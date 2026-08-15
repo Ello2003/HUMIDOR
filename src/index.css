@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-main: #0F0D0C;
+    --bg-surface: #13110F;
+    --bg-header: #161311;
+    --bg-card: #1C1816;
+    --bg-card-hover: #241E1B;
+    --border-main: #2C2621;
+    --border-hover: #3D352E;
+    --accent-gold: #D4AF37;
+    --accent-gold-hover: #E5C158;
+    --accent-cedar: #8B5E3C;
+    --text-primary: #E5E1DA;
+    --text-secondary: #A89F94;
+  }
+
+  body {
+    background-color: #0F0D0C;
+    color: #E5E1DA;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+
+  .font-display {
+    font-family: 'Cinzel', Georgia, serif;
+  }
+}
+
+/* Custom Scrollbar for Sophisticated Dark */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0F0D0C;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2C2621;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8B5E3C;
+}
+
