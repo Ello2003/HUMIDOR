@@ -318,6 +318,232 @@ List the most probable matches with their maker, line, wrapper type, and disting
   }
 });
 
+// Helper to sanitize & extract text from raw HTML
+function cleanHtmlContent(html: string): { title: string; metaDesc: string; ogImage: string; textContent: string; jsonLd: string } {
+  let title = "";
+  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (titleMatch) title = titleMatch[1].trim();
+
+  let metaDesc = "";
+  const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) ||
+                    html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i);
+  if (descMatch) metaDesc = descMatch[1].trim();
+
+  let ogImage = "";
+  const ogImgMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
+                     html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+  if (ogImgMatch) ogImage = ogImgMatch[1].trim();
+
+  // Extract JSON-LD if present (many e-commerce sites like C.Gars provide schema.org Product data)
+  let jsonLd = "";
+  const jsonLdMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (jsonLdMatches) {
+    jsonLd = jsonLdMatches.map((m) => m.replace(/<\/?script[^>]*>/gi, "").trim()).join("\n");
+  }
+
+  // Strip script, style, comments, and tags for readable text
+  let stripped = html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ")
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&pound;/g, "£")
+    .replace(/&#163;/g, "£")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Keep first 18,000 characters for token efficiency
+  if (stripped.length > 18000) {
+    stripped = stripped.substring(0, 18000);
+  }
+
+  return { title, metaDesc, ogImage, textContent: stripped, jsonLd: jsonLd.substring(0, 4000) };
+}
+
+// Endpoint: Scrape & Auto-Populate Cigar from Retailer Website (e.g. C.Gars Ltd, Havana House, etc.)
+app.post("/api/import/cigar-from-url", async (req, res) => {
+  try {
+    const { url, rawContent } = req.body;
+    if (!url && !rawContent) {
+      return res.status(400).json({ error: "Please provide a website URL or pasted product content." });
+    }
+
+    let fetchedHtml = "";
+    let extractedImage = "";
+    let extractedTitle = "";
+    let extractedDesc = "";
+    let extractedJsonLd = "";
+    let cleanText = "";
+    let vendorName = "Online Cigar Retailer";
+
+    if (url) {
+      try {
+        const parsedUrl = new URL(url);
+        const host = parsedUrl.hostname.toLowerCase();
+        if (host.includes("cgars") || host.includes("c-gars")) {
+          vendorName = "C.Gars Ltd (UK)";
+        } else if (host.includes("havanahouse")) {
+          vendorName = "Havana House (UK)";
+        } else if (host.includes("smoke-king") || host.includes("smokeking")) {
+          vendorName = "Smoke King (UK)";
+        } else if (host.includes("sautter")) {
+          vendorName = "Sautter Cigars (London)";
+        } else if (host.includes("davidoff")) {
+          vendorName = "Davidoff of London";
+        } else if (host.includes("foxcigar")) {
+          vendorName = "Fox Cigar";
+        } else if (host.includes("neptunecigar")) {
+          vendorName = "Neptune Cigar";
+        } else if (host.includes("famous-smoke")) {
+          vendorName = "Famous Smoke Shop";
+        } else if (host.includes("holts")) {
+          vendorName = "Holt's Cigar Co.";
+        } else {
+          vendorName = host.replace("www.", "").split(".")[0].toUpperCase();
+        }
+
+        // Fetch page with standard browser headers
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+            "Cache-Control": "no-cache",
+          },
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          fetchedHtml = await response.text();
+          const parsed = cleanHtmlContent(fetchedHtml);
+          extractedTitle = parsed.title;
+          extractedDesc = parsed.metaDesc;
+          extractedImage = parsed.ogImage;
+          extractedJsonLd = parsed.jsonLd;
+          cleanText = parsed.textContent;
+        }
+      } catch (fetchErr: any) {
+        console.warn(`Direct fetch for ${url} encountered: ${fetchErr.message}. Will use AI search grounding.`);
+      }
+    }
+
+    if (rawContent && !cleanText) {
+      const parsed = cleanHtmlContent(rawContent);
+      cleanText = parsed.textContent || rawContent;
+      if (parsed.title) extractedTitle = parsed.title;
+    }
+
+    const ai = getGeminiClient();
+    const systemInstruction = `You are an expert Master Tobacconist and data extraction engine specializing in British and international cigar retailers (including C.Gars Ltd cgarsltd.co.uk, Havana House, Smoke King, Sautter, etc.). Your job is to extract precise cigar specifications, blend composition, country of origin, vitola shape, ring gauge, length, strength, tasting notes, and price in British Pounds (£ GBP).`;
+
+    let prompt = "";
+    if (cleanText) {
+      prompt = `Extract structured cigar product information from this webpage/text:
+Source URL: ${url || "Pasted Content"}
+Detected Store: ${vendorName}
+Page Title: ${extractedTitle}
+Meta Description: ${extractedDesc}
+JSON-LD Data: ${extractedJsonLd}
+Extracted Text Content:
+${cleanText}
+
+Extract:
+- Exact Brand / Maker (e.g. Montecristo, Cohiba, Partagás, Ramón Allones, Romeo y Julieta, Padrón, Arturo Fuente, Davidoff, Trinidad, Bolivar, Hoyo de Monterrey, Olíva, Plasencia)
+- Cigar Name / Line (e.g. "No. 4", "Serie D No. 4", "Specially Selected", "Wide Churchill", "1926 Serie", "OpusX")
+- Vitola Format / Shape (e.g. "Robusto", "Petit Corona", "Churchill", "Toro", "Corona Gorda", "Pirámides / Torpedo", "Gordo")
+- Length in inches (numeric, e.g. 5.1, 4.88, 5.0) and ring gauge (integer, e.g. 42, 50, 52)
+- Country of Origin (e.g. "Cuba", "Nicaragua", "Dominican Republic", "Honduras", "Mexico")
+- Wrapper leaf variety (e.g. "Cuban", "Ecuadorian Habano", "Connecticut Broadleaf", "Mexican San Andrés", "Nicaraguan Sun Grown Maduro")
+- Binder and Filler blend if specified
+- Strength rating ("Mild", "Mild-Medium", "Medium", "Medium-Full", "Full", or "Full-Bodied")
+- Purchase Price in British Pounds (£ GBP). Extract the single stick price if available, or unit price. If only box price is found, state the single price calculated from box count.
+- Vendor / Store name (${vendorName})
+- Curated Tasting Notes & 4-6 dominant flavor descriptor tags (e.g. ["Spanish Cedar", "Dark Chocolate", "Rich Soil", "Baking Spice", "White Pepper"])
+- Short summary of why this cigar is celebrated.`;
+    } else {
+      // Fallback using URL and product search
+      prompt = `Look up and extract the exact cigar specifications for this product link: "${url}".
+Identify the brand, vitola, length, ring gauge, country of origin, wrapper, binder, filler, strength, typical UK price in British Pounds (£ GBP), flavor notes, and vendor.`;
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: prompt,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            brand: { type: Type.STRING, description: "Maker/Brand name, e.g. Montecristo, Padrón, Partagás" },
+            name: { type: Type.STRING, description: "Cigar model / line name, e.g. No. 4, Serie D No. 4, 1964 Exclusivo" },
+            line: { type: Type.STRING, description: "Sub-series or line" },
+            vitola: { type: Type.STRING, description: "Vitola shape, e.g. Robusto, Petit Corona, Toro, Churchill" },
+            lengthInches: { type: Type.NUMBER, description: "Length in inches, e.g. 5.12, 4.88" },
+            lengthMm: { type: Type.NUMBER, description: "Length in millimeters if available, e.g. 129" },
+            ringGauge: { type: Type.INTEGER, description: "Ring gauge integer, e.g. 42, 50" },
+            countryOrigin: { type: Type.STRING, description: "Cuba, Nicaragua, Dominican Republic, Honduras, etc." },
+            wrapper: { type: Type.STRING, description: "Wrapper tobacco type, e.g. Cuban, Ecuadorian Habano, Maduro" },
+            binder: { type: Type.STRING },
+            filler: { type: Type.STRING },
+            strength: { type: Type.STRING, description: "Mild, Mild-Medium, Medium, Medium-Full, Full, or Full-Bodied" },
+            purchasePrice: { type: Type.NUMBER, description: "Price in British Pounds (£) per single stick, e.g. 24.50" },
+            boxPrice: { type: Type.NUMBER, description: "Price of full box if listed in £" },
+            boxCount: { type: Type.INTEGER, description: "Number of cigars in box if applicable" },
+            currency: { type: Type.STRING, description: "Currency symbol, defaults to £" },
+            vendor: { type: Type.STRING, description: "Retailer name, e.g. C.Gars Ltd, Havana House" },
+            productDescription: { type: Type.STRING, description: "Clean overview from retailer" },
+            notes: { type: Type.STRING, description: "Tasting notes summary" },
+            flavorTags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            idealRestMonths: { type: Type.INTEGER, description: "Suggested resting time in months" },
+            isCuban: { type: Type.BOOLEAN },
+            imageUrl: { type: Type.STRING, description: "Product image URL if available" },
+          },
+          required: [
+            "brand",
+            "name",
+            "vitola",
+            "countryOrigin",
+            "wrapper",
+            "strength",
+            "purchasePrice",
+            "vendor",
+            "notes",
+            "flavorTags",
+          ],
+        },
+      },
+    });
+
+    const text = response.text || "{}";
+    const extractedData = JSON.parse(text);
+
+    // Attach imageUrl from OpenGraph if not detected in schema
+    if (!extractedData.imageUrl && extractedImage) {
+      extractedData.imageUrl = extractedImage;
+    }
+    extractedData.sourceUrl = url || "";
+    if (!extractedData.currency) {
+      extractedData.currency = "£";
+    }
+
+    return res.json({ success: true, data: extractedData });
+  } catch (error: any) {
+    console.error("Error in /api/import/cigar-from-url:", error);
+    return res.status(500).json({
+      error: error.message || "Failed to extract cigar details from website.",
+    });
+  }
+});
+
 // Vite middleware setup
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

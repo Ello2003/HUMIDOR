@@ -1,4 +1,4 @@
-export type StrengthRating = 'Mild' | 'Mild-Medium' | 'Medium' | 'Medium-Full' | 'Full';
+export type StrengthRating = 'Mild' | 'Mild-Medium' | 'Medium' | 'Medium-Full' | 'Full' | 'Full-Bodied';
 
 export type CigarStatus = 'resting' | 'ready' | 'aging' | 'special_occasion' | 'archived';
 
@@ -185,11 +185,70 @@ export interface SommelierRecommendation {
   sessionTips: string[];
 }
 
+export type WrapperType =
+  | 'Habano'
+  | 'Maduro'
+  | 'Connecticut Shade'
+  | 'Connecticut Broadleaf'
+  | 'Corojo'
+  | 'San Andrés'
+  | 'Cameroon'
+  | 'Sumatra'
+  | 'Candela'
+  | 'Oscuro'
+  | 'Criollo'
+  | 'Other';
+
+export interface CigarReviewNotes {
+  overview: string;
+  firstThird: string;
+  secondThird: string;
+  finalThird: string;
+  dominantFlavorTags: string[];
+  criticQuote?: string;
+  criticScore?: number;
+}
+
+export interface CigarResearchItem {
+  id: string;
+  brand: string;
+  line: string;
+  vitola: string;
+  lengthInches: number;
+  ringGauge: number;
+  countryOrigin: string;
+  wrapper: string;
+  wrapperType: WrapperType;
+  binder: string;
+  filler: string;
+  strength: StrengthRating;
+  body: 'Mild' | 'Mild-Medium' | 'Medium' | 'Medium-Full' | 'Full' | 'Full-Bodied';
+  averagePrice: number;
+  priceRange: string;
+  criticRating: number;
+  criticConsensus: string;
+  factoryTerroir?: string;
+  masterBlender?: string;
+  reviewTastingNotes: CigarReviewNotes;
+  recommendedPairings: string[];
+  agingWindowMonths?: number;
+  isCuban?: boolean;
+  // User personal annotations
+  personalRating?: number; // 1-100 score
+  personalNotes?: string;
+  personalFavorite?: boolean;
+  personalTried?: boolean;
+  personalWouldRebuy?: 'Box Worthy' | '5-Pack Buy' | 'Single Occasionally' | 'Never Again' | 'Not Smoked Yet';
+  personalPairingNotes?: string;
+  userUpdatedAt?: string;
+}
+
 export interface CigarAppData {
   cigars: Cigar[];
   humidors: Humidor[];
   smokeLogs: SmokeLog[];
   wishlist: WishlistItem[];
+  researchDatabase?: CigarResearchItem[];
   version: string;
   exportedAt?: string;
 }

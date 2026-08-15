@@ -1,4 +1,4 @@
-import { Cigar, Humidor, SmokeLog, WishlistItem, CigarAppData } from '../types';
+import { Cigar, Humidor, SmokeLog, WishlistItem, CigarAppData, CigarResearchItem } from '../types';
 
 /**
  * Utility to download text/data as a local file in browser
@@ -13,6 +13,104 @@ export function downloadFile(content: string, filename: string, mimeType: string
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Export Research Database (including brand, type, average price, review tasting notes, user personal rating & notes) as JSON
+ */
+export function exportResearchDatabaseToJSON(database: CigarResearchItem[], userOnly: boolean = false) {
+  const dataToExport = userOnly
+    ? database.filter((item) => item.personalRating || item.personalNotes || item.personalFavorite || item.personalTried)
+    : database;
+
+  const exportPayload = {
+    title: userOnly ? 'My Personal Cigar Ratings & Research Notes' : 'Cigar Connoisseur Research Database & Library',
+    totalCigars: dataToExport.length,
+    exportedAt: new Date().toISOString(),
+    version: '2.0.0',
+    cigars: dataToExport,
+  };
+
+  const jsonContent = JSON.stringify(exportPayload, null, 2);
+  const timestamp = new Date().toISOString().split('T')[0];
+  const filename = userOnly
+    ? `My_Cigar_Ratings_And_Notes_${timestamp}.json`
+    : `Cigar_Research_Database_${timestamp}.json`;
+
+  downloadFile(jsonContent, filename, 'application/json;charset=utf-8;');
+}
+
+/**
+ * Export Research Database as CSV
+ */
+export function exportResearchDatabaseToCSV(database: CigarResearchItem[]) {
+  const headers = [
+    'Brand',
+    'Line',
+    'Vitola',
+    'Length (in)',
+    'Ring Gauge',
+    'Country of Origin',
+    'Wrapper',
+    'Wrapper Type',
+    'Binder',
+    'Filler',
+    'Strength',
+    'Body',
+    'Average Price (USD)',
+    'Price Range',
+    'Critic Rating',
+    'Critic Consensus',
+    'Master Blender',
+    'Factory Terroir',
+    'Review Tasting Overview',
+    '1st Third Notes',
+    '2nd Third Notes',
+    'Final Third Notes',
+    'Dominant Flavors',
+    'Recommended Pairings',
+    'Personal Rating (1-100)',
+    'Personal Notes',
+    'Personal Favorite',
+    'Personal Rebuy Verdict',
+    'Personal Pairing Notes',
+  ];
+
+  const rows = database.map((c) => [
+    escapeCSV(c.brand),
+    escapeCSV(c.line),
+    escapeCSV(c.vitola),
+    escapeCSV(c.lengthInches),
+    escapeCSV(c.ringGauge),
+    escapeCSV(c.countryOrigin),
+    escapeCSV(c.wrapper),
+    escapeCSV(c.wrapperType),
+    escapeCSV(c.binder),
+    escapeCSV(c.filler),
+    escapeCSV(c.strength),
+    escapeCSV(c.body),
+    escapeCSV(c.averagePrice ? c.averagePrice.toFixed(2) : ''),
+    escapeCSV(c.priceRange),
+    escapeCSV(c.criticRating),
+    escapeCSV(c.criticConsensus),
+    escapeCSV(c.masterBlender || ''),
+    escapeCSV(c.factoryTerroir || ''),
+    escapeCSV(c.reviewTastingNotes?.overview || ''),
+    escapeCSV(c.reviewTastingNotes?.firstThird || ''),
+    escapeCSV(c.reviewTastingNotes?.secondThird || ''),
+    escapeCSV(c.reviewTastingNotes?.finalThird || ''),
+    escapeCSV((c.reviewTastingNotes?.dominantFlavorTags || []).join('; ')),
+    escapeCSV((c.recommendedPairings || []).join('; ')),
+    escapeCSV(c.personalRating || ''),
+    escapeCSV(c.personalNotes || ''),
+    escapeCSV(c.personalFavorite ? 'Yes' : 'No'),
+    escapeCSV(c.personalWouldRebuy || ''),
+    escapeCSV(c.personalPairingNotes || ''),
+  ].join(','));
+
+  const csvContent = [headers.join(','), ...rows].join('\r\n');
+  const timestamp = new Date().toISOString().split('T')[0];
+  downloadFile(csvContent, `Cigar_Research_Database_${timestamp}.csv`, 'text/csv;charset=utf-8;');
 }
 
 /**
@@ -215,6 +313,7 @@ export function exportCompleteVaultJSON(data: {
   humidors: Humidor[];
   smokeLogs: SmokeLog[];
   wishlist: WishlistItem[];
+  researchDatabase?: CigarResearchItem[];
 }) {
   const exportPayload: CigarAppData = {
     ...data,

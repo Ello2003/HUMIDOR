@@ -13,9 +13,15 @@ import {
   ArrowRight,
   ShieldCheck,
   Plus,
+  BarChart3,
+  Award,
+  Timer,
+  Coffee,
+  Heart,
 } from 'lucide-react';
 import { Cigar, Humidor, SmokeLog } from '../types';
 import { calculateRestDays } from '../utils/exportUtils';
+import { formatCurrency } from '../utils/currencyUtils';
 
 interface DashboardOverviewProps {
   cigars: Cigar[];
@@ -68,6 +74,86 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     tempUnit: 'F',
     maxCapacity: 150,
   };
+
+  // Personal Smoke Statistics from Smoke Logs
+  const totalCigarsSmoked = smokeLogs.length;
+  const totalDurationMinutes = smokeLogs.reduce((acc, log) => acc + (log.durationMinutes || 0), 0);
+  const avgDurationMinutes = totalCigarsSmoked > 0 ? Math.round(totalDurationMinutes / totalCigarsSmoked) : 0;
+  const totalHoursInvested = (totalDurationMinutes / 60).toFixed(1);
+  const avgOverallScore =
+    totalCigarsSmoked > 0
+      ? (smokeLogs.reduce((acc, log) => acc + (log.overallScore || 0), 0) / totalCigarsSmoked).toFixed(1)
+      : '0';
+  const avgStars =
+    totalCigarsSmoked > 0
+      ? (smokeLogs.reduce((acc, log) => acc + (log.starRating || 0), 0) / totalCigarsSmoked).toFixed(1)
+      : '0';
+
+  // Favorite Wrapper Types from smoke logs
+  const wrapperCounts: Record<string, number> = smokeLogs.reduce((acc: Record<string, number>, log) => {
+    if (log.wrapper && log.wrapper.trim()) {
+      const cleanWrapper = log.wrapper.trim();
+      acc[cleanWrapper] = (acc[cleanWrapper] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const sortedWrappers: [string, number][] = Object.entries(wrapperCounts).sort(
+    (a, b) => b[1] - a[1]
+  );
+
+  // Top Smoked Brands
+  const brandCounts: Record<string, number> = smokeLogs.reduce((acc: Record<string, number>, log) => {
+    if (log.cigarBrand && log.cigarBrand.trim()) {
+      const cleanBrand = log.cigarBrand.trim();
+      acc[cleanBrand] = (acc[cleanBrand] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const sortedBrands: [string, number][] = Object.entries(brandCounts).sort(
+    (a, b) => b[1] - a[1]
+  );
+
+  // Top Drink Pairings
+  const drinkCounts: Record<string, number> = smokeLogs.reduce((acc: Record<string, number>, log) => {
+    if (log.pairingDrink && log.pairingDrink.trim()) {
+      const cleanDrink = log.pairingDrink.trim();
+      acc[cleanDrink] = (acc[cleanDrink] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const sortedDrinks: [string, number][] = Object.entries(drinkCounts).sort(
+    (a, b) => b[1] - a[1]
+  );
+
+  // Box-Worthy Rebuy Percentage
+  const boxWorthyCount = smokeLogs.filter(
+    (l) => l.wouldRebuy === 'Box Worthy' || l.wouldRebuy === '5-Pack Buy'
+  ).length;
+  const boxWorthyRate = totalCigarsSmoked > 0 ? Math.round((boxWorthyCount / totalCigarsSmoked) * 100) : 0;
+
+  // Dominant Flavor Frequency across all logs
+  const flavorCounts: Record<string, number> = smokeLogs.reduce((acc: Record<string, number>, log) => {
+    const allNotes = [
+      ...(log.dominantFlavors || []),
+      ...(log.firstThirdNotes || []),
+      ...(log.secondThirdNotes || []),
+      ...(log.finalThirdNotes || []),
+    ];
+    allNotes.forEach((flavor) => {
+      if (flavor && flavor.trim()) {
+        const cleanFlavor = flavor.trim();
+        acc[cleanFlavor] = (acc[cleanFlavor] || 0) + 1;
+      }
+    });
+    return acc;
+  }, {});
+
+  const sortedFlavors: [string, number][] = Object.entries(flavorCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
 
   return (
     <div className="space-y-8">
@@ -155,14 +241,14 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </span>
           </div>
           <div className="my-3">
-            <div className="text-3xl sm:text-4xl font-serif text-white">${totalValuation.toFixed(2)}</div>
+            <div className="text-3xl sm:text-4xl font-serif text-white">{formatCurrency(totalValuation, '£')}</div>
             <div className="text-xs text-[#D4AF37] mt-1 flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
               <span>Curated across {humidors.length} active humidors</span>
             </div>
           </div>
           <div className="text-[11px] text-[#A89F94] border-t border-[#2C2621] pt-3 flex justify-between">
-            <span>Avg Stick: ${totalSticks > 0 ? (totalValuation / totalSticks).toFixed(2) : '0.00'}</span>
+            <span>Avg Stick: {formatCurrency(totalSticks > 0 ? totalValuation / totalSticks : 0, '£')}</span>
             <span className="text-[#E5E1DA] font-medium">Ready: {readyToSmoke.reduce((a, b) => a + b.quantity, 0)}</span>
           </div>
         </div>
@@ -379,6 +465,241 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Personal Statistics & Connoisseur Insights Section */}
+      <div className="bg-gradient-to-br from-[#1C1816] via-[#171311] to-[#13110F] border border-[#2C2621] rounded-lg p-6 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#2C2621]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[#241E1B] border border-[#382E26] flex items-center justify-center text-[#D4AF37] shadow-inner">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-serif font-bold text-[#E5E1DA]">Personal Smoking Statistics</h2>
+                <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30 rounded">
+                  Palate Insights
+                </span>
+              </div>
+              <p className="text-xs text-[#A89F94] mt-0.5">
+                Calculated in real-time from {totalCigarsSmoked} documented smoke logs in your tasting journal
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onSmokeCigar('')}
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#D4AF37] hover:brightness-110 text-[#0F0D0C] rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+            >
+              <Flame className="w-3.5 h-3.5 fill-[#0F0D0C]" />
+              <span>Log Smoke</span>
+            </button>
+            <button
+              onClick={() => onNavigate('journal')}
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#241E1B] hover:bg-[#2C2621] text-[#E5E1DA] border border-[#382E26] rounded text-xs uppercase tracking-wider font-semibold transition cursor-pointer"
+            >
+              <span>View Journal</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#D4AF37]" />
+            </button>
+          </div>
+        </div>
+
+        {totalCigarsSmoked > 0 ? (
+          <div className="space-y-6 pt-5">
+            {/* Top 4 Key Metric Tiles */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Metric 1: Total Smoked */}
+              <div className="p-4 rounded-lg bg-[#13110F] border border-[#2C2621] flex flex-col justify-between">
+                <div className="flex items-center justify-between text-[#A89F94] mb-2">
+                  <span className="text-[10px] uppercase tracking-wider font-bold">Total Cigars Smoked</span>
+                  <Flame className="w-4 h-4 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <div className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
+                    {totalCigarsSmoked}
+                  </div>
+                  <div className="text-[11px] text-[#A89F94] mt-1">
+                    {totalHoursInvested} hrs total tasting time
+                  </div>
+                </div>
+              </div>
+
+              {/* Metric 2: Average Smoke Duration */}
+              <div className="p-4 rounded-lg bg-[#13110F] border border-[#2C2621] flex flex-col justify-between">
+                <div className="flex items-center justify-between text-[#A89F94] mb-2">
+                  <span className="text-[10px] uppercase tracking-wider font-bold">Avg Smoke Duration</span>
+                  <Timer className="w-4 h-4 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <div className="text-2xl sm:text-3xl font-serif font-bold text-[#D4AF37] tracking-tight">
+                    {avgDurationMinutes} <span className="text-sm font-sans text-[#A89F94] font-normal">min</span>
+                  </div>
+                  <div className="text-[11px] text-[#A89F94] mt-1">
+                    Paced leisurely draw
+                  </div>
+                </div>
+              </div>
+
+              {/* Metric 3: Average Rating */}
+              <div className="p-4 rounded-lg bg-[#13110F] border border-[#2C2621] flex flex-col justify-between">
+                <div className="flex items-center justify-between text-[#A89F94] mb-2">
+                  <span className="text-[10px] uppercase tracking-wider font-bold">Average Rating</span>
+                  <Star className="w-4 h-4 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <div className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
+                    {avgOverallScore} <span className="text-sm font-sans text-[#A89F94] font-normal">/ 100</span>
+                  </div>
+                  <div className="text-[11px] text-[#D4AF37] mt-1">
+                    ★ {avgStars} / 5 • {boxWorthyRate}% rebuy rate
+                  </div>
+                </div>
+              </div>
+
+              {/* Metric 4: Top Favorite Wrapper */}
+              <div className="p-4 rounded-lg bg-[#13110F] border border-[#2C2621] flex flex-col justify-between">
+                <div className="flex items-center justify-between text-[#A89F94] mb-2">
+                  <span className="text-[10px] uppercase tracking-wider font-bold">Favorite Wrapper</span>
+                  <Award className="w-4 h-4 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <div className="text-base sm:text-lg font-serif font-bold text-[#E5E1DA] truncate" title={sortedWrappers[0]?.[0] || 'N/A'}>
+                    {sortedWrappers[0]?.[0] || 'None'}
+                  </div>
+                  <div className="text-[11px] text-[#A89F94] mt-1">
+                    {sortedWrappers[0] ? `${sortedWrappers[0][1]} sticks (${Math.round((sortedWrappers[0][1] / totalCigarsSmoked) * 100)}%)` : 'No logs yet'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* In-Depth Breakdown Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Breakdown 1: Favorite Wrapper Types */}
+              <div className="p-4 rounded-lg bg-[#13110F] border border-[#2C2621] space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-[#2C2621]">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#E5E1DA] flex items-center gap-1.5">
+                    <span className="text-sm">🍂</span>
+                    <span>Favorite Wrapper Types</span>
+                  </h3>
+                  <span className="text-[10px] text-[#D4AF37] font-medium">{sortedWrappers.length} varieties</span>
+                </div>
+                <div className="space-y-2.5">
+                  {sortedWrappers.slice(0, 4).map(([wrapper, count], idx) => {
+                    const percentage = Math.round((count / totalCigarsSmoked) * 100);
+                    return (
+                      <div key={wrapper} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-[#E5E1DA] font-medium truncate pr-2">
+                            {idx + 1}. {wrapper}
+                          </span>
+                          <span className="text-[#D4AF37] font-mono text-[11px] whitespace-nowrap">
+                            {count} ({percentage}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-[#1C1816] rounded-full h-1.5 overflow-hidden border border-[#2C2621]">
+                          <div
+                            className="bg-[#D4AF37] h-full rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Breakdown 2: Top Smoked Brands */}
+              <div className="p-4 rounded-lg bg-[#13110F] border border-[#2C2621] space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-[#2C2621]">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#E5E1DA] flex items-center gap-1.5">
+                    <span className="text-sm">🏷️</span>
+                    <span>Top Smoked Brands</span>
+                  </h3>
+                  <span className="text-[10px] text-[#D4AF37] font-medium">{sortedBrands.length} marcas</span>
+                </div>
+                <div className="space-y-2.5">
+                  {sortedBrands.slice(0, 4).map(([brand, count], idx) => {
+                    const percentage = Math.round((count / totalCigarsSmoked) * 100);
+                    return (
+                      <div key={brand} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-[#E5E1DA] font-medium truncate pr-2">
+                            {idx + 1}. {brand}
+                          </span>
+                          <span className="text-[#D4AF37] font-mono text-[11px] whitespace-nowrap">
+                            {count} ({percentage}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-[#1C1816] rounded-full h-1.5 overflow-hidden border border-[#2C2621]">
+                          <div
+                            className="bg-[#8B5E3C] h-full rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Breakdown 3: Preferred Drink Pairings & Flavors */}
+              <div className="p-4 rounded-lg bg-[#13110F] border border-[#2C2621] space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-[#2C2621]">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#E5E1DA] flex items-center gap-1.5">
+                    <span className="text-sm">🥃</span>
+                    <span>Pairings & Palate Profile</span>
+                  </h3>
+                  <span className="text-[10px] text-[#D4AF37] font-medium">Trends</span>
+                </div>
+
+                {/* Top Drinks */}
+                <div className="space-y-1.5">
+                  <div className="text-[10px] uppercase tracking-wider font-semibold text-[#A89F94]">Top Beverages:</div>
+                  <div className="space-y-1">
+                    {sortedDrinks.slice(0, 2).map(([drink, count]) => (
+                      <div key={drink} className="flex justify-between text-xs text-[#E5E1DA]">
+                        <span className="truncate pr-2">🍹 {drink}</span>
+                        <span className="text-[#D4AF37] font-serif font-bold text-[11px]">{count}x</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top Flavor Tags */}
+                {sortedFlavors.length > 0 && (
+                  <div className="pt-2 border-t border-[#2C2621] space-y-1.5">
+                    <div className="text-[10px] uppercase tracking-wider font-semibold text-[#A89F94]">Frequent Flavor Notes:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {sortedFlavors.map(([flavor]) => (
+                        <span
+                          key={flavor}
+                          className="px-2 py-0.5 bg-[#1C1816] border border-[#2C2621] text-[#D4AF37] rounded text-[10px] font-medium"
+                        >
+                          {flavor}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="py-8 text-center space-y-3">
+            <Flame className="w-8 h-8 text-[#A89F94]/50 mx-auto" />
+            <div className="text-sm font-serif font-bold text-[#E5E1DA]">No Smoking Sessions Logged Yet</div>
+            <p className="text-xs text-[#A89F94] max-w-md mx-auto">
+              Start logging your cigar smoking sessions with tasting notes, burn ratings, and the live smoking timer to generate your personal connoisseur statistics.
+            </p>
+            <button
+              onClick={() => onSmokeCigar('')}
+              className="mt-2 px-4 py-2 bg-[#D4AF37] hover:brightness-110 text-[#0F0D0C] rounded text-xs font-bold uppercase tracking-wider cursor-pointer"
+            >
+              Log First Cigar Session
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Curated Tasting Notes & Collection Breakdown matching design */}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bookmark, Plus, Check, Trash2, Sparkles, ExternalLink, Tag, Star } from 'lucide-react';
 import { WishlistItem, Cigar } from '../types';
+import { formatCurrency, DEFAULT_CURRENCY } from '../utils/currencyUtils';
 
 interface WishlistHuntingProps {
   wishlist: WishlistItem[];
@@ -116,11 +117,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Target Price ($/stick or box)</label>
+              <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Target Price (£/stick or box)</label>
               <input
                 type="number"
                 step="0.01"
-                placeholder="e.g. 24.00"
+                placeholder="e.g. 28.00"
                 value={targetPrice}
                 onChange={(e) => setTargetPrice(e.target.value)}
                 className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -214,9 +215,9 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               )}
 
               <div className="space-y-1 text-xs text-[#A89F94] pt-1">
-                {item.targetPrice && (
+                {item.targetPrice !== undefined && (
                   <div>
-                    Target: <strong className="text-[#E5E1DA]">${item.targetPrice.toFixed(2)}</strong>
+                    Target: <strong className="text-[#E5E1DA]">{formatCurrency(item.targetPrice, '£')}</strong>
                   </div>
                 )}
                 {item.sourceRetailer && (

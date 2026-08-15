@@ -11,7 +11,8 @@ import { LogSmokeModal } from './components/LogSmokeModal';
 import { HumidorManagerModal } from './components/HumidorManagerModal';
 import { HumidorManagerDrawer } from './components/HumidorManagerDrawer';
 import { initialCigars, initialHumidors, initialSmokeLogs, initialWishlist } from './data/initialData';
-import { Cigar, Humidor, SmokeLog, WishlistItem } from './types';
+import { INITIAL_RESEARCH_DATABASE } from './data/cigarDatabase';
+import { Cigar, Humidor, SmokeLog, WishlistItem, CigarResearchItem } from './types';
 
 export function App() {
   // Primary state with localStorage persistence
@@ -35,6 +36,20 @@ export function App() {
     return saved ? JSON.parse(saved) : initialWishlist;
   });
 
+  // Local Searchable Cigar Research Database
+  const [researchDatabase, setResearchDatabase] = useState<CigarResearchItem[]>(() => {
+    const saved = localStorage.getItem('cedar_ash_research_db');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved research db', e);
+      }
+    }
+    return INITIAL_RESEARCH_DATABASE;
+  });
+
   // Sync to localStorage
   useEffect(() => {
     localStorage.setItem('cedar_ash_cigars', JSON.stringify(cigars));
@@ -51,6 +66,10 @@ export function App() {
   useEffect(() => {
     localStorage.setItem('cedar_ash_wishlist', JSON.stringify(wishlist));
   }, [wishlist]);
+
+  useEffect(() => {
+    localStorage.setItem('cedar_ash_research_db', JSON.stringify(researchDatabase));
+  }, [researchDatabase]);
 
   // Navigation tab state
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -192,6 +211,17 @@ export function App() {
     handleDeleteWishlistItem(item.id);
   };
 
+  // Handlers: Research Database
+  const handleUpdateResearchCigar = (cigarId: string, updates: Partial<CigarResearchItem>) => {
+    setResearchDatabase((prev) =>
+      prev.map((item) => (item.id === cigarId ? { ...item, ...updates } : item))
+    );
+  };
+
+  const handleAddCustomResearchCigar = (newCigar: CigarResearchItem) => {
+    setResearchDatabase((prev) => [newCigar, ...prev]);
+  };
+
   // Handlers: Research jump
   const handleOpenResearchForCigar = (cigar: Cigar) => {
     setResearchQuery(`${cigar.brand} ${cigar.name}`);
@@ -203,17 +233,41 @@ export function App() {
     setActiveTab('research');
   };
 
+  // Direct smoke logger from research
+  const handleLogSmokeFromResearch = (
+    cigarName: string,
+    brand: string,
+    vitola: string,
+    wrapper: string,
+    origin: string
+  ) => {
+    // Find matching cigar in humidor if exists
+    const matchingCigar = cigars.find(
+      (c) => c.brand.toLowerCase() === brand.toLowerCase() && c.name.toLowerCase().includes(cigarName.toLowerCase())
+    );
+
+    if (matchingCigar) {
+      setSelectedCigarForSmoke(matchingCigar);
+    } else {
+      setSelectedCigarForSmoke(null);
+    }
+    setLogToEdit(null);
+    setIsLogSmokeOpen(true);
+  };
+
   // Vault import
   const handleImportVault = (data: {
     cigars?: Cigar[];
     humidors?: Humidor[];
     smokeLogs?: SmokeLog[];
     wishlist?: WishlistItem[];
+    researchDatabase?: CigarResearchItem[];
   }) => {
     if (data.cigars) setCigars(data.cigars);
     if (data.humidors) setHumidors(data.humidors);
     if (data.smokeLogs) setSmokeLogs(data.smokeLogs);
     if (data.wishlist) setWishlist(data.wishlist);
+    if (data.researchDatabase) setResearchDatabase(data.researchDatabase);
   };
 
   return (
@@ -299,6 +353,9 @@ export function App() {
         {activeTab === 'research' && (
           <CigarResearchHub
             cigars={cigars}
+            researchDatabase={researchDatabase}
+            onUpdateResearchCigar={handleUpdateResearchCigar}
+            onAddCustomResearchCigar={handleAddCustomResearchCigar}
             initialResearchQuery={researchQuery}
             onAddCigarFromResearch={(prefill) => {
               setPrefilledCigarData(prefill);
@@ -315,6 +372,7 @@ export function App() {
               });
               setActiveTab('wishlist');
             }}
+            onLogSmokeFromResearch={handleLogSmokeFromResearch}
           />
         )}
 
@@ -334,6 +392,7 @@ export function App() {
             humidors={humidors}
             smokeLogs={smokeLogs}
             wishlist={wishlist}
+            researchDatabase={researchDatabase}
             onImportVault={handleImportVault}
           />
         )}
@@ -397,8 +456,8 @@ export function App() {
       {/* Footer */}
       <footer className="mt-auto py-5 border-t border-[#2C2621] bg-[#13110F] text-center text-xs text-[#A89F94]">
         <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2">
-          <span className="font-serif tracking-wider text-[#D4AF37]">🍂 Cedar & Ash Personal Humidor & Sommelier Suite</span>
-          <span className="text-[11px] text-[#A89F94]/70">Offline-First Local Storage • Complete CSV & JSON Vault Portability</span>
+          <span className="font-serif tracking-wider text-[#D4AF37]">🍂 Cedar & Ash Personal Humidor & Research Suite</span>
+          <span className="text-[11px] text-[#A89F94]/70">Offline-First Local Storage • Curated Brand Database • Complete JSON & CSV Export</span>
         </div>
       </footer>
     </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Flame, Coffee, Star, CheckCircle, Award } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Flame, Coffee, Star, CheckCircle, Award, Play, Pause, RotateCcw, Timer, Clock, Sparkles, Check, ArrowRight } from 'lucide-react';
 import { Cigar, SmokeLog } from '../types';
 import { FLAVOR_CATEGORIES } from '../data/initialData';
 import confetti from 'canvas-confetti';
@@ -78,6 +78,61 @@ export const LogSmokeModal: React.FC<LogSmokeModalProps> = ({
     logToEdit?.wouldRebuy || 'Box Worthy'
   );
   const [detailedReview, setDetailedReview] = useState<string>(logToEdit?.detailedReview || '');
+
+  // Live Smoking Stopwatch Timer
+  const [timerSeconds, setTimerSeconds] = useState<number>(0);
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  const [timerAppliedFeedback, setTimerAppliedFeedback] = useState<boolean>(false);
+  const [showAutoSuggestNotice, setShowAutoSuggestNotice] = useState<boolean>(false);
+
+  // Stopwatch ticking effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setTimerSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTimerRunning]);
+
+  const handleStartTimer = () => {
+    setIsTimerRunning(true);
+    setShowAutoSuggestNotice(false);
+  };
+
+  const handlePauseTimer = () => {
+    setIsTimerRunning(false);
+    if (timerSeconds >= 30) {
+      setShowAutoSuggestNotice(true);
+    }
+  };
+
+  const handleResetTimer = () => {
+    setIsTimerRunning(false);
+    setTimerSeconds(0);
+    setShowAutoSuggestNotice(false);
+  };
+
+  const handleApplyTimerToDuration = () => {
+    const elapsedMinutes = Math.max(1, Math.round(timerSeconds / 60));
+    setDurationMinutes(elapsedMinutes);
+    setTimerAppliedFeedback(true);
+    setShowAutoSuggestNotice(false);
+    setTimeout(() => setTimerAppliedFeedback(false), 3000);
+  };
+
+  const formatStopwatch = (totalSec: number) => {
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    if (hrs > 0) {
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   // Sync selected cigar from humidor
   useEffect(() => {
@@ -280,6 +335,166 @@ export const LogSmokeModal: React.FC<LogSmokeModalProps> = ({
             )}
           </div>
 
+          {/* Interactive Smoking Timer Feature */}
+          <div className="p-4 bg-gradient-to-br from-[#161210] via-[#1E1815] to-[#14100E] border border-[#382E26] rounded-lg shadow-inner">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              {/* Left: Info & Status */}
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center border transition-all ${
+                    isTimerRunning
+                      ? 'bg-amber-950/70 border-[#D4AF37] text-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.35)] animate-pulse'
+                      : timerSeconds > 0
+                      ? 'bg-[#241E1B] border-[#D4AF37]/50 text-[#D4AF37]'
+                      : 'bg-[#13110F] border-[#2C2621] text-[#A89F94]'
+                  }`}
+                >
+                  <Timer className={`w-5 h-5 ${isTimerRunning ? 'animate-spin' : ''}`} style={{ animationDuration: '6s' }} />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-serif font-bold text-[#E5E1DA] tracking-wide">Smoking Session Timer</span>
+                    {isTimerRunning ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-[#D4AF37] border border-amber-500/40 animate-pulse">
+                        <Flame className="w-3 h-3 fill-amber-500 text-amber-500" />
+                        <span>Smoking Active</span>
+                      </span>
+                    ) : timerSeconds > 0 ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#241E1B] text-[#A89F94] border border-[#2C2621]">
+                        <span>Paused</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-[#A89F94]/70">Ready to track stick duration</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#A89F94] mt-0.5">
+                    Track your smoke time live with 1-click automatic duration logging
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: Digital Timer Display & Controls */}
+              <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+                {/* Digital clock display */}
+                <div className="px-3.5 py-1.5 bg-[#0F0D0C] border border-[#2C2621] rounded-md font-mono text-xl md:text-2xl font-bold tracking-wider text-[#D4AF37] shadow-inner flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#A89F94]/60" />
+                  <span>{formatStopwatch(timerSeconds)}</span>
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center gap-1.5">
+                  {!isTimerRunning ? (
+                    <button
+                      type="button"
+                      onClick={handleStartTimer}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-[#D4AF37] hover:brightness-110 text-[#0F0D0C] rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-[#0F0D0C]" />
+                      <span>{timerSeconds > 0 ? 'Resume' : 'Start'}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handlePauseTimer}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm"
+                    >
+                      <Pause className="w-3.5 h-3.5 fill-white" />
+                      <span>Pause</span>
+                    </button>
+                  )}
+
+                  {timerSeconds > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleResetTimer}
+                      title="Reset stopwatch"
+                      className="p-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621] rounded text-xs transition cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  {timerSeconds > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleApplyTimerToDuration}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer border ${
+                        timerAppliedFeedback
+                          ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50'
+                          : 'bg-[#241E1B] hover:bg-[#2F2723] text-[#D4AF37] border-[#D4AF37]/50'
+                      }`}
+                    >
+                      {timerAppliedFeedback ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Applied {durationMinutes}m!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          <span>Set Duration ({Math.max(1, Math.round(timerSeconds / 60))}m)</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Auto-suggest duration callout bar when paused */}
+            {showAutoSuggestNotice && timerSeconds >= 30 && (
+              <div className="mt-3 pt-2.5 border-t border-[#2C2621]/80 flex flex-wrap items-center justify-between gap-2 text-xs bg-[#13110F]/70 px-3 py-2 rounded border border-[#2C2621]">
+                <div className="flex items-center gap-2 text-[#E5E1DA]">
+                  <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <span>
+                    Stopwatch logged <strong>{Math.max(1, Math.round(timerSeconds / 60))} minutes</strong> of smoking time. Populate this into the session duration?
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleApplyTimerToDuration}
+                  className="text-[11px] font-bold text-[#0F0D0C] bg-[#D4AF37] hover:brightness-110 px-2.5 py-1 rounded transition flex items-center gap-1 cursor-pointer shadow-xs"
+                >
+                  <span>Apply ({Math.max(1, Math.round(timerSeconds / 60))} min)</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {/* Thirds Progression Visual Guide when timer is running/active */}
+            {timerSeconds > 0 && (
+              <div className="mt-3 pt-2.5 border-t border-[#2C2621]/60">
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-[#A89F94] mb-1.5">
+                  <span>Vitola Thirds Progression</span>
+                  <span className="text-[#D4AF37] font-semibold">
+                    {timerSeconds < 1200
+                      ? '🔥 1st Third (Initial Light & Cedar Aroma)'
+                      : timerSeconds < 2700
+                      ? '💨 2nd Third (Sweet Spot, Cream & Complexity)'
+                      : '🪵 Final Third / Nub (Rich Dark Notes & Spice)'}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-[#0F0D0C] rounded-full overflow-hidden flex gap-1 p-0.5 border border-[#2C2621]">
+                  <div
+                    className={`h-full rounded-xs transition-all duration-500 ${
+                      timerSeconds > 0 ? 'bg-[#D4AF37] flex-1' : 'bg-transparent flex-1'
+                    }`}
+                  />
+                  <div
+                    className={`h-full rounded-xs transition-all duration-500 ${
+                      timerSeconds >= 1200 ? 'bg-[#D4AF37] flex-1' : 'bg-[#241E1B] flex-1'
+                    }`}
+                  />
+                  <div
+                    className={`h-full rounded-xs transition-all duration-500 ${
+                      timerSeconds >= 2700 ? 'bg-amber-600 flex-1' : 'bg-[#241E1B] flex-1'
+                    }`}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Session Context & Mechanics */}
           <div>
             <h3 className="text-[10px] uppercase tracking-wider font-bold text-[#D4AF37] mb-3">
@@ -316,11 +531,24 @@ export const LogSmokeModal: React.FC<LogSmokeModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Duration (Minutes)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[10px] uppercase tracking-wider text-[#A89F94]">Duration (Minutes)</label>
+                  {timerSeconds > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleApplyTimerToDuration}
+                      className="text-[9px] text-[#D4AF37] hover:underline flex items-center gap-0.5 cursor-pointer font-medium"
+                      title="Sync with stopwatch timer"
+                    >
+                      <Timer className="w-2.5 h-2.5" />
+                      <span>Sync ({Math.max(1, Math.round(timerSeconds / 60))}m)</span>
+                    </button>
+                  )}
+                </div>
                 <input
                   type="number"
-                  min="15"
-                  max="240"
+                  min="1"
+                  max="360"
                   value={durationMinutes}
                   onChange={(e) => setDurationMinutes(parseInt(e.target.value, 10) || 60)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"

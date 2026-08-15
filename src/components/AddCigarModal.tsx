@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Plus, AlertCircle } from 'lucide-react';
+import { X, Sparkles, Plus, AlertCircle, Globe, Loader2, Check } from 'lucide-react';
 import { Cigar, Humidor, StrengthRating, CigarStatus } from '../types';
 import { FLAVOR_CATEGORIES } from '../data/initialData';
+import { DEFAULT_CURRENCY } from '../utils/currencyUtils';
 
 interface AddCigarModalProps {
   isOpen: boolean;
@@ -36,7 +37,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
   const [binder, setBinder] = useState(cigarToEdit?.binder || prefillData?.binder || 'Nicaragua');
   const [filler, setFiller] = useState(cigarToEdit?.filler || prefillData?.filler || 'Nicaragua');
   const [countryOrigin, setCountryOrigin] = useState(
-    cigarToEdit?.countryOrigin || prefillData?.countryOrigin || 'Nicaragua'
+    cigarToEdit?.countryOrigin || prefillData?.countryOrigin || 'Cuba'
   );
   const [strength, setStrength] = useState<StrengthRating>(
     (cigarToEdit?.strength as StrengthRating) || (prefillData?.strength as StrengthRating) || 'Medium-Full'
@@ -54,10 +55,10 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
       ? String(cigarToEdit.purchasePrice)
       : prefillData?.purchasePrice !== undefined
       ? String(prefillData.purchasePrice)
-      : '14.00'
+      : '24.50'
   );
-  const [currency] = useState<string>(cigarToEdit?.currency || '$');
-  const [vendor, setVendor] = useState<string>(cigarToEdit?.vendor || prefillData?.vendor || '');
+  const [currency, setCurrency] = useState<string>(cigarToEdit?.currency || prefillData?.currency || DEFAULT_CURRENCY);
+  const [vendor, setVendor] = useState<string>(cigarToEdit?.vendor || prefillData?.vendor || 'C.Gars Ltd');
   const [boxCode, setBoxCode] = useState<string>(cigarToEdit?.boxCode || '');
   const [targetRestMonths, setTargetRestMonths] = useState<number>(
     cigarToEdit?.targetRestMonths ?? prefillData?.targetRestMonths ?? 6
@@ -72,6 +73,59 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
     cigarToEdit?.flavorTags || prefillData?.flavorTags || ['Spanish Cedar', 'Dark Chocolate']
   );
   const [customTagInput, setCustomTagInput] = useState('');
+
+  // Web link auto-fill state
+  const [importUrl, setImportUrl] = useState('');
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+  const [urlFetchNotice, setUrlFetchNotice] = useState<string | null>(null);
+  const [urlFetchError, setUrlFetchError] = useState<string | null>(null);
+
+  const handleAutoFillFromUrl = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!importUrl.trim()) return;
+
+    setIsFetchingUrl(true);
+    setUrlFetchError(null);
+    setUrlFetchNotice(null);
+
+    try {
+      const res = await fetch('/api/import/cigar-from-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to auto-populate from URL.');
+      }
+
+      const extracted = data.data;
+      if (extracted.brand) setBrand(extracted.brand);
+      if (extracted.name) setName(extracted.name);
+      if (extracted.line) setLine(extracted.line);
+      if (extracted.vitola) setVitola(extracted.vitola);
+      if (extracted.lengthInches) setLengthInches(String(extracted.lengthInches));
+      if (extracted.ringGauge) setRingGauge(String(extracted.ringGauge));
+      if (extracted.wrapper) setWrapper(extracted.wrapper);
+      if (extracted.binder) setBinder(extracted.binder);
+      if (extracted.filler) setFiller(extracted.filler);
+      if (extracted.countryOrigin) setCountryOrigin(extracted.countryOrigin);
+      if (extracted.strength) setStrength(extracted.strength as StrengthRating);
+      if (extracted.purchasePrice !== undefined) setPurchasePrice(String(extracted.purchasePrice));
+      if (extracted.currency) setCurrency(extracted.currency);
+      if (extracted.vendor) setVendor(extracted.vendor);
+      if (extracted.idealRestMonths) setTargetRestMonths(extracted.idealRestMonths);
+      if (extracted.notes || extracted.productDescription) setNotes(extracted.notes || extracted.productDescription);
+      if (extracted.flavorTags && extracted.flavorTags.length > 0) setFlavorTags(extracted.flavorTags);
+
+      setUrlFetchNotice(`✨ Auto-populated specs and £ price from ${extracted.vendor || 'retailer'}!`);
+    } catch (err: any) {
+      setUrlFetchError(err.message || 'Could not auto-populate from website. Please enter details manually.');
+    } finally {
+      setIsFetchingUrl(false);
+    }
+  };
 
   const toggleFlavorTag = (tag: string) => {
     if (flavorTags.includes(tag)) {
@@ -106,7 +160,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
         wrapper: wrapper.trim(),
         binder: binder.trim() || undefined,
         filler: filler.trim() || undefined,
-        countryOrigin: countryOrigin.trim() || 'Nicaragua',
+        countryOrigin: countryOrigin.trim() || 'Cuba',
         strength,
         quantity: Math.max(0, quantity),
         humidorId,
@@ -147,8 +201,60 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
           </button>
         </div>
 
+        {/* Quick URL Auto-Fill Bar */}
+        {!cigarToEdit && (
+          <div className="px-6 py-3 bg-gradient-to-r from-[#191513] via-[#1F1916] to-[#191513] border-b border-[#2C2621]">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-[#D4AF37] flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5" />
+                <span>Auto-Fill from Website Link (C.Gars Ltd, Havana House, etc.)</span>
+              </span>
+              <span className="text-[10px] text-[#A89F94]">⚡ Instant AI Specs & £ Pricing</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                placeholder="Paste C.Gars or retailer link, e.g. https://www.cgarsltd.co.uk/montecristo-no4-cigar-p-54.html"
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                className="flex-1 bg-[#13110F] border border-[#2C2621] rounded px-3 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37] placeholder-[#A89F94]/50"
+              />
+              <button
+                type="button"
+                onClick={handleAutoFillFromUrl}
+                disabled={isFetchingUrl || !importUrl.trim()}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#D4AF37] hover:brightness-110 disabled:opacity-50 text-[#0F0D0C] rounded text-xs uppercase tracking-wider font-bold shadow-sm transition cursor-pointer shrink-0"
+              >
+                {isFetchingUrl ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Extracting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Auto-Fill Form</span>
+                  </>
+                )}
+              </button>
+            </div>
+            {urlFetchNotice && (
+              <div className="flex items-center gap-1.5 text-xs text-[#D4AF37] font-medium mt-1.5">
+                <Check className="w-3.5 h-3.5" />
+                <span>{urlFetchNotice}</span>
+              </div>
+            )}
+            {urlFetchError && (
+              <div className="flex items-center gap-1.5 text-xs text-red-400 font-medium mt-1.5">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>{urlFetchError}</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
           {/* Basic Details */}
           <div>
             <h3 className="text-[10px] uppercase tracking-wider font-bold text-[#D4AF37] mb-3 flex items-center gap-1.5">
@@ -160,7 +266,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Arturo Fuente, Padrón"
+                  placeholder="e.g. Montecristo, Padrón, Partagás"
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -171,7 +277,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. OpusX, 1926 Serie"
+                  placeholder="e.g. No. 4, Serie D No. 4, 1926 Serie"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -181,7 +287,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Line / Sub-Series</label>
                 <input
                   type="text"
-                  placeholder="e.g. Maduro, Rare Pink"
+                  placeholder="e.g. Classic, Rare Pink, Linea 1492"
                   value={line}
                   onChange={(e) => setLine(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -200,7 +306,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Vitola / Shape</label>
                 <input
                   type="text"
-                  placeholder="Robusto, Toro, Churchill, Figurado"
+                  placeholder="Robusto, Petit Corona, Toro, Churchill"
                   value={vitola}
                   onChange={(e) => setVitola(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -210,8 +316,8 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Length (inches)</label>
                 <input
                   type="number"
-                  step="0.1"
-                  placeholder="5.25"
+                  step="0.05"
+                  placeholder="5.12"
                   value={lengthInches}
                   onChange={(e) => setLengthInches(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -221,7 +327,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Ring Gauge</label>
                 <input
                   type="number"
-                  placeholder="52"
+                  placeholder="42"
                   value={ringGauge}
                   onChange={(e) => setRingGauge(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -234,14 +340,14 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                   onChange={(e) => setCountryOrigin(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
                 >
-                  <option value="Nicaragua">Nicaragua</option>
-                  <option value="Dominican Republic">Dominican Republic</option>
-                  <option value="Cuba">Cuba</option>
-                  <option value="Honduras">Honduras</option>
-                  <option value="Ecuador">Ecuador</option>
-                  <option value="Mexico">Mexico</option>
-                  <option value="Costa Rica">Costa Rica</option>
-                  <option value="United States">United States</option>
+                  <option value="Cuba">Cuba 🇨🇺</option>
+                  <option value="Nicaragua">Nicaragua 🇳🇮</option>
+                  <option value="Dominican Republic">Dominican Republic 🇩🇴</option>
+                  <option value="Honduras">Honduras 🇭🇳</option>
+                  <option value="Ecuador">Ecuador 🇪🇨</option>
+                  <option value="Mexico">Mexico 🇲🇽</option>
+                  <option value="Costa Rica">Costa Rica 🇨🇷</option>
+                  <option value="United States">United States 🇺🇸</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
@@ -252,7 +358,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Wrapper Leaf</label>
                 <input
                   type="text"
-                  placeholder="e.g. Ecuadorian Habano, Maduro, Broadleaf"
+                  placeholder="e.g. Cuban, Ecuadorian Habano, Maduro"
                   value={wrapper}
                   onChange={(e) => setWrapper(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -262,7 +368,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Binder</label>
                 <input
                   type="text"
-                  placeholder="e.g. San Andrés, Estelí"
+                  placeholder="e.g. Cuba, San Andrés, Estelí"
                   value={binder}
                   onChange={(e) => setBinder(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -272,7 +378,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Filler</label>
                 <input
                   type="text"
-                  placeholder="e.g. Jalapa, Condega, Ometepe"
+                  placeholder="e.g. Vuelta Abajo, Jalapa, Condega"
                   value={filler}
                   onChange={(e) => setFiller(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -284,7 +390,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
           {/* Humidor Placement & Inventory */}
           <div>
             <h3 className="text-[10px] uppercase tracking-wider font-bold text-[#D4AF37] mb-3 flex items-center gap-1.5">
-              <span>Humidor Placement, Quantity & Aging</span>
+              <span>Humidor Placement, Quantity & Pricing</span>
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               <div>
@@ -324,6 +430,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                   <option value="Medium">Medium</option>
                   <option value="Medium-Full">Medium-Full</option>
                   <option value="Full">Full</option>
+                  <option value="Full-Bodied">Full-Bodied</option>
                 </select>
               </div>
               <div>
@@ -363,20 +470,33 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Price per Stick ($)</label>
-                <input
-                  type="number"
-                  step="0.25"
-                  value={purchasePrice}
-                  onChange={(e) => setPurchasePrice(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
-                />
+                <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">
+                  Price per Stick ({currency})
+                </label>
+                <div className="flex gap-1">
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="bg-[#13110F] border border-[#2C2621] rounded-md px-2 py-2 text-xs text-[#D4AF37] focus:outline-hidden focus:border-[#D4AF37]"
+                  >
+                    <option value="£">£ (GBP)</option>
+                    <option value="$">$ (USD)</option>
+                    <option value="€">€ (EUR)</option>
+                  </select>
+                  <input
+                    type="number"
+                    step="0.25"
+                    value={purchasePrice}
+                    onChange={(e) => setPurchasePrice(e.target.value)}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Vendor / B&M Shop</label>
                 <input
                   type="text"
-                  placeholder="e.g. Local B&M, Fox Cigar"
+                  placeholder="e.g. C.Gars Ltd, Havana House"
                   value={vendor}
                   onChange={(e) => setVendor(e.target.value)}
                   className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
@@ -385,31 +505,41 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
             </div>
           </div>
 
-          {/* Flavor Profile Tags */}
+          {/* Flavor Notes & Collector Tags */}
           <div>
-            <h3 className="text-[10px] uppercase tracking-wider font-bold text-[#D4AF37] mb-2 flex items-center gap-1.5">
-              <span>Flavor Profile Tags</span>
+            <h3 className="text-[10px] uppercase tracking-wider font-bold text-[#D4AF37] mb-3 flex items-center gap-1.5">
+              <span>Primary Flavor Profile & Tasting Notes</span>
             </h3>
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {FLAVOR_CATEGORIES.flatMap((c) => c.notes).map((note) => {
-                const isSelected = flavorTags.includes(note);
-                return (
-                  <button
-                    type="button"
-                    key={note}
-                    onClick={() => toggleFlavorTag(note)}
-                    className={`text-xs px-2.5 py-1 rounded border transition cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#241E1B] border-[#D4AF37] text-[#D4AF37] font-semibold'
-                        : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] hover:border-[#3D352E]'
-                    }`}
-                  >
-                    {note}
-                  </button>
-                );
-              })}
+            
+            <div className="space-y-3">
+              {FLAVOR_CATEGORIES.map((cat) => (
+                <div key={cat.category} className="space-y-1.5">
+                  <div className="text-[11px] text-[#A89F94] font-medium">{cat.category}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {cat.notes.map((tag) => {
+                      const isSelected = flavorTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => toggleFlavorTag(tag)}
+                          className={`text-xs px-2.5 py-1 rounded transition cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#D4AF37] text-[#0F0D0C] font-semibold'
+                              : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621]'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex gap-2">
+
+            {/* Custom Tag Input */}
+            <div className="mt-3 flex gap-2">
               <input
                 type="text"
                 placeholder="Add custom flavor note..."
@@ -421,81 +551,46 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                     handleAddCustomTag();
                   }
                 }}
-                className="bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-1.5 text-xs text-[#E5E1DA] flex-1 focus:outline-hidden focus:border-[#D4AF37]"
+                className="flex-1 bg-[#13110F] border border-[#2C2621] rounded px-3 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
               />
               <button
                 type="button"
                 onClick={handleAddCustomTag}
-                className="px-3 py-1.5 bg-[#13110F] hover:bg-[#241E1B] rounded-md text-xs text-[#D4AF37] border border-[#2C2621] flex items-center gap-1 cursor-pointer font-semibold"
+                className="px-3 py-1.5 bg-[#2C2621] hover:bg-[#3D352E] text-[#E5E1DA] rounded text-xs transition cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Add Tag
+                + Add Tag
               </button>
             </div>
           </div>
 
-          {/* Personal Rating, Favorite & Notes */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Personal Rating (1-100)</label>
-              <input
-                type="number"
-                min="50"
-                max="100"
-                placeholder="e.g. 95"
-                value={personalRating}
-                onChange={(e) => setPersonalRating(e.target.value)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Box Date / Box Code</label>
-              <input
-                type="text"
-                placeholder="e.g. DIC 24, CF-08"
-                value={boxCode}
-                onChange={(e) => setBoxCode(e.target.value)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
-              />
-            </div>
-            <div className="flex items-center pt-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isFavorite}
-                  onChange={(e) => setIsFavorite(e.target.checked)}
-                  className="w-4 h-4 rounded-xs border-[#2C2621] bg-[#13110F] text-[#D4AF37] focus:ring-[#D4AF37]"
-                />
-                <span className="text-xs text-[#E5E1DA]">Mark as Connoisseur Favorite ⭐</span>
-              </label>
-            </div>
-          </div>
-
+          {/* Personal Tasting Notes / Quote */}
           <div>
-            <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Collector Notes / Aging Expectations</label>
+            <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">
+              Personal Vault Notes / Sommelier Insights
+            </label>
             <textarea
               rows={3}
-              placeholder="Pairing ideas, box purchase memories, wrapper notes..."
+              placeholder="Record initial impressions, pre-light aroma, cold draw, or aging expectations..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
-            ></textarea>
+              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md p-3 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37]"
+            />
           </div>
 
-          {/* Action Buttons */}
-          <div className="pt-3 border-t border-[#2C2621] flex justify-end gap-3">
+          {/* Modal Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-[#2C2621]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621] rounded text-xs transition cursor-pointer"
+              className="px-4 py-2 bg-[#13110F] hover:bg-[#2C2621] text-[#A89F94] hover:text-[#E5E1DA] rounded text-xs uppercase tracking-wider transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-[#D4AF37] hover:brightness-110 text-[#0F0D0C] font-bold uppercase tracking-wider rounded text-xs shadow-sm transition flex items-center gap-2 cursor-pointer"
+              className="px-6 py-2 bg-[#D4AF37] hover:brightness-110 text-[#0F0D0C] rounded text-xs uppercase tracking-widest font-bold shadow-md transition cursor-pointer"
             >
-              <span>{cigarToEdit ? 'Save Changes' : 'Store in Humidor'}</span>
+              {cigarToEdit ? 'Save Changes' : 'Add to Humidor'}
             </button>
           </div>
         </form>

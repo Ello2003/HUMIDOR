@@ -16,9 +16,11 @@ import {
   Check,
   Grid,
   List,
+  X,
 } from 'lucide-react';
 import { Cigar, Humidor, StrengthRating, CigarStatus } from '../types';
 import { calculateRestDays } from '../utils/exportUtils';
+import { formatCurrency } from '../utils/currencyUtils';
 
 interface HumidorInventoryProps {
   cigars: Cigar[];
@@ -170,11 +172,21 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
             <Search className="w-4 h-4 text-[#A89F94] absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search by brand, vitola, wrapper, flavor..."
+              placeholder="Search by brand, name, or wrapper type..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md pl-9 pr-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37] placeholder-[#A89F94]/60"
+              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md pl-9 pr-8 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#D4AF37] placeholder-[#A89F94]/60"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-2.5 text-[#A89F94] hover:text-[#E5E1DA] p-0.5 rounded cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Status Filter */}
@@ -224,12 +236,44 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
           </div>
         </div>
 
+        {/* Quick Wrapper Filters */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <span className="text-[10px] uppercase font-bold text-[#A89F94] mr-1">Quick Wrapper:</span>
+          {['Habano', 'Maduro', 'Connecticut', 'Corojo', 'San Andrés', 'Oscuro', 'Cameroon', 'Sumatra'].map((wType) => {
+            const isActive = searchQuery.toLowerCase() === wType.toLowerCase();
+            return (
+              <button
+                key={wType}
+                type="button"
+                onClick={() => setSearchQuery(isActive ? '' : wType)}
+                className={`text-[11px] px-2 py-0.5 rounded-full transition cursor-pointer border ${
+                  isActive
+                    ? 'bg-[#D4AF37] text-[#0F0D0C] border-[#D4AF37] font-semibold'
+                    : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621] hover:border-[#3D352E]'
+                }`}
+              >
+                {wType}
+              </button>
+            );
+          })}
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="text-[11px] px-2 py-0.5 rounded-full bg-[#241E1B] text-[#D4AF37] hover:text-white border border-[#382E26] flex items-center gap-1 cursor-pointer ml-auto"
+            >
+              <X className="w-3 h-3" />
+              <span>Clear Search</span>
+            </button>
+          )}
+        </div>
+
         {/* View Switcher & Result Summary */}
         <div className="flex items-center justify-between pt-3 border-t border-[#2C2621] text-xs text-[#A89F94]">
           <div>
             Showing <strong className="text-[#D4AF37] font-serif">{filteredCigars.length}</strong> distinct lines (
-            <strong className="text-[#D4AF37] font-serif">{totalFilteredSticks}</strong> total sticks, $
-            {totalFilteredValue.toFixed(2)} valuation)
+            <strong className="text-[#D4AF37] font-serif">{totalFilteredSticks}</strong> total sticks,{' '}
+            <strong className="text-[#E5E1DA]">{formatCurrency(totalFilteredValue, '£')}</strong> valuation)
           </div>
 
           <div className="flex items-center gap-1 bg-[#13110F] p-1 rounded border border-[#2C2621]">
@@ -255,8 +299,43 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
         </div>
       </div>
 
+      {/* Empty State when no results match search/filter */}
+      {filteredCigars.length === 0 && (
+        <div className="text-center py-16 px-4 bg-[#1C1816] border border-[#2C2621] rounded-lg">
+          <Search className="w-10 h-10 text-[#A89F94]/50 mx-auto mb-3" />
+          <h3 className="text-base font-serif font-bold text-[#E5E1DA]">No Cigars Found</h3>
+          <p className="text-xs text-[#A89F94] mt-1 max-w-md mx-auto">
+            {searchQuery
+              ? `No sticks in your inventory matched "${searchQuery}". Try searching for a different brand, name, or wrapper type.`
+              : 'No sticks match the currently active filters in your vault.'}
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-4 py-2 bg-[#241E1B] hover:bg-[#2C2621] text-[#D4AF37] border border-[#382E26] rounded text-xs font-semibold cursor-pointer"
+              >
+                Clear Search Term
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+                setStrengthFilter('all');
+                setOriginFilter('all');
+                setSelectedHumidorId('all');
+              }}
+              className="px-4 py-2 bg-[#D4AF37] hover:brightness-110 text-[#0F0D0C] rounded text-xs font-bold uppercase tracking-wider cursor-pointer"
+            >
+              Reset All Filters
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Cards View */}
-      {viewMode === 'grid' ? (
+      {filteredCigars.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredCigars.map((cigar) => {
             const restDays = calculateRestDays(cigar.purchaseDate);
@@ -382,7 +461,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
                     <div className="text-right">
                       <div className="text-xs font-serif text-[#E5E1DA]">
-                        {cigar.purchasePrice ? `$${cigar.purchasePrice.toFixed(2)}/ea` : '—'}
+                        {cigar.purchasePrice !== undefined ? `${formatCurrency(cigar.purchasePrice, cigar.currency || '£')}/ea` : '—'}
                       </div>
                       {cigar.personalRating && (
                         <div className="text-[11px] font-serif font-bold text-[#D4AF37]">
@@ -444,8 +523,10 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
             );
           })}
         </div>
-      ) : (
-        /* Table View */
+      )}
+
+      {/* Table View */}
+      {filteredCigars.length > 0 && viewMode === 'table' && (
         <div className="bg-[#1C1816] border border-[#2C2621] rounded-lg overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-[#E5E1DA]">
@@ -511,7 +592,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                         </div>
                       </td>
                       <td className="p-3 font-serif text-[#E5E1DA]">
-                        {c.purchasePrice ? `$${c.purchasePrice.toFixed(2)}` : '—'}
+                        {c.purchasePrice !== undefined ? formatCurrency(c.purchasePrice, c.currency || '£') : '—'}
                       </td>
                       <td className="p-3 font-serif font-bold text-[#D4AF37]">
                         {c.personalRating ? `★ ${c.personalRating}` : '—'}

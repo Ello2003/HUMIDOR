@@ -1,6 +1,6 @@
 {
   "name": "Cigar Humidor & Research Dashboard",
-  "description": "Personal cigar humidor manager, connoisseur smoke journal, AI sommelier research engine, and data exporter for cigar enthusiasts.",
+  "description": "Personal cigar humidor manager, searchable brand research database with wrapper and origin filters, tasting notes, personal connoisseur review logger, and full JSON/CSV export suite.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
