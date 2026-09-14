@@ -1,0 +1,766 @@
+import React, { useState } from 'react';
+import {
+  X,
+  Plus,
+  Bookmark,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Layers,
+  Sparkles,
+  DollarSign,
+  Package,
+  ShoppingCart,
+} from 'lucide-react';
+import { Cigar, Humidor, StrengthRating, CigarStatus, WishlistItem, CigarResearchItem, WrapperType } from '../types';
+import { FLAVOR_CATEGORIES } from '../data/initialData';
+import { DEFAULT_CURRENCY } from '../utils/currencyUtils';
+
+interface AddCigarModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (cigar: Omit<Cigar, 'id' | 'createdAt' | 'updatedAt'>, idToEdit?: string) => void;
+  humidors: Humidor[];
+  cigarToEdit?: Cigar | null;
+  prefillData?: Partial<Cigar> | null;
+  onAddToWishlist?: (item: Omit<WishlistItem, 'id' | 'createdAt'>) => void;
+  onAddToResearch?: (cigar: CigarResearchItem) => void;
+  onOpenBasketImporter?: () => void;
+}
+
+export const AddCigarModal: React.FC<AddCigarModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  humidors,
+  cigarToEdit,
+  prefillData,
+  onAddToWishlist,
+  onAddToResearch,
+  onOpenBasketImporter,
+}) => {
+  if (!isOpen) return null;
+
+  const [brand, setBrand] = useState(cigarToEdit?.brand || prefillData?.brand || '');
+  const [name, setName] = useState(cigarToEdit?.name || prefillData?.name || '');
+  const [line, setLine] = useState(cigarToEdit?.line || prefillData?.line || '');
+  const [vitola, setVitola] = useState(cigarToEdit?.vitola || prefillData?.vitola || 'Robusto');
+  const [lengthInches, setLengthInches] = useState<string>(
+    cigarToEdit?.lengthInches ? String(cigarToEdit.lengthInches) : prefillData?.lengthInches ? String(prefillData.lengthInches) : '5.0'
+  );
+  const [ringGauge, setRingGauge] = useState<string>(
+    cigarToEdit?.ringGauge ? String(cigarToEdit.ringGauge) : prefillData?.ringGauge ? String(prefillData.ringGauge) : '50'
+  );
+  const [wrapper, setWrapper] = useState(cigarToEdit?.wrapper || prefillData?.wrapper || 'Habano');
+  const [binder, setBinder] = useState(cigarToEdit?.binder || prefillData?.binder || 'Proprietary');
+  const [filler, setFiller] = useState(cigarToEdit?.filler || prefillData?.filler || 'Proprietary');
+  const [countryOrigin, setCountryOrigin] = useState(
+    cigarToEdit?.countryOrigin || prefillData?.countryOrigin || 'Cuba'
+  );
+  const [strength, setStrength] = useState<StrengthRating>(
+    (cigarToEdit?.strength as StrengthRating) || (prefillData?.strength as StrengthRating) || 'Medium-Full'
+  );
+  const [quantity, setQuantity] = useState<number>(cigarToEdit?.quantity ?? prefillData?.quantity ?? 1);
+  const [humidorId, setHumidorId] = useState<string>(
+    cigarToEdit?.humidorId || prefillData?.humidorId || humidors[0]?.id || ''
+  );
+  const [purchaseDate, setPurchaseDate] = useState<string>(
+    cigarToEdit?.purchaseDate || prefillData?.purchaseDate || new Date().toISOString().split('T')[0]
+  );
+  const [boxDate, setBoxDate] = useState<string>(cigarToEdit?.boxDate || prefillData?.boxDate || '');
+  const [purchasePrice, setPurchasePrice] = useState<string>(
+    cigarToEdit?.purchasePrice !== undefined
+      ? String(cigarToEdit.purchasePrice)
+      : prefillData?.purchasePrice !== undefined
+      ? String(prefillData.purchasePrice)
+      : '24.50'
+  );
+  const [currency, setCurrency] = useState<string>(cigarToEdit?.currency || prefillData?.currency || DEFAULT_CURRENCY);
+  const [vendor, setVendor] = useState<string>(cigarToEdit?.vendor || prefillData?.vendor || 'C.Gars Ltd');
+  const [boxCode, setBoxCode] = useState<string>(cigarToEdit?.boxCode || '');
+  const [targetRestMonths, setTargetRestMonths] = useState<number>(
+    cigarToEdit?.targetRestMonths ?? prefillData?.targetRestMonths ?? 6
+  );
+  const [personalRating, setPersonalRating] = useState<string>(
+    cigarToEdit?.personalRating ? String(cigarToEdit.personalRating) : ''
+  );
+  const [status, setStatus] = useState<CigarStatus>(cigarToEdit?.status || 'ready');
+  const [isFavorite, setIsFavorite] = useState<boolean>(cigarToEdit?.isFavorite || false);
+  const [notes, setNotes] = useState<string>(cigarToEdit?.notes || prefillData?.notes || '');
+  const [flavorTags, setFlavorTags] = useState<string[]>(
+    cigarToEdit?.flavorTags || prefillData?.flavorTags || ['Spanish Cedar', 'Dark Chocolate']
+  );
+  const [customTagInput, setCustomTagInput] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [actionSuccessNotice, setActionSuccessNotice] = useState<string | null>(null);
+
+  // Auto add every import to research automatically toggle
+  const [autoAddToResearch, setAutoAddToResearch] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('the_humidor_auto_add_import_to_research');
+      return saved !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  // Collapsible sections
+  const [openSections, setOpenSections] = useState({
+    identity: true,
+    dimensions: true,
+    blend: true,
+    placement: true,
+    flavors: true,
+    notes: true,
+  });
+
+  const toggleSection = (key: keyof typeof openSections) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const expandAllSections = () => {
+    setOpenSections({
+      identity: true,
+      dimensions: true,
+      blend: true,
+      placement: true,
+      flavors: true,
+      notes: true,
+    });
+  };
+
+  const collapseAllSections = () => {
+    setOpenSections({
+      identity: false,
+      dimensions: false,
+      blend: false,
+      placement: false,
+      flavors: false,
+      notes: false,
+    });
+  };
+
+  const buildResearchItem = (data: {
+    brand: string;
+    name: string;
+    line?: string;
+    vitola?: string;
+    lengthInches?: number;
+    ringGauge?: number;
+    wrapper?: string;
+    binder?: string;
+    filler?: string;
+    countryOrigin?: string;
+    strength?: StrengthRating;
+    purchasePrice?: number;
+    notes?: string;
+    flavorTags?: string[];
+  }): CigarResearchItem => {
+    const wLower = (data.wrapper || '').toLowerCase();
+    let derivedWrapperType: WrapperType = 'Habano';
+    if (wLower.includes('maduro')) derivedWrapperType = 'Maduro';
+    else if (wLower.includes('broadleaf')) derivedWrapperType = 'Connecticut Broadleaf';
+    else if (wLower.includes('connecticut') || wLower.includes('shade')) derivedWrapperType = 'Connecticut Shade';
+    else if (wLower.includes('san andrés') || wLower.includes('san andres')) derivedWrapperType = 'San Andrés';
+    else if (wLower.includes('oscuro')) derivedWrapperType = 'Oscuro';
+    else if (wLower.includes('corojo')) derivedWrapperType = 'Corojo';
+    else if (wLower.includes('sumatra')) derivedWrapperType = 'Sumatra';
+    else if (wLower.includes('cameroon')) derivedWrapperType = 'Cameroon';
+    else if (wLower.includes('candela')) derivedWrapperType = 'Candela';
+    else if (wLower.includes('criollo')) derivedWrapperType = 'Criollo';
+    else derivedWrapperType = 'Other';
+
+    const b = data.brand.trim() || 'Montecristo';
+    const n = data.name.trim() || 'No. 2';
+    const v = data.vitola?.trim() || 'Robusto';
+    const price = data.purchasePrice || 25;
+    const origin = data.countryOrigin?.trim() || 'Cuba';
+
+    return {
+      id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      brand: b,
+      line: data.line?.trim() || n,
+      vitola: v,
+      lengthInches: data.lengthInches || 5.0,
+      ringGauge: data.ringGauge || 50,
+      countryOrigin: origin,
+      wrapperType: derivedWrapperType,
+      wrapper: data.wrapper?.trim() || 'Habano',
+      binder: data.binder?.trim() || 'Selected',
+      filler: data.filler?.trim() || 'Selected',
+      strength: data.strength || 'Medium-Full',
+      body: 'Medium-Full',
+      averagePrice: price,
+      priceRange: `£${(price * 0.9).toFixed(0)} - £${(price * 1.2).toFixed(0)}`,
+      criticRating: 92,
+      criticConsensus: data.notes?.trim() || `${b} ${n} connoisseur entry.`,
+      reviewTastingNotes: {
+        overview: data.notes?.trim() || `${b} ${n} — ${v} vitola with ${data.wrapper || 'Habano'} wrapper.`,
+        firstThird: 'Smooth initial draw with cedar and delicate spice.',
+        secondThird: 'Rich cocoa, coffee bean, and toasted nuts.',
+        finalThird: 'Deep oak, leather, and lingering warm pepper.',
+        dominantFlavorTags: data.flavorTags && data.flavorTags.length > 0 ? data.flavorTags : ['Cedar', 'Leather', 'Spices'],
+      },
+      recommendedPairings: ['Single Malt Scotch', 'Espresso'],
+      agingWindowMonths: 6,
+      isCuban: origin.toLowerCase().includes('cuba'),
+    };
+  };
+
+  const toggleFlavorTag = (tag: string) => {
+    if (flavorTags.includes(tag)) {
+      setFlavorTags(flavorTags.filter((t) => t !== tag));
+    } else {
+      setFlavorTags([...flavorTags, tag]);
+    }
+  };
+
+  const handleAddCustomTag = () => {
+    if (customTagInput.trim() && !flavorTags.includes(customTagInput.trim())) {
+      setFlavorTags([...flavorTags, customTagInput.trim()]);
+      setCustomTagInput('');
+    }
+  };
+
+  const handleSaveToWishlist = () => {
+    if (!brand.trim() || !name.trim()) {
+      setFormError('Please provide at least a brand and cigar name before adding to Wishlist.');
+      return;
+    }
+    if (onAddToWishlist) {
+      onAddToWishlist({
+        brand: brand.trim(),
+        name: `${name.trim()} (${vitola.trim() || 'Robusto'})`,
+        vitola: vitola.trim() || 'Robusto',
+        priority: 'Medium',
+        targetPrice: purchasePrice ? parseFloat(purchasePrice) : undefined,
+        sourceRetailer: vendor.trim() || undefined,
+        notes: notes.trim() || `Wrapper: ${wrapper}, Origin: ${countryOrigin}, Strength: ${strength}`,
+      });
+      setActionSuccessNotice(`Added "${brand} ${name}" to Wishlist!`);
+      setTimeout(() => setActionSuccessNotice(null), 4000);
+    }
+  };
+
+  const handleSaveToResearch = () => {
+    if (!brand.trim() || !name.trim()) {
+      setFormError('Please provide at least a brand and cigar name before adding to Research.');
+      return;
+    }
+    if (onAddToResearch) {
+      const resItem = buildResearchItem({
+        brand,
+        name,
+        line,
+        vitola,
+        lengthInches: lengthInches ? parseFloat(lengthInches) : undefined,
+        ringGauge: ringGauge ? parseInt(ringGauge, 10) : undefined,
+        wrapper,
+        binder,
+        filler,
+        countryOrigin,
+        strength,
+        purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined,
+        notes,
+        flavorTags,
+      });
+
+      onAddToResearch(resItem);
+      setActionSuccessNotice(`Saved "${brand} ${name}" to Research Catalog!`);
+      setTimeout(() => setActionSuccessNotice(null), 4000);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (!brand.trim() || !name.trim()) {
+      setFormError('Please provide both a brand and cigar name.');
+      return;
+    }
+
+    onSave(
+      {
+        brand: brand.trim(),
+        name: name.trim(),
+        line: line.trim() || name.trim(),
+        vitola: vitola.trim() || 'Robusto',
+        lengthInches: lengthInches ? parseFloat(lengthInches) : undefined,
+        ringGauge: ringGauge ? parseInt(ringGauge, 10) : undefined,
+        wrapper: wrapper.trim(),
+        binder: binder.trim() || undefined,
+        filler: filler.trim() || undefined,
+        countryOrigin: countryOrigin.trim() || 'Cuba',
+        strength,
+        quantity: Math.max(0, quantity),
+        humidorId,
+        purchaseDate,
+        boxDate: boxDate.trim() || undefined,
+        purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined,
+        currency,
+        vendor: vendor.trim() || undefined,
+        boxCode: boxCode.trim() || undefined,
+        targetRestMonths: Math.max(0, targetRestMonths),
+        notes: notes.trim() || undefined,
+        personalRating: personalRating ? parseInt(personalRating, 10) : undefined,
+        isFavorite,
+        status,
+        flavorTags,
+      },
+      cigarToEdit?.id
+    );
+
+    // If auto add to research is enabled and not editing, save to research database too
+    if (autoAddToResearch && onAddToResearch && !cigarToEdit) {
+      const resItem = buildResearchItem({
+        brand,
+        name,
+        line,
+        vitola,
+        lengthInches: lengthInches ? parseFloat(lengthInches) : undefined,
+        ringGauge: ringGauge ? parseInt(ringGauge, 10) : undefined,
+        wrapper,
+        binder,
+        filler,
+        countryOrigin,
+        strength,
+        purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined,
+        notes,
+        flavorTags,
+      });
+      onAddToResearch(resItem);
+    }
+
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="relative w-full max-w-3xl bg-[#1C1816] border border-[#2C2621] rounded-lg shadow-2xl overflow-hidden text-[#E5E1DA]">
+        {/* Header */}
+        <div className="px-6 py-4 bg-[#13110F] border-b border-[#2C2621] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[#C5A059] text-lg">🍂</span>
+            <h2 className="text-base font-serif font-semibold text-[#E5E1DA]">
+              {cigarToEdit ? 'Edit Humidor Stick' : 'Add Single Stick (Manual Entry)'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openSections.identity && openSections.dimensions ? collapseAllSections : expandAllSections}
+              className="text-[11px] px-2 py-1 bg-[#241E1B] hover:bg-[#2C2621] text-[#A89F94] hover:text-[#E5E1DA] rounded border border-[#2C2621] transition cursor-pointer flex items-center gap-1"
+              title="Expand or Condense all form sections"
+            >
+              <Layers className="w-3 h-3 text-[#C5A059]" />
+              <span>{openSections.identity && openSections.dimensions ? 'Condense All' : 'Expand All'}</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="text-[#A89F94] hover:text-[#E5E1DA] p-1.5 rounded hover:bg-[#241E1B] transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Batch Importer Quick Banner */}
+        {onOpenBasketImporter && !cigarToEdit && (
+          <div className="px-6 py-2.5 bg-[#171412] border-b border-[#2C2621] flex flex-wrap items-center justify-between gap-3 text-xs">
+            <span className="text-[#A89F94] text-[11px]">
+              Want to import multiple cigars or extract directly from a URL, HTML file, or cart?
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenBasketImporter();
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#241E1B] hover:bg-[#2C2621] text-[#C5A059] border border-[#C5A059]/30 rounded text-xs font-semibold transition cursor-pointer"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span>Open Basket Batch Importer →</span>
+            </button>
+          </div>
+        )}
+
+        {/* Form Error or Success Notice */}
+        {formError && (
+          <div className="mx-6 mt-4 p-3 bg-red-950/80 border border-red-800 text-red-200 text-xs rounded">
+            {formError}
+          </div>
+        )}
+
+        {actionSuccessNotice && (
+          <div className="mx-6 mt-4 p-3 bg-emerald-950/80 border border-emerald-800 text-emerald-200 text-xs rounded">
+            {actionSuccessNotice}
+          </div>
+        )}
+
+        {/* Manual Form Content */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+          {/* Section 1: Stick Identity */}
+          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+            <div
+              onClick={() => toggleSection('identity')}
+              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+            >
+              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+                1. Stick Identity & Brand
+              </span>
+              {openSections.identity ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+            </div>
+
+            {openSections.identity && (
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    Brand *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Montecristo, Partagás, Padrón"
+                    value={brand}
+                    onChange={(e) => setBrand(e.target.value)}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    Cigar Name / Line *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. No. 2, Serie D No. 4, 1964 Anniversary"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (!line) setLine(e.target.value);
+                    }}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Vitola & Dimensions */}
+          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+            <div
+              onClick={() => toggleSection('dimensions')}
+              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+            >
+              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+                2. Vitola & Dimensions
+              </span>
+              {openSections.dimensions ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+            </div>
+
+            {openSections.dimensions && (
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    Vitola Shape
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Robusto, Pirámides, Churchill"
+                    value={vitola}
+                    onChange={(e) => setVitola(e.target.value)}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    Length (inches)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="5.0"
+                    value={lengthInches}
+                    onChange={(e) => setLengthInches(e.target.value)}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    Ring Gauge (RG)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="50"
+                    value={ringGauge}
+                    onChange={(e) => setRingGauge(e.target.value)}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Blend & Origin */}
+          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+            <div
+              onClick={() => toggleSection('blend')}
+              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+            >
+              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+                3. Blend & Terroir
+              </span>
+              {openSections.blend ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+            </div>
+
+            {openSections.blend && (
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    Country of Origin
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Cuba, Nicaragua, Dominican Republic"
+                    value={countryOrigin}
+                    onChange={(e) => setCountryOrigin(e.target.value)}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    Wrapper Leaf
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Cuban Habano, Ecuadorian Shade, Maduro"
+                    value={wrapper}
+                    onChange={(e) => setWrapper(e.target.value)}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    Strength Profile
+                  </label>
+                  <select
+                    value={strength}
+                    onChange={(e) => setStrength(e.target.value as StrengthRating)}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                  >
+                    <option value="Mild">Mild</option>
+                    <option value="Mild-Medium">Mild-Medium</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Medium-Full">Medium-Full</option>
+                    <option value="Full">Full</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 4: Humidor Placement & Pricing */}
+          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+            <div
+              onClick={() => toggleSection('placement')}
+              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+            >
+              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+                4. Humidor Placement, Pricing & Aging
+              </span>
+              {openSections.placement ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+            </div>
+
+            {openSections.placement && (
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                      Target Humidor *
+                    </label>
+                    <select
+                      value={humidorId}
+                      onChange={(e) => setHumidorId(e.target.value)}
+                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    >
+                      {humidors.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.name} ({h.type})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                      Quantity (Sticks) *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
+                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                      Target Rest (Months)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={targetRestMonths}
+                      onChange={(e) => setTargetRestMonths(parseInt(e.target.value, 10) || 0)}
+                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                      Purchase Price per Stick ({currency})
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="24.50"
+                      value={purchasePrice}
+                      onChange={(e) => setPurchasePrice(e.target.value)}
+                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                      Shop / Retailer
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. C.Gars Ltd, Havana House, Smoke King"
+                      value={vendor}
+                      onChange={(e) => setVendor(e.target.value)}
+                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                      Purchase Date
+                    </label>
+                    <input
+                      type="date"
+                      value={purchaseDate}
+                      onChange={(e) => setPurchaseDate(e.target.value)}
+                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 5: Flavor Tags & Notes */}
+          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+            <div
+              onClick={() => toggleSection('flavors')}
+              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+            >
+              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+                5. Flavor Profile & Notes
+              </span>
+              {openSections.flavors ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+            </div>
+
+            {openSections.flavors && (
+              <div className="p-4 space-y-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {FLAVOR_CATEGORIES.flatMap((c) => c.notes).slice(0, 16).map((tag) => {
+                    const isSelected = flavorTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleFlavorTag(tag)}
+                        className={`px-2 py-1 rounded text-xs transition cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#C5A059] text-[#0F0D0C] font-semibold'
+                            : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621]'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    Personal Notes / Aging Goals
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Gifted from friends; rest for 12 months before lighting."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-3 border-t border-[#2C2621] flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              {onAddToWishlist && (
+                <button
+                  type="button"
+                  onClick={handleSaveToWishlist}
+                  className="px-3 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] text-xs font-semibold rounded transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Bookmark className="w-3.5 h-3.5" />
+                  <span>Save to Wishlist</span>
+                </button>
+              )}
+              {onAddToResearch && (
+                <button
+                  type="button"
+                  onClick={handleSaveToResearch}
+                  className="px-3 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] text-xs font-semibold rounded transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Save to Research</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#E5E1DA] rounded text-xs transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-xs uppercase tracking-wider rounded shadow-sm transition cursor-pointer flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{cigarToEdit ? 'Save Changes' : 'Stock Cigar to Humidor'}</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
