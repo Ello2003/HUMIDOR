@@ -118,6 +118,38 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
+/**
+ * Blocks the classic SSRF vectors for the URL-import endpoints below: only
+ * plain http/https is allowed, and loopback/private/link-local addresses
+ * (including the cloud metadata IP) are rejected so a pasted URL can't be
+ * used to make this server probe internal services on its network.
+ */
+function isSafePublicUrl(rawUrl: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+
+  const host = parsed.hostname.toLowerCase();
+  if (host === "localhost" || host.endsWith(".localhost")) return false;
+  if (host === "169.254.169.254") return false; // cloud metadata endpoint
+
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const [a, b] = [parseInt(ipv4[1], 10), parseInt(ipv4[2], 10)];
+    if (a === 127 || a === 10 || a === 0) return false;
+    if (a === 169 && b === 254) return false;
+    if (a === 172 && b >= 16 && b <= 31) return false;
+    if (a === 192 && b === 168) return false;
+  }
+  if (host === "::1" || host === "[::1]") return false;
+
+  return true;
+}
+
 // Heuristic / Local Fallback Cigar Parser from HTML and text (works even if AI models are at peak capacity)
 function extractCigarFromHtmlLocally({
   html,
@@ -1173,6 +1205,9 @@ app.post("/api/import/cigar-from-url", async (req, res) => {
     let vendorName = "Online Cigar Retailer";
 
     if (url) {
+      if (!isSafePublicUrl(url)) {
+        return res.status(400).json({ error: "That URL isn't allowed. Please provide a public http(s) product page." });
+      }
       try {
         const parsedUrl = new URL(url);
         const host = parsedUrl.hostname.toLowerCase();
@@ -1351,6 +1386,9 @@ app.post("/api/import/basket-from-url", async (req, res) => {
     let vendorName = "C.Gars Ltd (UK)";
 
     if (url) {
+      if (!isSafePublicUrl(url)) {
+        return res.status(400).json({ error: "That URL isn't allowed. Please provide a public http(s) basket/cart page." });
+      }
       try {
         const parsedUrl = new URL(url);
         const host = parsedUrl.hostname.toLowerCase();

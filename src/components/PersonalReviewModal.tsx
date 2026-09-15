@@ -66,23 +66,23 @@ export const PersonalReviewModal: React.FC<PersonalReviewModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="relative w-full max-w-2xl bg-[#1C1816] border border-[#2C2621] rounded-lg shadow-2xl overflow-hidden text-[#E5E1DA]">
+      <div className="relative w-full max-w-2xl bg-card border border-line rounded-lg shadow-2xl overflow-hidden text-text">
         {/* Header */}
-        <div className="px-6 py-4 bg-[#13110F] border-b border-[#2C2621] flex items-center justify-between">
+        <div className="px-6 py-4 bg-surface border-b border-line flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-[#1C1816] border border-[#2C2621] flex items-center justify-center text-[#C5A059]">
+            <div className="w-8 h-8 rounded bg-card border border-line flex items-center justify-center text-gold">
               <Star className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-serif font-semibold text-[#E5E1DA]">Personal Rating & Sommelier Notes</h2>
-              <p className="text-xs text-[#A89F94]">
+              <h2 className="text-base font-serif font-semibold text-text">Personal Rating & Sommelier Notes</h2>
+              <p className="text-xs text-text-muted">
                 {cigar.brand} {cigar.line} ({cigar.vitola})
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-[#A89F94] hover:text-[#E5E1DA] p-1.5 rounded hover:bg-[#241E1B] transition cursor-pointer"
+            className="text-text-muted hover:text-text p-1.5 rounded hover:bg-card-hover transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -90,34 +90,34 @@ export const PersonalReviewModal: React.FC<PersonalReviewModalProps> = ({
 
         <form onSubmit={handleSave} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           {/* Quick Specs Strip */}
-          <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div className="p-3 bg-surface border border-line rounded-md grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             <div>
-              <span className="text-[9px] uppercase tracking-wider text-[#A89F94] block">Origin</span>
-              <span className="font-semibold text-[#E5E1DA]">{cigar.countryOrigin}</span>
+              <span className="text-[9px] uppercase tracking-wider text-text-muted block">Origin</span>
+              <span className="font-semibold text-text">{cigar.countryOrigin}</span>
             </div>
             <div>
-              <span className="text-[9px] uppercase tracking-wider text-[#A89F94] block">Wrapper</span>
-              <span className="font-semibold text-[#E5E1DA] truncate block">{cigar.wrapper}</span>
+              <span className="text-[9px] uppercase tracking-wider text-text-muted block">Wrapper</span>
+              <span className="font-semibold text-text truncate block">{cigar.wrapper}</span>
             </div>
             <div>
-              <span className="text-[9px] uppercase tracking-wider text-[#A89F94] block">Avg Price</span>
-              <span className="font-semibold text-[#C5A059]">${cigar.averagePrice.toFixed(2)}</span>
+              <span className="text-[9px] uppercase tracking-wider text-text-muted block">Avg Price</span>
+              <span className="font-semibold text-gold">${cigar.averagePrice.toFixed(2)}</span>
             </div>
             <div>
-              <span className="text-[9px] uppercase tracking-wider text-[#A89F94] block">Critic Score</span>
-              <span className="font-semibold text-[#E5E1DA]">★ {cigar.criticRating}/100</span>
+              <span className="text-[9px] uppercase tracking-wider text-text-muted block">Critic Score</span>
+              <span className="font-semibold text-text">★ {cigar.criticRating}/100</span>
             </div>
           </div>
 
           {/* Rating Slider (1-100) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-widest text-[#C5A059]">
+              <label className="text-xs font-semibold uppercase tracking-widest text-gold">
                 Your Connoisseur Rating
               </label>
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-serif font-bold text-white">{personalRating}</span>
-                <span className="text-xs text-[#A89F94]">/ 100</span>
+                <span className="text-xs text-text-muted">/ 100</span>
               </div>
             </div>
             <input
@@ -126,47 +126,47 @@ export const PersonalReviewModal: React.FC<PersonalReviewModalProps> = ({
               max="100"
               value={personalRating}
               onChange={(e) => setPersonalRating(parseInt(e.target.value, 10))}
-              className="w-full h-2 bg-[#13110F] rounded-lg appearance-none cursor-pointer accent-[#C5A059]"
+              className="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-gold"
             />
-            <div className="flex justify-between text-[10px] text-[#A89F94]">
+            <div className="flex justify-between text-[10px] text-text-muted">
               <span>50 (Mediocre)</span>
               <span>75 (Solid Everyday)</span>
               <span>90 (Outstanding)</span>
-              <span className="text-[#C5A059] font-semibold">95-100 (Masterpiece)</span>
+              <span className="text-gold font-semibold">95-100 (Masterpiece)</span>
             </div>
           </div>
 
           {/* Toggles: Tried / Favorite / Rebuy Verdict */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label className="flex items-center gap-2.5 p-3 rounded bg-[#13110F] border border-[#2C2621] cursor-pointer hover:border-[#3D352E] transition">
+            <label className="flex items-center gap-2.5 p-3 rounded bg-surface border border-line cursor-pointer hover:border-line-hover transition">
               <input
                 type="checkbox"
                 checked={personalTried}
                 onChange={(e) => setPersonalTried(e.target.checked)}
-                className="w-4 h-4 rounded bg-[#1C1816] border-[#2C2621] text-[#C5A059] focus:ring-0"
+                className="w-4 h-4 rounded bg-card border-line text-gold focus:ring-0"
               />
-              <span className="text-xs font-medium text-[#E5E1DA]">Mark as Smoked / Tried</span>
+              <span className="text-xs font-medium text-text">Mark as Smoked / Tried</span>
             </label>
 
-            <label className="flex items-center gap-2.5 p-3 rounded bg-[#13110F] border border-[#2C2621] cursor-pointer hover:border-[#3D352E] transition">
+            <label className="flex items-center gap-2.5 p-3 rounded bg-surface border border-line cursor-pointer hover:border-line-hover transition">
               <input
                 type="checkbox"
                 checked={personalFavorite}
                 onChange={(e) => setPersonalFavorite(e.target.checked)}
-                className="w-4 h-4 rounded bg-[#1C1816] border-[#2C2621] text-[#C5A059] focus:ring-0"
+                className="w-4 h-4 rounded bg-card border-line text-gold focus:ring-0"
               />
-              <span className="text-xs font-medium text-[#E5E1DA] flex items-center gap-1">
-                <Heart className={`w-3.5 h-3.5 ${personalFavorite ? 'text-red-400 fill-red-400' : 'text-[#A89F94]'}`} />
+              <span className="text-xs font-medium text-text flex items-center gap-1">
+                <Heart className={`w-3.5 h-3.5 ${personalFavorite ? 'text-red-400 fill-red-400' : 'text-text-muted'}`} />
                 <span>Personal Favorite</span>
               </span>
             </label>
 
             <div>
-              <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Rebuy Verdict</label>
+              <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Rebuy Verdict</label>
               <select
                 value={personalWouldRebuy}
                 onChange={(e) => setPersonalWouldRebuy(e.target.value as any)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               >
                 <option value="Box Worthy">📦 Box Worthy</option>
                 <option value="5-Pack Buy">🖐️ 5-Pack Buy</option>
@@ -180,23 +180,23 @@ export const PersonalReviewModal: React.FC<PersonalReviewModalProps> = ({
           {/* Personal Tasting Notes */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-widest text-[#C5A059]">
+              <label className="text-xs font-semibold uppercase tracking-widest text-gold">
                 Personal Tasting Notes & Impressions
               </label>
-              <span className="text-[10px] text-[#A89F94]">Saved in your private research ledger</span>
+              <span className="text-[10px] text-text-muted">Saved in your private research ledger</span>
             </div>
             <textarea
               rows={4}
               value={personalNotes}
               onChange={(e) => setPersonalNotes(e.target.value)}
               placeholder="e.g. Sublime retrohale with heavy baker's cocoa and roasted espresso. Draw was open and effortless throughout the 80 minutes..."
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded p-3 text-xs sm:text-sm text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059] placeholder-[#A89F94]/50"
+              className="w-full bg-surface border border-line rounded p-3 text-xs sm:text-sm text-text focus:outline-hidden focus:border-gold placeholder-text-muted/50"
             />
           </div>
 
           {/* Quick Flavor Chips Helper */}
           <div className="space-y-1.5">
-            <span className="text-[10px] text-[#A89F94] uppercase tracking-wider block">Click to append tasting notes:</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider block">Click to append tasting notes:</span>
             <div className="flex flex-wrap gap-1">
               {['Dark Chocolate', 'Espresso', 'Spanish Cedar', 'White Pepper', 'Caramel', 'Leather', 'Cream', 'Vanilla Bean', 'Toasted Almond', 'Cinnamon', 'Baking Spice', 'Earth'].map(
                 (tag) => (
@@ -204,7 +204,7 @@ export const PersonalReviewModal: React.FC<PersonalReviewModalProps> = ({
                     type="button"
                     key={tag}
                     onClick={() => addFlavorTag(tag)}
-                    className="text-[10px] px-2 py-0.5 rounded bg-[#13110F] border border-[#2C2621] text-[#A89F94] hover:text-[#C5A059] hover:border-[#C5A059]/50 transition cursor-pointer"
+                    className="text-[10px] px-2 py-0.5 rounded bg-surface border border-line text-text-muted hover:text-gold hover:border-gold/50 transition cursor-pointer"
                   >
                     + {tag}
                   </button>
@@ -215,8 +215,8 @@ export const PersonalReviewModal: React.FC<PersonalReviewModalProps> = ({
 
           {/* Personal Beverage Pairing Notes */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-widest text-[#C5A059] flex items-center gap-1.5">
-              <Coffee className="w-3.5 h-3.5 text-[#C5A059]" />
+            <label className="text-xs font-semibold uppercase tracking-widest text-gold flex items-center gap-1.5">
+              <Coffee className="w-3.5 h-3.5 text-gold" />
               <span>Personal Pairing Notes (Bourbon, Coffee, Scotch, Wine)</span>
             </label>
             <input
@@ -224,22 +224,22 @@ export const PersonalReviewModal: React.FC<PersonalReviewModalProps> = ({
               value={personalPairingNotes}
               onChange={(e) => setPersonalPairingNotes(e.target.value)}
               placeholder="e.g. Paired with Woodford Reserve Double Oaked and a shot of espresso"
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059] placeholder-[#A89F94]/50"
+              className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold placeholder-text-muted/50"
             />
           </div>
 
           {/* Actions */}
-          <div className="pt-4 border-t border-[#2C2621] flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-line flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621] rounded text-xs uppercase tracking-wider font-semibold transition cursor-pointer"
+              className="px-4 py-2 bg-surface hover:bg-card-hover text-text-muted hover:text-text border border-line rounded text-xs uppercase tracking-wider font-semibold transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded text-xs uppercase tracking-wider font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+              className="px-6 py-2 bg-gold hover:brightness-110 text-ink rounded text-xs uppercase tracking-wider font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Save Rating & Notes</span>

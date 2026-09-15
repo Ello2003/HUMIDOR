@@ -201,28 +201,28 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs overflow-y-auto">
       <div
-        className="relative w-full max-w-2xl bg-[#181412] border border-[#2C2621] rounded-2xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-2xl bg-modal border border-line rounded-2xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-5 border-b border-[#2C2621] flex items-center justify-between bg-[#13110F]">
+        <div className="p-5 border-b border-line flex items-center justify-between bg-surface">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059]">
+            <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/30 flex items-center justify-center text-gold">
               <Store className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wider font-bold text-[#C5A059]">{cigarBrand}</span>
-                {vitola && <span className="text-[10px] text-[#A89F94]">({vitola})</span>}
+                <span className="text-[10px] uppercase tracking-wider font-bold text-gold">{cigarBrand}</span>
+                {vitola && <span className="text-[10px] text-text-muted">({vitola})</span>}
               </div>
-              <h2 className="text-base sm:text-lg font-serif font-bold text-white leading-tight">
+              <h2 className="text-ink sm:text-lg font-serif font-bold text-white leading-tight">
                 Retailer Price Comparison
               </h2>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-[#A89F94] hover:text-white hover:bg-[#2C2621] rounded-lg transition cursor-pointer"
+            className="p-1.5 text-text-muted hover:text-white hover:bg-line rounded-lg transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -230,22 +230,22 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
 
         <div className="p-5 space-y-5 max-h-[75vh] overflow-y-auto">
           {/* Price Overview Banner */}
-          <div className="grid grid-cols-3 gap-3 p-3.5 bg-[#13110F] border border-[#2C2621] rounded-xl text-center">
+          <div className="grid grid-cols-3 gap-3 p-3.5 bg-surface border border-line rounded-xl text-center">
             <div>
-              <span className="block text-[10px] uppercase font-bold text-[#A89F94] tracking-wider">Best Price</span>
-              <span className="text-sm sm:text-base font-serif font-bold text-emerald-400">
+              <span className="block text-[10px] uppercase font-bold text-text-muted tracking-wider">Best Price</span>
+              <span className="text-sm sm:text-ink font-serif font-bold text-emerald-400">
                 {minPrice > 0 ? formatCurrency(minPrice, prices[0]?.currency || '£') : '—'}
               </span>
             </div>
-            <div className="border-x border-[#2C2621]">
-              <span className="block text-[10px] uppercase font-bold text-[#A89F94] tracking-wider">Market Avg</span>
-              <span className="text-sm sm:text-base font-serif font-bold text-[#C5A059]">
+            <div className="border-x border-line">
+              <span className="block text-[10px] uppercase font-bold text-text-muted tracking-wider">Market Avg</span>
+              <span className="text-sm sm:text-ink font-serif font-bold text-gold">
                 {avgPrice > 0 ? formatCurrency(avgPrice, prices[0]?.currency || '£') : '—'}
               </span>
             </div>
             <div>
-              <span className="block text-[10px] uppercase font-bold text-[#A89F94] tracking-wider">High Retail</span>
-              <span className="text-sm sm:text-base font-serif font-bold text-[#E5E1DA]">
+              <span className="block text-[10px] uppercase font-bold text-text-muted tracking-wider">High Retail</span>
+              <span className="text-sm sm:text-ink font-serif font-bold text-text">
                 {maxPrice > 0 ? formatCurrency(maxPrice, prices[0]?.currency || '£') : '—'}
               </span>
             </div>
@@ -254,17 +254,17 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
           {/* Current Tracked Retailer Prices */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs uppercase tracking-wider font-bold text-[#C5A059]">
+              <label className="text-xs uppercase tracking-wider font-bold text-gold">
                 Tracked Retailers ({prices.length})
               </label>
-              <span className="text-[11px] text-[#A89F94]">Editable inline</span>
+              <span className="text-[11px] text-text-muted">Editable inline</span>
             </div>
 
             <div className="space-y-2">
               {prices.map((p, idx) => (
                 <div
                   key={p.id || idx}
-                  className="p-3 bg-[#1C1816] border border-[#2C2621] rounded-lg flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 shadow-xs"
+                  className="p-3 bg-card border border-line rounded-lg flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 shadow-xs"
                 >
                   <div className="flex-1 min-w-[140px]">
                     <input
@@ -272,7 +272,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
                       value={p.vendor}
                       onChange={(e) => handleUpdatePriceField(idx, 'vendor', e.target.value)}
                       placeholder="Retailer Name"
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA] font-semibold focus:outline-hidden focus:border-[#C5A059]"
+                      className="w-full bg-surface border border-line rounded px-2 py-1 text-xs text-text font-semibold focus:outline-hidden focus:border-gold"
                     />
                   </div>
 
@@ -280,7 +280,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
                     <select
                       value={p.packageType || 'Single'}
                       onChange={(e) => handleUpdatePriceField(idx, 'packageType', e.target.value)}
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-[11px] text-[#A89F94] focus:outline-hidden focus:border-[#C5A059]"
+                      className="w-full bg-surface border border-line rounded px-2 py-1 text-[11px] text-text-muted focus:outline-hidden focus:border-gold"
                     >
                       <option value="Single">Single</option>
                       <option value="Pack of 3">3-Pack</option>
@@ -292,13 +292,13 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
                   </div>
 
                   <div className="w-24 flex items-center gap-1">
-                    <span className="text-xs text-[#C5A059] font-bold">{p.currency || '£'}</span>
+                    <span className="text-xs text-gold font-bold">{p.currency || '£'}</span>
                     <input
                       type="number"
                       step="0.01"
                       value={p.price}
                       onChange={(e) => handleUpdatePriceField(idx, 'price', parseFloat(e.target.value) || 0)}
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-xs text-white font-bold focus:outline-hidden focus:border-[#C5A059]"
+                      className="w-full bg-surface border border-line rounded px-2 py-1 text-xs text-white font-bold focus:outline-hidden focus:border-gold"
                     />
                   </div>
 
@@ -308,7 +308,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
                       value={p.url || ''}
                       onChange={(e) => handleUpdatePriceField(idx, 'url', e.target.value)}
                       placeholder="https://shop-link.com/cigar"
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-[11px] text-[#A89F94] focus:outline-hidden focus:border-[#C5A059]"
+                      className="w-full bg-surface border border-line rounded px-2 py-1 text-[11px] text-text-muted focus:outline-hidden focus:border-gold"
                     />
                   </div>
 
@@ -318,7 +318,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
                         href={p.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded cursor-pointer"
+                        className="p-1.5 bg-surface hover:bg-card-hover text-gold border border-line rounded cursor-pointer"
                         title="Open retailer product page"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -327,7 +327,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemovePrice(p.id, idx)}
-                      className="p-1.5 bg-[#13110F] hover:bg-[#2C1515] text-[#A89F94] hover:text-red-400 border border-[#2C2621] rounded cursor-pointer transition"
+                      className="p-1.5 bg-surface hover:bg-danger-bg text-text-muted hover:text-red-400 border border-line rounded cursor-pointer transition"
                       title="Remove retailer price"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -339,22 +339,22 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
           </div>
 
           {/* Add New Retailer Price Form */}
-          <form onSubmit={handleAddPrice} className="p-4 bg-[#1C1816] border border-[#2C2621] rounded-xl space-y-3">
+          <form onSubmit={handleAddPrice} className="p-4 bg-card border border-line rounded-xl space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs uppercase tracking-wider font-semibold text-[#E5E1DA] flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5 text-[#C5A059]" />
+              <h4 className="text-xs uppercase tracking-wider font-semibold text-text flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5 text-gold" />
                 <span>Shop</span>
               </h4>
 
               {/* Quick suggestions with editable tags */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[10px] text-[#A89F94] font-medium flex items-center gap-1">
-                  <Tag className="w-2.5 h-2.5 text-[#C5A059]" /> Quick Shops:
+                <span className="text-[10px] text-text-muted font-medium flex items-center gap-1">
+                  <Tag className="w-2.5 h-2.5 text-gold" /> Quick Shops:
                 </span>
                 {quickQuoteTags.map((name) => (
                   <div
                     key={name}
-                    className="group inline-flex items-center gap-1 text-[10px] pl-2 pr-1 py-0.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/40 rounded transition"
+                    className="group inline-flex items-center gap-1 text-[10px] pl-2 pr-1 py-0.5 bg-surface hover:bg-card-hover text-gold border border-line hover:border-gold/40 rounded transition"
                   >
                     <button
                       type="button"
@@ -394,19 +394,19 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
                         }
                       }}
                       autoFocus
-                      className="text-[10px] px-1.5 py-0.5 bg-[#13110F] border border-[#C5A059] rounded text-[#E5E1DA] w-24 focus:outline-hidden"
+                      className="text-[10px] px-1.5 py-0.5 bg-surface border border-gold rounded text-text w-24 focus:outline-hidden"
                     />
                     <button
                       type="button"
                       onClick={handleAddNewQuickTag}
-                      className="text-[10px] px-1.5 py-0.5 bg-[#C5A059] text-[#0F0D0C] font-bold rounded cursor-pointer"
+                      className="text-[10px] px-1.5 py-0.5 bg-gold text-ink font-bold rounded cursor-pointer"
                     >
                       Add
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowAddTagInput(false)}
-                      className="text-[10px] text-[#A89F94] hover:text-white px-1 cursor-pointer"
+                      className="text-[10px] text-text-muted hover:text-white px-1 cursor-pointer"
                     >
                       ✕
                     </button>
@@ -415,7 +415,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowAddTagInput(true)}
-                    className="text-[10px] px-1.5 py-0.5 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#C5A059] border border-dashed border-[#2C2621] hover:border-[#C5A059]/40 rounded cursor-pointer flex items-center gap-0.5"
+                    className="text-[10px] px-1.5 py-0.5 bg-surface hover:bg-card-hover text-text-muted hover:text-gold border border-dashed border-line hover:border-gold/40 rounded cursor-pointer flex items-center gap-0.5"
                     title="Add a new shop shortcut tag"
                   >
                     <Plus className="w-2.5 h-2.5" /> Tag
@@ -425,7 +425,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
             </div>
 
             {error && (
-              <div className="p-2.5 bg-[#2C1515] border border-red-800/60 rounded text-xs text-red-300 flex items-center gap-2">
+              <div className="p-2.5 bg-danger-bg border border-red-800/60 rounded text-xs text-red-300 flex items-center gap-2">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -433,23 +433,23 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
               <div className="sm:col-span-2">
-                <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Retailer / Shop *</label>
+                <label className="block text-[10px] uppercase tracking-wider text-text-muted mb-1">Retailer / Shop *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Sautter Cigars London, Fox Cigar"
                   value={newVendor}
                   onChange={(e) => setNewVendor(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded-md px-3 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Format</label>
+                <label className="block text-[10px] uppercase tracking-wider text-text-muted mb-1">Format</label>
                 <select
                   value={newPackageType}
                   onChange={(e) => setNewPackageType(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded-md px-2 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="Single">Single Stick</option>
                   <option value="Pack of 3">3-Pack</option>
@@ -461,12 +461,12 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Price *</label>
+                <label className="block text-[10px] uppercase tracking-wider text-text-muted mb-1">Price *</label>
                 <div className="flex items-center gap-1">
                   <select
                     value={newCurrency}
                     onChange={(e) => setNewCurrency(e.target.value)}
-                    className="w-12 bg-[#13110F] border border-[#2C2621] rounded-md px-1 py-1.5 text-xs text-[#C5A059] font-bold focus:outline-hidden"
+                    className="w-12 bg-surface border border-line rounded-md px-1 py-1.5 text-xs text-gold font-bold focus:outline-hidden"
                   >
                     <option value="£">£</option>
                     <option value="$">$</option>
@@ -480,7 +480,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
                     placeholder="26.00"
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] font-bold focus:outline-hidden focus:border-[#C5A059]"
+                    className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text font-bold focus:outline-hidden focus:border-gold"
                   />
                 </div>
               </div>
@@ -488,23 +488,23 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Product Web Link (Optional)</label>
+                <label className="block text-[10px] uppercase tracking-wider text-text-muted mb-1">Product Web Link (Optional)</label>
                 <input
                   type="url"
                   placeholder="https://retailer.com/product..."
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded-md px-3 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 />
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-[#A89F94] mb-1">Stock / Special Note</label>
+                <label className="block text-[10px] uppercase tracking-wider text-text-muted mb-1">Stock / Special Note</label>
                 <input
                   type="text"
                   placeholder="e.g. Free shipping over £50; currently in stock"
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded-md px-3 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 />
               </div>
             </div>
@@ -512,7 +512,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
             <div className="flex justify-end pt-1">
               <button
                 type="submit"
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-[#C5A059]/20 hover:bg-[#C5A059]/30 text-[#C5A059] border border-[#C5A059]/40 rounded text-xs font-semibold uppercase tracking-wider transition cursor-pointer"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-gold/20 hover:bg-gold/30 text-gold border border-gold/40 rounded text-xs font-semibold uppercase tracking-wider transition cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Retailer to List</span>
@@ -521,32 +521,32 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
           </form>
 
           {/* Site-wide Sync Option */}
-          <div className="p-3.5 bg-[#13110F] border border-[#2C2621] rounded-xl flex items-center justify-between gap-4">
+          <div className="p-3.5 bg-surface border border-line rounded-xl flex items-center justify-between gap-4">
             <div className="flex items-start gap-2.5">
               <input
                 type="checkbox"
                 id="syncSiteWide"
                 checked={syncSiteWide}
                 onChange={(e) => setSyncSiteWide(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded bg-[#1C1816] border-[#2C2621] text-[#C5A059] focus:ring-0 cursor-pointer"
+                className="mt-1 w-4 h-4 rounded bg-card border-line text-gold focus:ring-0 cursor-pointer"
               />
-              <label htmlFor="syncSiteWide" className="text-xs text-[#E5E1DA] cursor-pointer">
-                <span className="font-semibold block text-[#C5A059]">Merge & Sync Prices Site-Wide</span>
-                <span className="text-[#A89F94] text-[11px] block mt-0.5">
+              <label htmlFor="syncSiteWide" className="text-xs text-text cursor-pointer">
+                <span className="font-semibold block text-gold">Merge & Sync Prices Site-Wide</span>
+                <span className="text-text-muted text-[11px] block mt-0.5">
                   Automatically sync updated retailer prices to matching Humidor vault cigars and Wishlist target sticks.
                 </span>
               </label>
             </div>
-            <Sparkles className="w-5 h-5 text-[#C5A059] shrink-0" />
+            <Sparkles className="w-5 h-5 text-gold shrink-0" />
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-[#2C2621] bg-[#13110F] flex items-center justify-between">
+        <div className="p-4 border-t border-line bg-surface flex items-center justify-between">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-[#1C1816] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621] rounded-lg text-xs font-medium cursor-pointer"
+            className="px-4 py-2 bg-card hover:bg-card-hover text-text-muted hover:text-text border border-line rounded-lg text-xs font-medium cursor-pointer"
           >
             Cancel
           </button>
@@ -554,7 +554,7 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-2 px-6 py-2.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold uppercase tracking-wider rounded-lg text-xs shadow-md transition cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2.5 bg-gold hover:brightness-110 text-ink font-bold uppercase tracking-wider rounded-lg text-xs shadow-md transition cursor-pointer"
           >
             <Check className="w-4 h-4" />
             <span>Apply Retailer Prices</span>

@@ -102,15 +102,15 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="p-6 bg-gradient-to-br from-[#1C1816] via-[#161311] to-[#13110F] border border-[#2C2621] rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-6 bg-gradient-to-br from-card via-header to-surface border border-line rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Download className="w-5 h-5 text-[#C5A059]" />
+            <Download className="w-5 h-5 text-gold" />
             <h1 className="text-xl sm:text-2xl font-serif text-white font-normal">
               Vault Export, Downloads & Backup Hub
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-[#A89F94] mt-1 max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-text-muted mt-1 max-w-3xl leading-relaxed">
             Your personal cigar collection and research library belong to you. Export your humidor inventory, resting histories,
             tasting journals, wishlist, and entire research brand database across industry-standard formats (JSON backups, CSV spreadsheets,
             Markdown logs, and printable PDF documents).
@@ -119,7 +119,7 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
         {onOpenSettings && (
           <button
             onClick={onOpenSettings}
-            className="flex items-center gap-2 px-3.5 py-2 bg-[#1C1816] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/50 rounded-md text-xs font-semibold uppercase tracking-wider shrink-0 transition cursor-pointer self-start sm:self-center"
+            className="flex items-center gap-2 px-3.5 py-2 bg-card hover:bg-card-hover text-gold border border-line hover:border-gold/50 rounded-md text-xs font-semibold uppercase tracking-wider shrink-0 transition cursor-pointer self-start sm:self-center"
           >
             <span>⚙️ Customize Exports</span>
           </button>
@@ -127,7 +127,7 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
       </div>
 
       {importStatus && (
-        <div className="p-4 bg-[#13110F] border border-emerald-800/80 rounded-md text-xs text-emerald-300 flex items-center gap-2">
+        <div className="p-4 bg-surface border border-emerald-800/80 rounded-md text-xs text-emerald-300 flex items-center gap-2">
           <CheckCircle className="w-4 h-4 text-emerald-400" />
           <span>{importStatus}</span>
         </div>
@@ -137,13 +137,13 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {/* Research Database JSON */}
         {opts.showResearchExport && (
-          <div className="p-6 bg-[#1C1816] border border-[#2C2621] rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-[#3D352E] transition">
+          <div className="p-6 bg-card border border-line rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-line-hover transition">
             <div>
-              <div className="w-10 h-10 rounded-md bg-[#13110F] border border-[#2C2621] flex items-center justify-center text-[#C5A059] mb-3">
+              <div className="w-10 h-10 rounded-md bg-surface border border-line flex items-center justify-center text-gold mb-3">
                 <BookOpen className="w-5 h-5" />
               </div>
-              <h3 className="font-serif font-semibold text-base text-[#E5E1DA]">Cigar Research Library (JSON)</h3>
-              <p className="text-xs text-[#A89F94] mt-1 leading-relaxed">
+              <h3 className="font-serif font-semibold text-base text-text">Cigar Research Library (JSON)</h3>
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
                 Export {researchDatabase.length} curated cigar brands and types with wrapper classifications, origin terroir, average prices, critic notes, and your personal ratings.
               </p>
             </div>
@@ -151,7 +151,7 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
             <div className="space-y-2">
               <button
                 onClick={() => exportResearchDatabaseToJSON(researchDatabase, false)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gold hover:brightness-110 text-ink rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
               >
                 <FileJson className="w-3.5 h-3.5" />
                 <span>Download research_database.json</span>
@@ -159,18 +159,18 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => exportResearchDatabaseToJSON(researchDatabase, true)}
-                  className="flex items-center justify-center gap-1.5 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded font-semibold uppercase tracking-wider text-[11px] transition cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 py-2 bg-surface hover:bg-card-hover text-gold border border-line rounded font-semibold uppercase tracking-wider text-[11px] transition cursor-pointer"
                   title="Export only cigars you have rated or reviewed"
                 >
-                  <Star className="w-3 h-3 text-[#C5A059]" />
+                  <Star className="w-3 h-3 text-gold" />
                   <span>My Notes ({ratedResearchSticks})</span>
                 </button>
                 <button
                   onClick={() => exportResearchDatabaseToCSV(researchDatabase)}
-                  className="flex items-center justify-center gap-1.5 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621] rounded font-semibold uppercase tracking-wider text-[11px] transition cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 py-2 bg-surface hover:bg-card-hover text-text-muted hover:text-text border border-line rounded font-semibold uppercase tracking-wider text-[11px] transition cursor-pointer"
                   title="Export research database as CSV spreadsheet"
                 >
-                  <FileSpreadsheet className="w-3 h-3 text-[#C5A059]" />
+                  <FileSpreadsheet className="w-3 h-3 text-gold" />
                   <span>Research CSV</span>
                 </button>
               </div>
@@ -180,20 +180,20 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
 
         {/* Complete JSON Vault Backup */}
         {opts.showMasterJson && (
-          <div className="p-6 bg-[#1C1816] border border-[#2C2621] rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-[#3D352E] transition">
+          <div className="p-6 bg-card border border-line rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-line-hover transition">
             <div>
-              <div className="w-10 h-10 rounded-md bg-[#13110F] border border-[#2C2621] flex items-center justify-center text-[#C5A059] mb-3">
+              <div className="w-10 h-10 rounded-md bg-surface border border-line flex items-center justify-center text-gold mb-3">
                 <FileCode className="w-5 h-5" />
               </div>
-              <h3 className="font-serif font-semibold text-base text-[#E5E1DA]">Complete Master Vault (JSON)</h3>
-              <p className="text-xs text-[#A89F94] mt-1 leading-relaxed">
+              <h3 className="font-serif font-semibold text-base text-text">Complete Master Vault (JSON)</h3>
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
                 Full lossless snapshot of humidors, stick inventory, smoke logs, wishlist, and annotated research database. Can be safely restored anytime.
               </p>
             </div>
 
             <button
               onClick={() => exportCompleteVaultJSON({ cigars, humidors, smokeLogs, wishlist, researchDatabase })}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-surface hover:bg-card-hover text-gold border border-line rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download cigar_vault_backup.json</span>
@@ -203,22 +203,22 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
 
         {/* CSV Inventory Spreadsheet */}
         {opts.showInventoryCsv && (
-          <div className="p-6 bg-[#1C1816] border border-[#2C2621] rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-[#3D352E] transition">
+          <div className="p-6 bg-card border border-line rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-line-hover transition">
             <div>
-              <div className="w-10 h-10 rounded-md bg-[#13110F] border border-[#2C2621] flex items-center justify-center text-[#C5A059] mb-3">
+              <div className="w-10 h-10 rounded-md bg-surface border border-line flex items-center justify-center text-gold mb-3">
                 <FileSpreadsheet className="w-5 h-5" />
               </div>
-              <h3 className="font-serif font-semibold text-base text-[#E5E1DA]">Humidor Inventory CSV</h3>
-              <p className="text-xs text-[#A89F94] mt-1 leading-relaxed">
+              <h3 className="font-serif font-semibold text-base text-text">Humidor Inventory CSV</h3>
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
                 Export all {cigars.length} cigar lines ({totalSticks} sticks, £{totalValuation.toFixed(2)} valuation) with resting days, box press, wrapper details, price per stick, and humidor assignments.
               </p>
             </div>
 
             <button
               onClick={() => exportInventoryToCSV(cigars, humidors)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-surface hover:bg-card-hover text-text border border-line rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5 text-[#C5A059]" />
+              <Download className="w-3.5 h-3.5 text-gold" />
               <span>Download inventory.csv</span>
             </button>
           </div>
@@ -226,22 +226,22 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
 
         {/* CSV Tasting Journal */}
         {opts.showTastingCsv && (
-          <div className="p-6 bg-[#1C1816] border border-[#2C2621] rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-[#3D352E] transition">
+          <div className="p-6 bg-card border border-line rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-line-hover transition">
             <div>
-              <div className="w-10 h-10 rounded-md bg-[#13110F] border border-[#2C2621] flex items-center justify-center text-[#C5A059] mb-3">
+              <div className="w-10 h-10 rounded-md bg-surface border border-line flex items-center justify-center text-gold mb-3">
                 <Flame className="w-5 h-5" />
               </div>
-              <h3 className="font-serif font-semibold text-base text-[#E5E1DA]">Tasting Journal CSV</h3>
-              <p className="text-xs text-[#A89F94] mt-1 leading-relaxed">
+              <h3 className="font-serif font-semibold text-base text-text">Tasting Journal CSV</h3>
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
                 Export {smokeLogs.length} logged smoke sessions with 100-pt scores, 3-thirds flavor breakdowns, drink pairings, burn & draw metrics, and connoisseur tasting notes.
               </p>
             </div>
 
             <button
               onClick={() => exportSmokeLogsToCSV(smokeLogs)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-surface hover:bg-card-hover text-text border border-line rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5 text-[#C5A059]" />
+              <Download className="w-3.5 h-3.5 text-gold" />
               <span>Download tasting_journal.csv</span>
             </button>
           </div>
@@ -249,22 +249,22 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
 
         {/* Markdown Connoisseur Ledger */}
         {opts.showMarkdownExport && (
-          <div className="p-6 bg-[#1C1816] border border-[#2C2621] rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-[#3D352E] transition">
+          <div className="p-6 bg-card border border-line rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-line-hover transition">
             <div>
-              <div className="w-10 h-10 rounded-md bg-[#13110F] border border-[#2C2621] flex items-center justify-center text-[#C5A059] mb-3">
+              <div className="w-10 h-10 rounded-md bg-surface border border-line flex items-center justify-center text-gold mb-3">
                 <FileText className="w-5 h-5" />
               </div>
-              <h3 className="font-serif font-semibold text-base text-[#E5E1DA]">Obsidian / Markdown Journal</h3>
-              <p className="text-xs text-[#A89F94] mt-1 leading-relaxed">
+              <h3 className="font-serif font-semibold text-base text-text">Obsidian / Markdown Journal</h3>
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
                 Export an elegant formatted Markdown file suitable for Obsidian, Logseq, Notion, or personal notes with YAML metadata, bulleted thirds, and beverage notes.
               </p>
             </div>
 
             <button
               onClick={() => exportJournalMarkdown(smokeLogs, cigars)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-surface hover:bg-card-hover text-text border border-line rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5 text-[#C5A059]" />
+              <Download className="w-3.5 h-3.5 text-gold" />
               <span>Download cigar_journal.md</span>
             </button>
           </div>
@@ -272,20 +272,20 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
 
         {/* Printable / PDF Cellar Report */}
         {opts.showPrintablePdf && (
-          <div className="p-6 bg-[#1C1816] border border-[#2C2621] rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-[#3D352E] transition">
+          <div className="p-6 bg-card border border-line rounded-lg flex flex-col justify-between shadow-sm space-y-4 hover:border-line-hover transition">
             <div>
-              <div className="w-10 h-10 rounded-md bg-[#13110F] border border-[#2C2621] flex items-center justify-center text-[#C5A059] mb-3">
+              <div className="w-10 h-10 rounded-md bg-surface border border-line flex items-center justify-center text-gold mb-3">
                 <Printer className="w-5 h-5" />
               </div>
-              <h3 className="font-serif font-semibold text-base text-[#E5E1DA]">Printable Cellar Dossier (PDF)</h3>
-              <p className="text-xs text-[#A89F94] mt-1 leading-relaxed">
+              <h3 className="font-serif font-semibold text-base text-text">Printable Cellar Dossier (PDF)</h3>
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
                 Opens a print-ready report in a new tab with styled cedar styling, humidor environment charts, and valuation summaries ready for saving as PDF or physical printout.
               </p>
             </div>
 
             <button
               onClick={() => exportPrintableReport(cigars, humidors, smokeLogs)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-gold hover:brightness-110 text-ink rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Generate Printable PDF / Report</span>
@@ -296,15 +296,15 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
 
       {/* Restore & Import Vault Section */}
       {opts.showRestoreBackup && (
-        <div className="p-6 bg-[#1C1816] border border-[#2C2621] rounded-lg space-y-3">
+        <div className="p-6 bg-card border border-line rounded-lg space-y-3">
           <div className="flex items-center gap-2">
-            <Upload className="w-4 h-4 text-[#C5A059]" />
-            <h2 className="text-base font-serif font-semibold text-[#E5E1DA]">
+            <Upload className="w-4 h-4 text-gold" />
+            <h2 className="text-base font-serif font-semibold text-text">
               Restore or Merge Vault Backup
             </h2>
           </div>
-          <p className="text-xs text-[#A89F94]">
-            Upload a previously downloaded <code className="text-[#C5A059] font-mono">cigar_vault_backup.json</code> or <code className="text-[#C5A059] font-mono">cigar_research_database.json</code> file to restore your humidor records, research library, and personal tasting notes.
+          <p className="text-xs text-text-muted">
+            Upload a previously downloaded <code className="text-gold font-mono">cigar_vault_backup.json</code> or <code className="text-gold font-mono">cigar_research_database.json</code> file to restore your humidor records, research library, and personal tasting notes.
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -317,21 +317,21 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-5 py-2.5 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] rounded text-xs font-semibold flex items-center gap-2 transition cursor-pointer"
+              className="px-5 py-2.5 bg-surface hover:bg-card-hover text-text border border-line rounded text-xs font-semibold flex items-center gap-2 transition cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5 text-[#C5A059]" />
+              <Upload className="w-3.5 h-3.5 text-gold" />
               <span>Select JSON Backup File</span>
             </button>
 
             {onOpenBasketImporter && (
               <button
                 onClick={onOpenBasketImporter}
-                className="px-5 py-2.5 bg-radial from-[#3A2E1D] to-[#1E1812] hover:brightness-125 text-[#C5A059] border border-[#C5A059]/60 font-bold uppercase tracking-wider text-xs rounded shadow-xs transition flex items-center gap-2 cursor-pointer"
+                className="px-5 py-2.5 bg-radial from-[#3A2E1D] to-[#1E1812] hover:brightness-125 text-gold border border-gold/60 font-bold uppercase tracking-wider text-xs rounded shadow-xs transition flex items-center gap-2 cursor-pointer"
                 title="Import multiple cigars automatically from a retailer shopping basket / invoice HTML"
               >
-                <ShoppingCart className="w-3.5 h-3.5 text-[#C5A059]" />
+                <ShoppingCart className="w-3.5 h-3.5 text-gold" />
                 <span>Import Basket HTML / Invoice</span>
-                <span className="px-1.5 py-0.5 bg-[#C5A059]/20 text-[#C5A059] rounded text-[9px]">AI Auto</span>
+                <span className="px-1.5 py-0.5 bg-gold/20 text-gold rounded text-[9px]">AI Auto</span>
               </button>
             )}
           </div>

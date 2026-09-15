@@ -1168,15 +1168,15 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-6 bg-gradient-to-br from-[#1C1816] via-[#161311] to-[#13110F] border border-[#2C2621] rounded-lg shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-6 bg-gradient-to-br from-card via-header to-surface border border-line rounded-lg shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <Bookmark className="w-4 h-4 text-[#C5A059]" />
+            <Bookmark className="w-4 h-4 text-gold" />
             <h1 className="text-xl sm:text-2xl font-serif text-white font-normal">
               Wishlist
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-[#A89F94] mt-1">
+          <p className="text-xs sm:text-sm text-text-muted mt-1">
             What to buy next…
           </p>
         </div>
@@ -1187,22 +1187,22 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             onClick={() => setIsBasketOpen(true)}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm ${
               totalBasketCount > 0
-                ? 'bg-gradient-to-r from-[#C5A059] to-[#D4AF37] text-[#0F0D0C] hover:brightness-110'
-                : 'bg-[#13110F] text-[#E5E1DA] border border-[#2C2621] hover:border-[#C5A059] hover:text-[#C5A059]'
+                ? 'bg-gradient-to-r from-gold to-gold-hover text-ink hover:brightness-110'
+                : 'bg-surface text-text border border-line hover:border-gold hover:text-gold'
             }`}
             title="Open Shopping Basket with Best Prices across Tobacconists"
           >
             <ShoppingCart className="w-4 h-4 shrink-0" />
             <span>Basket</span>
             {totalBasketCount > 0 ? (
-              <span className="flex items-center gap-1.5 pl-1.5 border-l border-[#0F0D0C]/30 text-[11px]">
-                <span className="bg-[#0F0D0C] text-[#C5A059] px-1.5 py-0.2 rounded-full font-mono font-bold">
+              <span className="flex items-center gap-1.5 pl-1.5 border-l border-ink/30 text-[11px]">
+                <span className="bg-ink text-gold px-1.5 py-0.2 rounded-full font-mono font-bold">
                   {totalBasketCount}
                 </span>
                 <span className="font-serif">{formatCurrency(totalBasketPrice, '£')}</span>
               </span>
             ) : (
-              <span className="text-[10px] text-[#A89F94] lowercase font-normal">(0 items)</span>
+              <span className="text-[10px] text-text-muted lowercase font-normal">(0 items)</span>
             )}
           </button>
 
@@ -1210,7 +1210,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
           {filteredWishlist.length > 0 && (
             <button
               onClick={handleAddAllBestDealsToBasket}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#1C1816] hover:bg-[#241E1B] text-[#C5A059] border border-[#C5A059]/40 hover:border-[#C5A059] rounded-md text-xs font-semibold uppercase tracking-wider transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-card hover:bg-card-hover text-gold border border-gold/40 hover:border-gold rounded-md text-xs font-semibold uppercase tracking-wider transition cursor-pointer"
               title="Add all currently displayed cigars to Basket using their lowest/best retailer price"
             >
               <TrendingDown className="w-3.5 h-3.5" />
@@ -1221,20 +1221,20 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
           {/* Add Cigar Button */}
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#C5A059] text-[#0F0D0C] hover:bg-[#b08e4c] rounded-md text-xs font-bold uppercase tracking-wider transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-gold text-ink hover:bg-[#b08e4c] rounded-md text-xs font-bold uppercase tracking-wider transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Add Cigar</span>
           </button>
 
           {/* View Mode Switcher */}
-          <div className="flex items-center bg-[#13110F] border border-[#2C2621] rounded-md p-0.5">
+          <div className="flex items-center bg-surface border border-line rounded-md p-0.5">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded transition cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-[#C5A059] text-[#0F0D0C]'
-                  : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink'
+                  : 'text-text-muted hover:text-text'
               }`}
               title="Card Grid View"
             >
@@ -1244,8 +1244,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded transition cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-[#C5A059] text-[#0F0D0C]'
-                  : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink'
+                  : 'text-text-muted hover:text-text'
               }`}
               title="Database Table View"
             >
@@ -1258,8 +1258,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             onClick={() => setShowDisplayOptions(!showDisplayOptions)}
             className={`flex items-center gap-1.5 px-3 py-2 border rounded-md text-xs font-semibold uppercase tracking-wider transition cursor-pointer ${
               showDisplayOptions
-                ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059]'
-                : 'bg-[#13110F] text-[#A89F94] border-[#2C2621] hover:text-[#E5E1DA]'
+                ? 'bg-gold text-ink border-gold'
+                : 'bg-surface text-text-muted border-line hover:text-text'
             }`}
             title="Inline Display Settings & Presets"
           >
@@ -1271,14 +1271,14 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
       {/* Feedback Banner */}
       {feedbackNotice && (
-        <div className="flex items-center justify-between p-3.5 bg-[#1C1816] border border-[#C5A059]/40 rounded-lg text-xs text-[#E5E1DA] animate-in fade-in">
+        <div className="flex items-center justify-between p-3.5 bg-card border border-gold/40 rounded-lg text-xs text-text animate-in fade-in">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-[#C5A059] shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-gold shrink-0" />
             <span>{feedbackNotice}</span>
           </div>
           <button
             onClick={() => setFeedbackNotice(null)}
-            className="text-[#A89F94] hover:text-white cursor-pointer ml-3 p-0.5"
+            className="text-text-muted hover:text-white cursor-pointer ml-3 p-0.5"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -1287,31 +1287,31 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
       {/* Inline Display Settings & Presets Panel */}
       {showDisplayOptions && (
-        <div className="p-4 bg-[#161311] border border-[#2C2621] rounded-lg space-y-3 shadow-sm animate-in fade-in duration-200">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2C2621] pb-3">
+        <div className="p-4 bg-header border border-line rounded-lg space-y-3 shadow-sm animate-in fade-in duration-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
             <div className="flex items-center gap-2">
-              <Eye className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#E5E1DA]">
+              <Eye className="w-3.5 h-3.5 text-gold" />
+              <span className="text-xs font-bold uppercase tracking-wider text-text">
                 Inline Field Visibility & View Presets
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] uppercase font-semibold text-[#A89F94] mr-1">Presets:</span>
+              <span className="text-[10px] uppercase font-semibold text-text-muted mr-1">Presets:</span>
               <button
                 onClick={() => applyPreset('all')}
-                className="px-2 py-1 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
+                className="px-2 py-1 bg-surface hover:bg-card-hover text-gold border border-line rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
               >
                 All Details
               </button>
               <button
                 onClick={() => applyPreset('keySpecs')}
-                className="px-2 py-1 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
+                className="px-2 py-1 bg-surface hover:bg-card-hover text-text border border-line rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
               >
                 Key Specs Only
               </button>
               <button
                 onClick={() => applyPreset('priceHunter')}
-                className="px-2 py-1 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
+                className="px-2 py-1 bg-surface hover:bg-card-hover text-text border border-line rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
               >
                 Price Hunter
               </button>
@@ -1337,15 +1337,15 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                   }
                   className={`flex items-center justify-between px-2.5 py-1.5 rounded text-[11px] font-medium border transition cursor-pointer ${
                     active
-                      ? 'bg-[#1F1A17] text-[#C5A059] border-[#C5A059]/40'
-                      : 'bg-[#13110F] text-[#A89F94]/60 border-[#2C2621] line-through'
+                      ? 'bg-section-header text-gold border-gold/40'
+                      : 'bg-surface text-text-muted/60 border-line line-through'
                   }`}
                 >
                   <span>{f.label}</span>
                   {active ? (
-                    <Eye className="w-3 h-3 text-[#C5A059]" />
+                    <Eye className="w-3 h-3 text-gold" />
                   ) : (
-                    <EyeOff className="w-3 h-3 text-[#A89F94]/40" />
+                    <EyeOff className="w-3 h-3 text-text-muted/40" />
                   )}
                 </button>
               );
@@ -1355,22 +1355,22 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       )}
 
       {/* Search & Filter Bar */}
-      <div className="p-4 bg-[#161311] border border-[#2C2621] rounded-lg space-y-3 shadow-sm">
+      <div className="p-4 bg-header border border-line rounded-lg space-y-3 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
           {/* Search Input */}
           <div className="relative sm:col-span-2 lg:col-span-4">
-            <Search className="w-3.5 h-3.5 text-[#A89F94] absolute left-3 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-text-muted absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Search wishlist by brand, line, vitola, notes, retailer..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md pl-9 pr-8 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059] placeholder-[#A89F94]/50"
+              className="w-full bg-surface border border-line rounded-md pl-9 pr-8 py-2 text-xs text-text focus:outline-hidden focus:border-gold placeholder-text-muted/50"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-2.5 text-[#A89F94] hover:text-[#E5E1DA]"
+                className="absolute right-2.5 top-2.5 text-text-muted hover:text-text"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1382,7 +1382,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             <select
               value={brandFilter}
               onChange={(e) => setBrandFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="ALL">All Brands ({uniqueBrands.length})</option>
               {uniqueBrands.map((b) => (
@@ -1398,7 +1398,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             <select
               value={selectedShopFilter}
               onChange={(e) => setSelectedShopFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               title="Filter by Tobacconist / Shop quotes"
             >
               <option value="ALL">All Shops & Tobacconists ({availableShops.length})</option>
@@ -1415,7 +1415,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               title="Sort Wishlist items"
             >
               <option value="priority-desc">🔥 Highest Priority</option>
@@ -1428,18 +1428,18 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
         </div>
 
         {/* Filter Rows: Priority, Smoke Duration, and Shop Best Price Toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#2C2621]/60">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-line/60">
           {/* Priority Chips */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] text-[#A89F94] uppercase font-semibold tracking-wider mr-1">
+            <span className="text-[10px] text-text-muted uppercase font-semibold tracking-wider mr-1">
               Priority:
             </span>
             <button
               onClick={() => setPriorityFilter('ALL')}
               className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                 priorityFilter === 'ALL'
-                  ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                  : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink font-bold'
+                  : 'bg-surface text-text-muted border border-line hover:text-text'
               }`}
             >
               All ({counts.all})
@@ -1449,7 +1449,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                 priorityFilter === 'High'
                   ? 'bg-red-900/80 text-red-100 font-bold border border-red-700'
-                  : 'bg-[#13110F] text-red-400 border border-[#2C2621] hover:bg-[#2C1515]'
+                  : 'bg-surface text-red-400 border border-line hover:bg-danger-bg'
               }`}
             >
               🔥 High ({counts.high})
@@ -1458,8 +1458,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               onClick={() => setPriorityFilter('Medium')}
               className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                 priorityFilter === 'Medium'
-                  ? 'bg-[#8B5E3C] text-amber-100 font-bold border border-[#C5A059]'
-                  : 'bg-[#13110F] text-[#C5A059] border border-[#2C2621] hover:bg-[#241E1B]'
+                  ? 'bg-cedar text-amber-100 font-bold border border-gold'
+                  : 'bg-surface text-gold border border-line hover:bg-card-hover'
               }`}
             >
               ⚡ Medium ({counts.medium})
@@ -1468,8 +1468,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               onClick={() => setPriorityFilter('Low')}
               className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                 priorityFilter === 'Low'
-                  ? 'bg-[#2A241F] text-[#E5E1DA] font-bold border border-[#4A4036]'
-                  : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:bg-[#1C1816]'
+                  ? 'bg-selected text-text font-bold border border-[#4A4036]'
+                  : 'bg-surface text-text-muted border border-line hover:bg-card'
               }`}
             >
               🌱 Low ({counts.low})
@@ -1478,15 +1478,15 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
           {/* Smoke Duration Filter Chips */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] text-[#A89F94] uppercase font-semibold tracking-wider mr-1">
+            <span className="text-[10px] text-text-muted uppercase font-semibold tracking-wider mr-1">
               ⏱️ Duration:
             </span>
             <button
               onClick={() => setSmokeTimeFilter('ALL')}
               className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                 smokeTimeFilter === 'ALL'
-                  ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                  : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink font-bold'
+                  : 'bg-surface text-text-muted border border-line hover:text-text'
               }`}
             >
               All
@@ -1495,8 +1495,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               onClick={() => setSmokeTimeFilter('quick')}
               className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                 smokeTimeFilter === 'quick'
-                  ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                  : 'bg-[#13110F] text-[#E5E1DA] border border-[#2C2621] hover:border-[#C5A059]'
+                  ? 'bg-gold text-ink font-bold'
+                  : 'bg-surface text-text border border-line hover:border-gold'
               }`}
             >
               ⚡ Quick (&le;45m)
@@ -1505,8 +1505,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               onClick={() => setSmokeTimeFilter('medium')}
               className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                 smokeTimeFilter === 'medium'
-                  ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                  : 'bg-[#13110F] text-[#E5E1DA] border border-[#2C2621] hover:border-[#C5A059]'
+                  ? 'bg-gold text-ink font-bold'
+                  : 'bg-surface text-text border border-line hover:border-gold'
               }`}
             >
               ⏳ Medium (45-75m)
@@ -1515,8 +1515,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               onClick={() => setSmokeTimeFilter('long')}
               className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                 smokeTimeFilter === 'long'
-                  ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                  : 'bg-[#13110F] text-[#E5E1DA] border border-[#2C2621] hover:border-[#C5A059]'
+                  ? 'bg-gold text-ink font-bold'
+                  : 'bg-surface text-text border border-line hover:border-gold'
               }`}
             >
               👑 Long (&gt;75m)
@@ -1531,7 +1531,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                 className={`text-[10px] px-2.5 py-1 rounded border transition cursor-pointer flex items-center gap-1.5 font-bold ${
                   shopBestPriceOnly
                     ? 'bg-emerald-900/80 text-emerald-100 border-emerald-500 shadow-xs'
-                    : 'bg-[#13110F] text-[#E5E1DA] border-[#2C2621] hover:border-emerald-600 hover:text-emerald-300'
+                    : 'bg-surface text-text border-line hover:border-emerald-600 hover:text-emerald-300'
                 }`}
                 title={`Filter for cigars where ${selectedShopFilter} offers the lowest/best price among all shops`}
               >
@@ -1548,7 +1548,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               shopBestPriceOnly) && (
               <button
                 onClick={resetAllFilters}
-                className="text-[10px] px-2.5 py-1 rounded bg-[#241E1B] hover:bg-[#2C2621] text-[#C5A059] hover:text-white border border-[#3D352E] flex items-center gap-1 cursor-pointer transition"
+                className="text-[10px] px-2.5 py-1 rounded bg-card-hover hover:bg-line text-gold hover:text-white border border-line-hover flex items-center gap-1 cursor-pointer transition"
               >
                 <X className="w-3 h-3" />
                 <span>Reset Filters</span>
@@ -1558,17 +1558,17 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
         </div>
 
         {/* Quick Tobacconist Chips Bar */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#2C2621]/40 text-[10px]">
-          <span className="text-[#A89F94] font-semibold uppercase tracking-wider flex items-center gap-1 mr-1">
-            <Store className="w-3 h-3 text-[#C5A059]" />
+        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-line/40 text-[10px]">
+          <span className="text-text-muted font-semibold uppercase tracking-wider flex items-center gap-1 mr-1">
+            <Store className="w-3 h-3 text-gold" />
             <span>Shop Deals:</span>
           </span>
           <button
             onClick={() => setSelectedShopFilter('ALL')}
             className={`px-2 py-0.5 rounded transition cursor-pointer ${
               selectedShopFilter === 'ALL'
-                ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                ? 'bg-gold text-ink font-bold'
+                : 'bg-surface text-text-muted border border-line hover:text-text'
             }`}
           >
             All Shops
@@ -1581,15 +1581,15 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                 onClick={() => setSelectedShopFilter(isSelected ? 'ALL' : s.name)}
                 className={`px-2 py-0.5 rounded transition flex items-center gap-1 cursor-pointer ${
                   isSelected
-                    ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                    : 'bg-[#13110F] text-[#E5E1DA] border border-[#2C2621] hover:border-[#C5A059]'
+                    ? 'bg-gold text-ink font-bold'
+                    : 'bg-surface text-text border border-line hover:border-gold'
                 }`}
               >
                 <span>{s.name}</span>
                 {s.bestPriceCount > 0 && (
                   <span
                     className={`text-[9px] px-1 py-0.2 rounded-xs font-mono font-bold ${
-                      isSelected ? 'bg-[#0F0D0C] text-[#C5A059]' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                      isSelected ? 'bg-ink text-gold' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                     }`}
                   >
                     🏆{s.bestPriceCount}
@@ -1603,62 +1603,62 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
       {/* Add Form */}
       {showAddForm && (
-        <form onSubmit={handleSubmit} className="p-5 bg-[#1C1816] border border-[#2C2621] rounded-lg space-y-4 shadow-sm">
-          <h3 className="text-sm font-serif font-semibold text-[#C5A059]">Track New Cigar on Wishlist</h3>
+        <form onSubmit={handleSubmit} className="p-5 bg-card border border-line rounded-lg space-y-4 shadow-sm">
+          <h3 className="text-sm font-serif font-semibold text-gold">Track New Cigar on Wishlist</h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Brand *</label>
+              <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Brand *</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. Arturo Fuente"
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Cigar / Line Name *</label>
+              <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Cigar / Line Name *</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. Opus X Fuente Fuente"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Vitola / Format</label>
+              <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Vitola / Format</label>
               <input
                 type="text"
                 placeholder="e.g. Corona Gorda, Robusto"
                 value={vitola}
                 onChange={(e) => setVitola(e.target.value)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Target Max Price (£)</label>
+              <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Target Max Price (£)</label>
               <input
                 type="number"
                 step="0.01"
                 placeholder="e.g. 35.00"
                 value={targetPrice}
                 onChange={(e) => setTargetPrice(e.target.value)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Priority</label>
+              <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as any)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               >
                 <option value="High">🔥 High (Grail / Must Buy)</option>
                 <option value="Medium">⚡ Medium (Keep eye out)</option>
@@ -1666,25 +1666,25 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Initial Retailer (Optional)</label>
+              <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Initial Retailer (Optional)</label>
               <input
                 type="text"
                 placeholder="e.g. C.Gars Ltd, Sautter"
                 value={sourceRetailer}
                 onChange={(e) => setSourceRetailer(e.target.value)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Hunt Notes & Release Details</label>
+            <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Hunt Notes & Release Details</label>
             <textarea
               rows={2}
               placeholder="e.g. Restocks usually occur in November; look for 2022 release date box code."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
             />
           </div>
 
@@ -1692,13 +1692,13 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             <button
               type="button"
               onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621] rounded-md text-xs cursor-pointer"
+              className="px-4 py-2 bg-surface text-text-muted hover:text-text border border-line rounded-md text-xs cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold uppercase tracking-wider rounded-md text-xs shadow-sm cursor-pointer"
+              className="px-5 py-2 bg-gold hover:brightness-110 text-ink font-bold uppercase tracking-wider rounded-md text-xs shadow-sm cursor-pointer"
             >
               Save to Wishlist
             </button>
@@ -1709,12 +1709,12 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       {/* Edit Modal */}
       {editingItem && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1C1816] border border-[#2C2621] rounded-lg max-w-lg w-full p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-[#2C2621] pb-3">
+          <div className="bg-card border border-line rounded-lg max-w-lg w-full p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <h3 className="font-serif font-semibold text-base text-white">Edit Wishlist Cigar</h3>
               <button
                 onClick={() => setEditingItem(null)}
-                className="text-[#A89F94] hover:text-white cursor-pointer"
+                className="text-text-muted hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1723,43 +1723,43 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             <form onSubmit={handleSaveEdit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Brand *</label>
+                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Brand *</label>
                   <input
                     type="text"
                     required
                     value={editBrand}
                     onChange={(e) => setEditBrand(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                    className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Name *</label>
+                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Name *</label>
                   <input
                     type="text"
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                    className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Vitola</label>
+                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Vitola</label>
                   <input
                     type="text"
                     value={editVitola}
                     onChange={(e) => setEditVitola(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                    className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Priority</label>
+                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Priority</label>
                   <select
                     value={editPriority}
                     onChange={(e) => setEditPriority(e.target.value as any)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                    className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                   >
                     <option value="High">🔥 High (Grail / Must Buy)</option>
                     <option value="Medium">⚡ Medium (Keep eye out)</option>
@@ -1770,58 +1770,58 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Target Price (£)</label>
+                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Target Price (£)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={editTargetPrice}
                     onChange={(e) => setEditTargetPrice(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                    className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Source / Retailer</label>
+                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Source / Retailer</label>
                   <input
                     type="text"
                     value={editSourceRetailer}
                     onChange={(e) => setEditSourceRetailer(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                    className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Retailer Web Link</label>
+                <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Retailer Web Link</label>
                 <input
                   type="url"
                   placeholder="https://..."
                   value={editSourceUrl}
                   onChange={(e) => setEditSourceUrl(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-[#A89F94] mb-1">Notes / Details</label>
+                <label className="block text-[10px] uppercase font-bold text-text-muted mb-1">Notes / Details</label>
                 <textarea
                   rows={3}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-[#2C2621]">
+              <div className="flex justify-end gap-3 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setEditingItem(null)}
-                  className="px-4 py-2 bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621] rounded-md text-xs cursor-pointer"
+                  className="px-4 py-2 bg-surface text-text-muted hover:text-text border border-line rounded-md text-xs cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold uppercase tracking-wider rounded-md text-xs shadow-sm cursor-pointer"
+                  className="px-5 py-2 bg-gold hover:brightness-110 text-ink font-bold uppercase tracking-wider rounded-md text-xs shadow-sm cursor-pointer"
                 >
                   Save Changes
                 </button>
@@ -1833,11 +1833,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
       {/* VIEW 1: Database Table View */}
       {viewMode === 'table' && (
-        <div className="bg-[#161311] border border-[#2C2621] rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-header border border-line rounded-lg overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-[#13110F] text-[#A89F94] text-[10px] uppercase tracking-wider font-semibold border-b border-[#2C2621]">
+                <tr className="bg-surface text-text-muted text-[10px] uppercase tracking-wider font-semibold border-b border-line">
                   {displayFields.priority && <th className="py-3 px-3">Priority</th>}
                   <th className="py-3 px-3">Brand & Cigar Line</th>
                   {displayFields.rating && <th className="py-3 px-3">Rating / Score</th>}
@@ -1849,7 +1849,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                   <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#2C2621]">
+              <tbody className="divide-y divide-line">
                 {filteredWishlist.map((item) => {
                   const smokeTime = estimateAccurateSmokeTime(item.vitola, item.lengthInches, item.ringGauge);
                   const quotes = item.vendorPrices || [];
@@ -1857,7 +1857,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                   const { rating: itemRating, scores: itemScores } = getItemRatings(item);
 
                   return (
-                    <tr key={item.id} className="hover:bg-[#1F1A17] transition">
+                    <tr key={item.id} className="hover:bg-section-header transition">
                       {displayFields.priority && (
                         <td className="py-3 px-3 whitespace-nowrap">
                           <select
@@ -1865,10 +1865,10 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                             onChange={(e) => handleQuickChangePriority(item, e.target.value as any)}
                             className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border cursor-pointer ${
                               item.priority === 'High'
-                                ? 'bg-[#2C1515] text-red-300 border-red-900/60'
+                                ? 'bg-danger-bg text-red-300 border-red-900/60'
                                 : item.priority === 'Medium'
-                                ? 'bg-[#261E14] text-[#C5A059] border-[#C5A059]/40'
-                                : 'bg-[#13110F] text-[#A89F94] border-[#2C2621]'
+                                ? 'bg-[#261E14] text-gold border-gold/40'
+                                : 'bg-surface text-text-muted border-line'
                             }`}
                           >
                             <option value="High">🔥 High</option>
@@ -1879,13 +1879,13 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                       )}
                       <td className="py-3 px-3">
                         {editingNameId === item.id ? (
-                          <div className="space-y-1 p-2 bg-[#13110F] border border-[#C5A059] rounded min-w-[180px]">
+                          <div className="space-y-1 p-2 bg-surface border border-gold rounded min-w-[180px]">
                             <input
                               type="text"
                               placeholder="Brand"
                               value={inlineBrand}
                               onChange={(e) => setInlineBrand(e.target.value)}
-                              className="w-full bg-[#1C1816] border border-[#2C2621] rounded px-1.5 py-0.5 text-xs text-[#E5E1DA] focus:border-[#C5A059]"
+                              className="w-full bg-card border border-line rounded px-1.5 py-0.5 text-xs text-text focus:border-gold"
                             />
                             <input
                               type="text"
@@ -1896,18 +1896,18 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                 if (e.key === 'Enter') handleSaveInlineEdit(item);
                                 if (e.key === 'Escape') setEditingNameId(null);
                               }}
-                              className="w-full bg-[#1C1816] border border-[#2C2621] rounded px-1.5 py-0.5 text-xs text-[#E5E1DA] focus:border-[#C5A059]"
+                              className="w-full bg-card border border-line rounded px-1.5 py-0.5 text-xs text-text focus:border-gold"
                             />
                             <div className="flex gap-1 pt-1">
                               <button
                                 onClick={() => handleSaveInlineEdit(item)}
-                                className="px-2 py-0.5 bg-[#C5A059] text-[#0F0D0C] rounded font-bold text-[10px]"
+                                className="px-2 py-0.5 bg-gold text-ink rounded font-bold text-[10px]"
                               >
                                 Save
                               </button>
                               <button
                                 onClick={() => setEditingNameId(null)}
-                                className="px-1.5 py-0.5 bg-[#2C2621] text-[#A89F94] rounded text-[10px]"
+                                className="px-1.5 py-0.5 bg-line text-text-muted rounded text-[10px]"
                               >
                                 Cancel
                               </button>
@@ -1916,12 +1916,12 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                         ) : (
                           <div>
                             <div className="flex items-center gap-1">
-                              <span className="text-[10px] uppercase font-bold tracking-wider text-[#C5A059]">
+                              <span className="text-[10px] uppercase font-bold tracking-wider text-gold">
                                 {item.brand}
                               </span>
                               <button
                                 onClick={() => handleStartInlineEdit(item)}
-                                className="opacity-0 group-hover:opacity-100 text-[#A89F94] hover:text-[#C5A059] transition cursor-pointer"
+                                className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-gold transition cursor-pointer"
                                 title="Edit name inline (syncs across all tabs)"
                               >
                                 <Edit3 className="w-2.5 h-2.5" />
@@ -1929,7 +1929,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                             </div>
                             <div
                               onClick={() => handleStartInlineEdit(item)}
-                              className="font-serif font-semibold text-white hover:text-[#C5A059] cursor-pointer transition"
+                              className="font-serif font-semibold text-white hover:text-gold cursor-pointer transition"
                               title="Click to edit name inline"
                             >
                               {item.name}
@@ -1942,10 +1942,10 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                           {itemRating || itemScores.length > 0 ? (
                             <div className="space-y-1">
                               {itemRating && (
-                                <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#1F1A17] border border-[#C5A059]/40 rounded text-[11px] font-bold text-[#C5A059]">
-                                  <Star className="w-3 h-3 fill-[#C5A059] text-[#C5A059]" />
+                                <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-section-header border border-gold/40 rounded text-[11px] font-bold text-gold">
+                                  <Star className="w-3 h-3 fill-gold text-gold" />
                                   <span>{itemRating}</span>
-                                  <span className="text-[9px] text-[#A89F94] font-normal">/100</span>
+                                  <span className="text-[9px] text-text-muted font-normal">/100</span>
                                 </div>
                               )}
                               {itemScores.length > 0 && (
@@ -1953,27 +1953,27 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                   {itemScores.slice(0, 2).map((sc, idx) => (
                                     <span
                                       key={idx}
-                                      className="text-[9px] px-1.5 py-0.5 bg-[#13110F] text-[#E5E1DA] border border-[#2C2621] rounded"
+                                      className="text-[9px] px-1.5 py-0.5 bg-surface text-text border border-line rounded"
                                       title={`${sc.source}: ${sc.score}${sc.scale ? '/' + sc.scale : ''}${sc.award ? ' (' + sc.award + ')' : ''}`}
                                     >
-                                      <span className="text-[#A89F94] font-medium">{sc.source.split(' ')[0]}:</span> <strong className="text-[#C5A059]">★{sc.score}</strong>
+                                      <span className="text-text-muted font-medium">{sc.source.split(' ')[0]}:</span> <strong className="text-gold">★{sc.score}</strong>
                                     </span>
                                   ))}
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <span className="text-[#A89F94]/50 italic text-[10px]">Unrated</span>
+                            <span className="text-text-muted/50 italic text-[10px]">Unrated</span>
                           )}
                         </td>
                       )}
                       {displayFields.vitolaSpecs && (
-                        <td className="py-3 px-3 text-[#A89F94]">{item.vitola || '—'}</td>
+                        <td className="py-3 px-3 text-text-muted">{item.vitola || '—'}</td>
                       )}
                       {displayFields.smokeTime && (
                         <td className="py-3 px-3 whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#13110F] border border-[#2C2621] rounded text-[10px] text-[#C5A059]">
-                            <Clock className="w-3 h-3 text-[#C5A059]" />
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface border border-line rounded text-[10px] text-gold">
+                            <Clock className="w-3 h-3 text-gold" />
                             <span>{item.smokeTimeRange || smokeTime.range}</span>
                           </div>
                         </td>
@@ -1995,7 +1995,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                     className={`flex items-center justify-between gap-1 px-1.5 py-0.5 rounded text-[10px] ${
                                       isBest
                                         ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-800/60'
-                                        : 'bg-[#13110F] text-[#E5E1DA] border border-[#2C2621]'
+                                        : 'bg-surface text-text border border-line'
                                     }`}
                                   >
                                     <span className="truncate">{vp.vendor}</span>
@@ -2003,14 +2003,14 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                       <span>{formatCurrency(vp.price, vp.currency || '£')}</span>
                                       <button
                                         onClick={() => handleAddToBasket(item, vp.vendor, vp.price, vp.url)}
-                                        className="text-[#C5A059] hover:text-white cursor-pointer p-0.5"
+                                        className="text-gold hover:text-white cursor-pointer p-0.5"
                                         title={`Add to Basket from ${vp.vendor} (${formatCurrency(vp.price, '£')})`}
                                       >
                                         <ShoppingCart className="w-2.5 h-2.5" />
                                       </button>
                                       <button
                                         onClick={() => handleDeleteRetailerQuote(item, vp.id)}
-                                        className="text-[#A89F94] hover:text-red-400 cursor-pointer p-0.5"
+                                        className="text-text-muted hover:text-red-400 cursor-pointer p-0.5"
                                         title={`Delete quote from ${vp.vendor}`}
                                       >
                                         <X className="w-2.5 h-2.5" />
@@ -2022,11 +2022,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                             </div>
                           ) : (
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[#A89F94]/50 italic text-[10px]">No quotes</span>
+                              <span className="text-text-muted/50 italic text-[10px]">No quotes</span>
                               <button
                                 onClick={() => handleScanRetailerPricesForWishlistItem(item)}
                                 disabled={scanningItemId === item.id}
-                                className="text-[10px] text-[#C5A059] hover:underline flex items-center gap-0.5 cursor-pointer"
+                                className="text-[10px] text-gold hover:underline flex items-center gap-0.5 cursor-pointer"
                                 title="Scan UK Tobacconists"
                               >
                                 {scanningItemId === item.id ? (
@@ -2041,7 +2041,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                         </td>
                       )}
                       {displayFields.notes && (
-                        <td className="py-3 px-3 max-w-xs truncate text-[#A89F94] italic">
+                        <td className="py-3 px-3 max-w-xs truncate text-text-muted italic">
                           {item.notes || '—'}
                         </td>
                       )}
@@ -2049,14 +2049,14 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => handleAddToBasket(item)}
-                            className="p-1.5 bg-[#1C1816] hover:bg-[#C5A059] text-[#C5A059] hover:text-[#0F0D0C] border border-[#C5A059]/50 rounded cursor-pointer transition"
+                            className="p-1.5 bg-card hover:bg-gold text-gold hover:text-ink border border-gold/50 rounded cursor-pointer transition"
                             title="Add Best Price to Shopping Basket"
                           >
                             <ShoppingCart className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => onAcquireItem(item)}
-                            className="p-1.5 bg-[#13110F] hover:bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 rounded cursor-pointer"
+                            className="p-1.5 bg-surface hover:bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 rounded cursor-pointer"
                             title="Acquired! Move to Vault"
                           >
                             <Check className="w-3.5 h-3.5" />
@@ -2064,13 +2064,13 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                           <button
                             onClick={() => handleScanRetailerPricesForWishlistItem(item)}
                             disabled={scanningItemId === item.id}
-                            className={`p-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded cursor-pointer ${
+                            className={`p-1.5 bg-surface hover:bg-card-hover text-gold border border-line rounded cursor-pointer ${
                               scanningItemId === item.id ? 'opacity-70 cursor-wait' : ''
                             }`}
                             title="Scan UK Retailer Quotes (C.Gars, Havana House, Smoke King, Sautter, JJ Fox, etc.)"
                           >
                             {scanningItemId === item.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C5A059]" />
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-gold" />
                             ) : (
                               <Globe className="w-3.5 h-3.5" />
                             )}
@@ -2086,7 +2086,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                   vendor: item.sourceRetailer,
                                 })
                               }
-                              className="p-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded cursor-pointer"
+                              className="p-1.5 bg-surface hover:bg-card-hover text-gold border border-line rounded cursor-pointer"
                               title="Compare Retailer Quotes"
                             >
                               <Store className="w-3.5 h-3.5" />
@@ -2094,21 +2094,21 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                           )}
                           <button
                             onClick={() => handleStartEdit(item)}
-                            className="p-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] hover:text-[#C5A059] border border-[#2C2621] rounded cursor-pointer"
+                            className="p-1.5 bg-surface hover:bg-card-hover text-text hover:text-gold border border-line rounded cursor-pointer"
                             title="Edit"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => onResearchCigar(`${item.brand} ${item.name}`)}
-                            className="p-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded cursor-pointer"
+                            className="p-1.5 bg-surface hover:bg-card-hover text-gold border border-line rounded cursor-pointer"
                             title="AI Dossier Research"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => onDeleteWishlistItem(item.id)}
-                            className="p-1.5 bg-[#13110F] hover:bg-[#2C1515] text-[#A89F94] hover:text-red-400 border border-[#2C2621] rounded cursor-pointer"
+                            className="p-1.5 bg-surface hover:bg-danger-bg text-text-muted hover:text-red-400 border border-line rounded cursor-pointer"
                             title="Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -2135,22 +2135,22 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             return (
               <div
                 key={item.id}
-                className="p-5 bg-[#1C1816] border border-[#2C2621] rounded-lg flex flex-col justify-between shadow-sm transition hover:border-[#3D352E]"
+                className="p-5 bg-card border border-line rounded-lg flex flex-col justify-between shadow-sm transition hover:border-line-hover"
               >
                 <div>
                   {/* Card Header: Brand, Name & Priority */}
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex-1 min-w-0">
                       {editingNameId === item.id ? (
-                        <div className="space-y-1.5 p-2.5 bg-[#13110F] border border-[#C5A059] rounded-md mb-2">
-                          <div className="text-[10px] uppercase font-bold text-[#C5A059]">Edit Name (Syncs Everywhere)</div>
+                        <div className="space-y-1.5 p-2.5 bg-surface border border-gold rounded-md mb-2">
+                          <div className="text-[10px] uppercase font-bold text-gold">Edit Name (Syncs Everywhere)</div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                             <input
                               type="text"
                               placeholder="Brand"
                               value={inlineBrand}
                               onChange={(e) => setInlineBrand(e.target.value)}
-                              className="bg-[#1C1816] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA] focus:border-[#C5A059]"
+                              className="bg-card border border-line rounded px-2 py-1 text-xs text-text focus:border-gold"
                             />
                             <input
                               type="text"
@@ -2161,19 +2161,19 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                 if (e.key === 'Enter') handleSaveInlineEdit(item);
                                 if (e.key === 'Escape') setEditingNameId(null);
                               }}
-                              className="bg-[#1C1816] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA] focus:border-[#C5A059]"
+                              className="bg-card border border-line rounded px-2 py-1 text-xs text-text focus:border-gold"
                             />
                           </div>
                           <div className="flex gap-1.5 pt-1">
                             <button
                               onClick={() => handleSaveInlineEdit(item)}
-                              className="px-2.5 py-1 bg-[#C5A059] text-[#0F0D0C] rounded font-bold text-xs"
+                              className="px-2.5 py-1 bg-gold text-ink rounded font-bold text-xs"
                             >
                               Save & Sync
                             </button>
                             <button
                               onClick={() => setEditingNameId(null)}
-                              className="px-2 py-1 bg-[#2C2621] text-[#A89F94] rounded text-xs"
+                              className="px-2 py-1 bg-line text-text-muted rounded text-xs"
                             >
                               Cancel
                             </button>
@@ -2182,12 +2182,12 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                       ) : (
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-[#C5A059]">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-gold">
                               {item.brand}
                             </span>
                             <button
                               onClick={() => handleStartInlineEdit(item)}
-                              className="text-[#A89F94] hover:text-[#C5A059] transition cursor-pointer p-0.5"
+                              className="text-text-muted hover:text-gold transition cursor-pointer p-0.5"
                               title="Edit name inline (syncs across all tabs)"
                             >
                               <Edit3 className="w-2.5 h-2.5" />
@@ -2195,7 +2195,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                           </div>
                           <h3
                             onClick={() => handleStartInlineEdit(item)}
-                            className="font-serif font-semibold text-base text-[#E5E1DA] hover:text-[#C5A059] cursor-pointer transition"
+                            className="font-serif font-semibold text-base text-text hover:text-gold cursor-pointer transition"
                             title="Click to edit name inline"
                           >
                             {item.name}
@@ -2203,7 +2203,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                         </div>
                       )}
                       {displayFields.vitolaSpecs && item.vitola && (
-                        <span className="text-xs text-[#A89F94] block mt-0.5">{item.vitola}</span>
+                        <span className="text-xs text-text-muted block mt-0.5">{item.vitola}</span>
                       )}
                     </div>
 
@@ -2214,16 +2214,16 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                           onChange={(e) => handleQuickChangePriority(item, e.target.value as any)}
                           className={`text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded border cursor-pointer appearance-none pr-5 focus:outline-hidden ${
                             item.priority === 'High'
-                              ? 'bg-[#2C1515] text-red-300 border-red-900/60'
+                              ? 'bg-danger-bg text-red-300 border-red-900/60'
                               : item.priority === 'Medium'
-                              ? 'bg-[#261E14] text-[#C5A059] border-[#C5A059]/40'
-                              : 'bg-[#13110F] text-[#A89F94] border-[#2C2621]'
+                              ? 'bg-[#261E14] text-gold border-gold/40'
+                              : 'bg-surface text-text-muted border-line'
                           }`}
                           title="Click to switch priority immediately"
                         >
-                          <option value="High" className="bg-[#1C1816] text-red-400">🔥 High Priority</option>
-                          <option value="Medium" className="bg-[#1C1816] text-[#C5A059]">⚡ Medium Priority</option>
-                          <option value="Low" className="bg-[#1C1816] text-[#A89F94]">🌱 Low Priority</option>
+                          <option value="High" className="bg-card text-red-400">🔥 High Priority</option>
+                          <option value="Medium" className="bg-card text-gold">⚡ Medium Priority</option>
+                          <option value="Low" className="bg-card text-text-muted">🌱 Low Priority</option>
                         </select>
                         <ChevronDown className="w-2.5 h-2.5 absolute right-1.5 top-2 pointer-events-none text-current opacity-70" />
                       </div>
@@ -2232,8 +2232,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
                   {/* Smoke Time Badge */}
                   {displayFields.smokeTime && (
-                    <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#13110F] border border-[#2C2621] rounded text-[10px] text-[#C5A059] mb-2 font-medium">
-                      <Clock className="w-3 h-3 text-[#C5A059]" />
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface border border-line rounded text-[10px] text-gold mb-2 font-medium">
+                      <Clock className="w-3 h-3 text-gold" />
                       <span>Est. Smoke Time: {item.smokeTimeRange || smokeTime.range}</span>
                     </div>
                   )}
@@ -2243,34 +2243,34 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                     const { rating: itemRating, scores: itemScores } = getItemRatings(item);
                     if (!itemRating && itemScores.length === 0) return null;
                     return (
-                      <div className="p-2.5 bg-[#13110F] border border-[#2C2621] rounded-md mb-2 space-y-1.5">
+                      <div className="p-2.5 bg-surface border border-line rounded-md mb-2 space-y-1.5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
-                            <Award className="w-3.5 h-3.5 text-[#C5A059]" />
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-[#C5A059]">
+                            <Award className="w-3.5 h-3.5 text-gold" />
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-gold">
                               Critic & Panel Score
                             </span>
                           </div>
                           {itemRating && (
-                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#1F1A17] border border-[#C5A059]/40 rounded text-xs font-mono font-bold text-[#C5A059]">
-                              <Star className="w-3 h-3 fill-[#C5A059] text-[#C5A059]" />
+                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-section-header border border-gold/40 rounded text-xs font-mono font-bold text-gold">
+                              <Star className="w-3 h-3 fill-gold text-gold" />
                               <span>{itemRating}</span>
-                              <span className="text-[9px] text-[#A89F94] font-normal">/100</span>
+                              <span className="text-[9px] text-text-muted font-normal">/100</span>
                             </div>
                           )}
                         </div>
                         {itemScores.length > 0 && (
-                          <div className="flex flex-wrap gap-1 pt-1 border-t border-[#2C2621]/60">
+                          <div className="flex flex-wrap gap-1 pt-1 border-t border-line/60">
                             {itemScores.map((sc, idx) => (
                               <div
                                 key={idx}
-                                className="text-[10px] px-1.5 py-0.5 bg-[#1C1816] text-[#E5E1DA] border border-[#2C2621] rounded flex items-center gap-1"
+                                className="text-[10px] px-1.5 py-0.5 bg-card text-text border border-line rounded flex items-center gap-1"
                                 title={`${sc.source}: ${sc.score}${sc.scale ? '/' + sc.scale : ''}${sc.award ? ' (' + sc.award + ')' : ''}`}
                               >
-                                <span className="text-[#A89F94] font-medium">{sc.source}:</span>
-                                <span className="text-[#C5A059] font-bold">★{sc.score}</span>
+                                <span className="text-text-muted font-medium">{sc.source}:</span>
+                                <span className="text-gold font-bold">★{sc.score}</span>
                                 {sc.award && (
-                                  <span className="text-[8px] bg-[#C5A059]/20 text-[#C5A059] px-1 rounded font-semibold">
+                                  <span className="text-[8px] bg-gold/20 text-gold px-1 rounded font-semibold">
                                     {sc.award}
                                   </span>
                                 )}
@@ -2284,13 +2284,13 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
                   {/* Notes */}
                   {displayFields.notes && item.notes && (
-                    <p className="text-xs text-[#E5E1DA] italic bg-[#13110F] p-2.5 rounded border border-[#2C2621] my-2 font-serif">
+                    <p className="text-xs text-text italic bg-surface p-2.5 rounded border border-line my-2 font-serif">
                       "{item.notes}"
                     </p>
                   )}
 
                   {/* Pricing and Quotes */}
-                  <div className="space-y-1.5 text-xs text-[#A89F94] pt-1">
+                  <div className="space-y-1.5 text-xs text-text-muted pt-1">
                     {displayFields.targetPrice && item.targetPrice !== undefined && (
                       <div className="flex items-center justify-between">
                         <span>Target Max Price:</span>
@@ -2301,8 +2301,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                     )}
 
                     {displayFields.retailerQuotes && (
-                      <div className="pt-1.5 border-t border-[#2C2621]/60 space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] font-semibold text-[#A89F94]">
+                      <div className="pt-1.5 border-t border-line/60 space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-semibold text-text-muted">
                           <span className="uppercase tracking-wider">
                             Shop Quotes ({quotes.length}):
                           </span>
@@ -2310,7 +2310,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                             <button
                               onClick={() => handleScanRetailerPricesForWishlistItem(item)}
                               disabled={scanningItemId === item.id}
-                              className="text-[#C5A059] hover:underline cursor-pointer flex items-center gap-0.5 text-[10px]"
+                              className="text-gold hover:underline cursor-pointer flex items-center gap-0.5 text-[10px]"
                               title="Scan UK Tobacconists for live prices"
                             >
                               {scanningItemId === item.id ? (
@@ -2334,7 +2334,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                   setQuickQuotePrice('');
                                 }
                               }}
-                              className="text-[#A89F94] hover:text-[#E5E1DA] hover:underline cursor-pointer flex items-center gap-0.5 text-[10px]"
+                              className="text-text-muted hover:text-text hover:underline cursor-pointer flex items-center gap-0.5 text-[10px]"
                             >
                               <Plus className="w-2.5 h-2.5" />
                               <span>Quote</span>
@@ -2344,7 +2344,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
                         {/* Inline Quick Add Form for this item */}
                         {quickQuoteItemId === item.id && (
-                          <div className="p-2.5 bg-[#13110F] border border-[#C5A059]/40 rounded-md space-y-2">
+                          <div className="p-2.5 bg-surface border border-gold/40 rounded-md space-y-2">
                             {/* Vendor Quick Tags */}
                             <div className="flex flex-wrap gap-1">
                               {quickQuoteCustomTags.map((tag) => (
@@ -2354,8 +2354,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                   onClick={() => setQuickQuoteVendor(tag)}
                                   className={`text-[9px] px-1.5 py-0.5 rounded transition flex items-center gap-1 cursor-pointer ${
                                     quickQuoteVendor === tag
-                                      ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                                      : 'bg-[#1C1816] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                                      ? 'bg-gold text-ink font-bold'
+                                      : 'bg-card text-text-muted border border-line hover:text-text'
                                   }`}
                                 >
                                   <span>{tag}</span>
@@ -2376,7 +2376,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                     placeholder="Shop name"
                                     value={newTagInput}
                                     onChange={(e) => setNewTagInput(e.target.value)}
-                                    className="bg-[#161311] border border-[#C5A059] rounded px-1.5 py-0.5 text-[9px] text-[#E5E1DA] w-20"
+                                    className="bg-header border border-gold rounded px-1.5 py-0.5 text-[9px] text-text w-20"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
                                         e.preventDefault();
@@ -2387,7 +2387,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                   <button
                                     type="button"
                                     onClick={handleAddCustomTag}
-                                    className="text-[9px] text-[#C5A059] font-bold"
+                                    className="text-[9px] text-gold font-bold"
                                   >
                                     ✓
                                   </button>
@@ -2396,7 +2396,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => setIsAddingTag(true)}
-                                  className="text-[9px] px-1.5 py-0.5 bg-[#1C1816] text-[#C5A059] border border-dashed border-[#C5A059]/50 rounded hover:bg-[#241E1B]"
+                                  className="text-[9px] px-1.5 py-0.5 bg-card text-gold border border-dashed border-gold/50 rounded hover:bg-card-hover"
                                 >
                                   + Shop Tag
                                 </button>
@@ -2411,12 +2411,12 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                 placeholder="Price £"
                                 value={quickQuotePrice}
                                 onChange={(e) => setQuickQuotePrice(e.target.value)}
-                                className="flex-1 bg-[#161311] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                                className="flex-1 bg-header border border-line rounded px-2 py-1 text-xs text-text focus:outline-hidden focus:border-gold"
                               />
                               <button
                                 type="button"
                                 onClick={() => handleSaveQuickQuote(item)}
-                                className="px-2.5 py-1 bg-[#C5A059] text-[#0F0D0C] font-bold text-[10px] uppercase tracking-wider rounded cursor-pointer"
+                                className="px-2.5 py-1 bg-gold text-ink font-bold text-[10px] uppercase tracking-wider rounded cursor-pointer"
                               >
                                 Save
                               </button>
@@ -2437,10 +2437,10 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                   key={vp.id}
                                   className={`flex items-center justify-between px-2 py-1 rounded text-[11px] ${
                                     isSelectedShop
-                                      ? 'bg-[#2A241F] border border-[#C5A059] text-white font-medium shadow-xs'
+                                      ? 'bg-selected border border-gold text-white font-medium shadow-xs'
                                       : isBest
                                       ? 'bg-emerald-950/40 border border-emerald-800/60 text-emerald-200 font-medium'
-                                      : 'bg-[#13110F] border border-[#2C2621] text-[#E5E1DA]'
+                                      : 'bg-surface border border-line text-text'
                                   }`}
                                 >
                                   <div className="truncate flex items-center gap-1">
@@ -2451,23 +2451,23 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                       </span>
                                     )}
                                     {isSelectedShop && !isBest && (
-                                      <span className="px-1 py-0.2 bg-[#C5A059] text-[#0F0D0C] text-[8px] font-bold uppercase rounded-xs">
+                                      <span className="px-1 py-0.2 bg-gold text-ink text-[8px] font-bold uppercase rounded-xs">
                                         Filter
                                       </span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-1 font-mono font-bold text-[#C5A059]">
+                                  <div className="flex items-center gap-1 font-mono font-bold text-gold">
                                     <span>{formatCurrency(vp.price, vp.currency || '£')}</span>
                                     <button
                                       onClick={() => handleAddToBasket(item, vp.vendor, vp.price, vp.url)}
-                                      className="text-[#C5A059] hover:text-white p-0.5 cursor-pointer"
+                                      className="text-gold hover:text-white p-0.5 cursor-pointer"
                                       title={`Add to Basket from ${vp.vendor} (${formatCurrency(vp.price, '£')})`}
                                     >
                                       <ShoppingCart className="w-3 h-3" />
                                     </button>
                                     <button
                                       onClick={() => handleDeleteRetailerQuote(item, vp.id)}
-                                      className="text-[#A89F94] hover:text-red-400 p-0.5 cursor-pointer ml-0.5"
+                                      className="text-text-muted hover:text-red-400 p-0.5 cursor-pointer ml-0.5"
                                       title={`Delete quote from ${vp.vendor}`}
                                     >
                                       <X className="w-3 h-3" />
@@ -2481,7 +2481,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                           item.sourceRetailer && (
                             <div className="flex items-center justify-between text-xs">
                               <span>Retailer:</span>
-                              <strong className="text-[#E5E1DA]">{item.sourceRetailer}</strong>
+                              <strong className="text-text">{item.sourceRetailer}</strong>
                             </div>
                           )
                         )}
@@ -2491,11 +2491,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                 </div>
 
                 {/* Card Actions Footer */}
-                <div className="pt-4 border-t border-[#2C2621] mt-3 flex items-center justify-between gap-2">
+                <div className="pt-4 border-t border-line mt-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleAddToBasket(item)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded text-xs font-bold transition cursor-pointer shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gold hover:brightness-110 text-ink rounded text-xs font-bold transition cursor-pointer shadow-xs"
                       title="Add to Shopping Basket at Best Price"
                     >
                       <ShoppingCart className="w-3.5 h-3.5" />
@@ -2508,7 +2508,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
                     <button
                       onClick={() => onAcquireItem(item)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 bg-[#13110F] hover:bg-[#1E2922] text-emerald-400 border border-emerald-800/60 rounded text-xs font-medium transition cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1.5 bg-surface hover:bg-[#1E2922] text-emerald-400 border border-emerald-800/60 rounded text-xs font-medium transition cursor-pointer"
                       title="Acquired this stick! Move to inventory"
                     >
                       <Check className="w-3.5 h-3.5" />
@@ -2528,7 +2528,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                             vendor: item.sourceRetailer,
                           })
                         }
-                        className="p-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded cursor-pointer"
+                        className="p-1.5 bg-surface hover:bg-card-hover text-gold border border-line rounded cursor-pointer"
                         title="Compare / Add multiple retailer prices"
                       >
                         <Store className="w-3.5 h-3.5" />
@@ -2537,7 +2537,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
                     <button
                       onClick={() => handleStartEdit(item)}
-                      className="p-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] hover:text-[#C5A059] border border-[#2C2621] rounded cursor-pointer"
+                      className="p-1.5 bg-surface hover:bg-card-hover text-text hover:text-gold border border-line rounded cursor-pointer"
                       title="Edit Wishlist Item"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -2545,7 +2545,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
                     <button
                       onClick={() => onResearchCigar(`${item.brand} ${item.name}`)}
-                      className="p-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded cursor-pointer"
+                      className="p-1.5 bg-surface hover:bg-card-hover text-gold border border-line rounded cursor-pointer"
                       title="Research Blend Dossier"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
@@ -2553,7 +2553,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
                     <button
                       onClick={() => onDeleteWishlistItem(item.id)}
-                      className="p-1.5 bg-[#13110F] hover:bg-[#2C1515] text-[#A89F94] hover:text-red-400 border border-[#2C2621] rounded cursor-pointer"
+                      className="p-1.5 bg-surface hover:bg-danger-bg text-text-muted hover:text-red-400 border border-line rounded cursor-pointer"
                       title="Delete from Wishlist"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -2565,12 +2565,12 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
           })}
 
           {filteredWishlist.length === 0 && (
-            <div className="col-span-full text-center py-12 bg-[#1C1816] border border-[#2C2621] rounded-lg">
-              <Bookmark className="w-8 h-8 text-[#A89F94]/50 mx-auto mb-3" />
-              <h3 className="text-sm font-serif font-semibold text-[#E5E1DA]">
+            <div className="col-span-full text-center py-12 bg-card border border-line rounded-lg">
+              <Bookmark className="w-8 h-8 text-text-muted/50 mx-auto mb-3" />
+              <h3 className="text-sm font-serif font-semibold text-text">
                 {wishlist.length === 0 ? 'No Wishlist Items Yet' : 'No Cigars Match Current Filter'}
               </h3>
-              <p className="text-xs text-[#A89F94] mt-1">
+              <p className="text-xs text-text-muted mt-1">
                 {wishlist.length === 0
                   ? "Add rare cigars you'd love to hunt down or buy when restocked."
                   : 'Try adjusting your search query or priority filter.'}
@@ -2583,28 +2583,28 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       {/* SHOPPING BASKET SLIDE-OVER / MODAL */}
       {isBasketOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center sm:justify-end p-2 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-[#1C1816] border border-[#2C2621] rounded-lg sm:rounded-l-lg sm:rounded-r-none w-full max-w-2xl h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-right duration-300">
+          <div className="bg-card border border-line rounded-lg sm:rounded-l-lg sm:rounded-r-none w-full max-w-2xl h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-right duration-300">
             {/* Basket Header */}
-            <div className="p-4 sm:p-5 bg-[#161311] border-b border-[#2C2621] flex items-center justify-between">
+            <div className="p-4 sm:p-5 bg-header border-b border-line flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/30 rounded-md">
+                <div className="p-2 bg-gold/10 text-gold border border-gold/30 rounded-md">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-serif font-semibold text-base text-white flex items-center gap-2">
                     <span>Wishlist Shopping Basket</span>
-                    <span className="text-xs px-2 py-0.5 bg-[#C5A059] text-[#0F0D0C] font-bold rounded-full font-sans">
+                    <span className="text-xs px-2 py-0.5 bg-gold text-ink font-bold rounded-full font-sans">
                       {totalBasketCount} {totalBasketCount === 1 ? 'stick' : 'sticks'}
                     </span>
                   </h3>
-                  <p className="text-xs text-[#A89F94]">
+                  <p className="text-xs text-text-muted">
                     Curated basket optimized for the best available retailer deals across UK tobacconists.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsBasketOpen(false)}
-                className="p-1.5 text-[#A89F94] hover:text-white bg-[#13110F] hover:bg-[#2C2621] border border-[#2C2621] rounded-md transition cursor-pointer"
+                className="p-1.5 text-text-muted hover:text-white bg-surface hover:bg-line border border-line rounded-md transition cursor-pointer"
                 title="Close Basket"
               >
                 <X className="w-5 h-5" />
@@ -2615,15 +2615,15 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
               {basket.length === 0 ? (
                 <div className="text-center py-16 px-4">
-                  <ShoppingCart className="w-12 h-12 text-[#A89F94]/30 mx-auto mb-3" />
-                  <h4 className="font-serif text-base text-[#E5E1DA] font-semibold">Your Basket is Empty</h4>
-                  <p className="text-xs text-[#A89F94] mt-1 max-w-sm mx-auto">
+                  <ShoppingCart className="w-12 h-12 text-text-muted/30 mx-auto mb-3" />
+                  <h4 className="font-serif text-base text-text font-semibold">Your Basket is Empty</h4>
+                  <p className="text-xs text-text-muted mt-1 max-w-sm mx-auto">
                     Click "Add to Basket" or "Add Best Deals" on any cigar to bundle your purchase at the best quoted prices.
                   </p>
                   {filteredWishlist.length > 0 && (
                     <button
                       onClick={handleAddAllBestDealsToBasket}
-                      className="mt-4 px-4 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-xs uppercase tracking-wider rounded-md transition cursor-pointer shadow-sm"
+                      className="mt-4 px-4 py-2 bg-gold hover:brightness-110 text-ink font-bold text-xs uppercase tracking-wider rounded-md transition cursor-pointer shadow-sm"
                     >
                       Add All ({filteredWishlist.length}) Filtered Cigars
                     </button>
@@ -2632,20 +2632,20 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               ) : (
                 <div className="space-y-6">
                   {/* Summary Bar */}
-                  <div className="p-3.5 bg-[#13110F] border border-[#2C2621] rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="p-3.5 bg-surface border border-line rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-4">
                       <div>
-                        <span className="text-[#A89F94] block text-[10px] uppercase font-bold">Total Items</span>
+                        <span className="text-text-muted block text-[10px] uppercase font-bold">Total Items</span>
                         <span className="font-mono font-bold text-white text-sm">{totalBasketCount} units</span>
                       </div>
-                      <div className="border-l border-[#2C2621] pl-4">
-                        <span className="text-[#A89F94] block text-[10px] uppercase font-bold">Vendors</span>
+                      <div className="border-l border-line pl-4">
+                        <span className="text-text-muted block text-[10px] uppercase font-bold">Vendors</span>
                         <span className="font-mono font-bold text-white text-sm">{Object.keys(basketByVendor).length} shops</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-[#A89F94] block text-[10px] uppercase font-bold">Estimated Total</span>
-                      <span className="font-mono font-bold text-[#C5A059] text-base">
+                      <span className="text-text-muted block text-[10px] uppercase font-bold">Estimated Total</span>
+                      <span className="font-mono font-bold text-gold text-base">
                         {formatCurrency(totalBasketPrice, '£')}
                       </span>
                     </div>
@@ -2656,40 +2656,40 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                     {Object.entries(basketByVendor).map(([vendor, group]) => (
                       <div
                         key={vendor}
-                        className="bg-[#13110F] border border-[#2C2621] rounded-lg overflow-hidden"
+                        className="bg-surface border border-line rounded-lg overflow-hidden"
                       >
                         {/* Vendor Header */}
-                        <div className="p-3 bg-[#181513] border-b border-[#2C2621] flex items-center justify-between">
+                        <div className="p-3 bg-[#181513] border-b border-line flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <Store className="w-4 h-4 text-[#C5A059]" />
-                            <span className="font-bold text-xs text-[#E5E1DA]">{vendor}</span>
-                            <span className="text-[10px] text-[#A89F94] px-1.5 py-0.2 bg-[#1C1816] rounded border border-[#2C2621]">
+                            <Store className="w-4 h-4 text-gold" />
+                            <span className="font-bold text-xs text-text">{vendor}</span>
+                            <span className="text-[10px] text-text-muted px-1.5 py-0.2 bg-card rounded border border-line">
                               {group.count} items
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono font-bold text-[#C5A059]">
+                            <span className="text-xs font-mono font-bold text-gold">
                               Subtotal: {formatCurrency(group.total, '£')}
                             </span>
                           </div>
                         </div>
 
                         {/* Items in Vendor Group */}
-                        <div className="divide-y divide-[#2C2621]/60">
+                        <div className="divide-y divide-line/60">
                           {group.items.map((bItem) => {
                             const lineTotal = (bItem.unitPrice || 0) * bItem.quantity;
                             return (
                               <div
                                 key={bItem.id}
-                                className="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#161311] transition"
+                                className="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-header transition"
                               >
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] uppercase font-bold text-[#C5A059]">
+                                    <span className="text-[10px] uppercase font-bold text-gold">
                                       {bItem.brand}
                                     </span>
                                     {bItem.vitola && (
-                                      <span className="text-[10px] text-[#A89F94]">
+                                      <span className="text-[10px] text-text-muted">
                                         • {bItem.vitola}
                                       </span>
                                     )}
@@ -2697,7 +2697,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                   <div className="font-serif font-semibold text-sm text-white truncate">
                                     {bItem.name}
                                   </div>
-                                  <div className="flex items-center gap-2 mt-1 text-[10px] text-[#A89F94]">
+                                  <div className="flex items-center gap-2 mt-1 text-[10px] text-text-muted">
                                     <span className="font-mono text-emerald-400 font-bold">
                                       {formatCurrency(bItem.unitPrice || 0, '£')} each
                                     </span>
@@ -2706,7 +2706,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                         href={bItem.sourceUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-[#C5A059] hover:underline flex items-center gap-0.5"
+                                        className="text-gold hover:underline flex items-center gap-0.5"
                                       >
                                         <span>View Store</span>
                                         <ExternalLink className="w-2.5 h-2.5" />
@@ -2718,10 +2718,10 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                 {/* Controls: Quantity Stepper & Actions */}
                                 <div className="flex items-center justify-between sm:justify-end gap-3">
                                   {/* Quantity Stepper */}
-                                  <div className="flex items-center border border-[#2C2621] rounded bg-[#1C1816]">
+                                  <div className="flex items-center border border-line rounded bg-card">
                                     <button
                                       onClick={() => handleUpdateBasketQuantity(bItem.id, -1)}
-                                      className="p-1 px-2 text-[#A89F94] hover:text-white hover:bg-[#2C2621] rounded-l cursor-pointer text-xs"
+                                      className="p-1 px-2 text-text-muted hover:text-white hover:bg-line rounded-l cursor-pointer text-xs"
                                       title="Decrease quantity"
                                     >
                                       -
@@ -2731,7 +2731,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                     </span>
                                     <button
                                       onClick={() => handleUpdateBasketQuantity(bItem.id, 1)}
-                                      className="p-1 px-2 text-[#A89F94] hover:text-white hover:bg-[#2C2621] rounded-r cursor-pointer text-xs"
+                                      className="p-1 px-2 text-text-muted hover:text-white hover:bg-line rounded-r cursor-pointer text-xs"
                                       title="Increase quantity"
                                     >
                                       +
@@ -2746,7 +2746,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                                   {/* Individual Remove Button */}
                                   <button
                                     onClick={() => handleRemoveFromBasket(bItem.id)}
-                                    className="p-1.5 text-[#A89F94] hover:text-red-400 hover:bg-[#2C1515] border border-[#2C2621] rounded cursor-pointer transition"
+                                    className="p-1.5 text-text-muted hover:text-red-400 hover:bg-danger-bg border border-line rounded cursor-pointer transition"
                                     title="Remove from basket"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -2765,19 +2765,19 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
             {/* Basket Footer */}
             {basket.length > 0 && (
-              <div className="p-4 sm:p-5 bg-[#161311] border-t border-[#2C2621] space-y-3">
+              <div className="p-4 sm:p-5 bg-header border-t border-line space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleClearBasket}
-                      className="text-xs text-[#A89F94] hover:text-red-400 underline cursor-pointer"
+                      className="text-xs text-text-muted hover:text-red-400 underline cursor-pointer"
                     >
                       Clear Basket
                     </button>
                   </div>
                   <div className="text-right">
-                    <span className="text-[#A89F94] text-[11px] mr-2">Grand Total ({totalBasketCount} sticks):</span>
-                    <span className="font-mono font-bold text-lg text-[#C5A059]">
+                    <span className="text-text-muted text-[11px] mr-2">Grand Total ({totalBasketCount} sticks):</span>
+                    <span className="font-mono font-bold text-lg text-gold">
                       {formatCurrency(totalBasketPrice, '£')}
                     </span>
                   </div>
@@ -2810,7 +2810,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                       navigator.clipboard.writeText(fullCopy);
                       setFeedbackNotice('📋 Formatted shopping list copied to clipboard!');
                     }}
-                    className="py-2.5 px-4 bg-[#1C1816] hover:bg-[#241E1B] text-[#E5E1DA] hover:text-white border border-[#2C2621] font-bold text-xs uppercase tracking-wider rounded-md flex items-center justify-center gap-2 cursor-pointer transition"
+                    className="py-2.5 px-4 bg-card hover:bg-card-hover text-text hover:text-white border border-line font-bold text-xs uppercase tracking-wider rounded-md flex items-center justify-center gap-2 cursor-pointer transition"
                     title="Copy formatted shopping list to clipboard"
                   >
                     <Share2 className="w-3.5 h-3.5" />

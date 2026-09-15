@@ -12,7 +12,7 @@ import {
   Package,
   ShoppingCart,
 } from 'lucide-react';
-import { Cigar, Humidor, StrengthRating, CigarStatus, WishlistItem, CigarResearchItem, WrapperType } from '../types';
+import { Cigar, Humidor, StrengthRating, CigarStatus, WishlistItem, CigarResearchItem, WrapperType, STRENGTH_LEVELS } from '../types';
 import { FLAVOR_CATEGORIES } from '../data/initialData';
 import { DEFAULT_CURRENCY } from '../utils/currencyUtils';
 
@@ -39,7 +39,8 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
   onAddToResearch,
   onOpenBasketImporter,
 }) => {
-  if (!isOpen) return null;
+  // Note: the early `isOpen` bail-out must come after every Hook call
+  // (React's Rules of Hooks) -- moved to just before the JSX return below.
 
   const [brand, setBrand] = useState(cigarToEdit?.brand || prefillData?.brand || '');
   const [name, setName] = useState(cigarToEdit?.name || prefillData?.name || '');
@@ -334,14 +335,16 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="relative w-full max-w-3xl bg-[#1C1816] border border-[#2C2621] rounded-lg shadow-2xl overflow-hidden text-[#E5E1DA]">
+      <div className="relative w-full max-w-3xl bg-card border border-line rounded-lg shadow-2xl overflow-hidden text-text">
         {/* Header */}
-        <div className="px-6 py-4 bg-[#13110F] border-b border-[#2C2621] flex items-center justify-between">
+        <div className="px-6 py-4 bg-surface border-b border-line flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-[#C5A059] text-lg">🍂</span>
-            <h2 className="text-base font-serif font-semibold text-[#E5E1DA]">
+            <span className="text-gold text-lg">🍂</span>
+            <h2 className="text-base font-serif font-semibold text-text">
               {cigarToEdit ? 'Edit Humidor Stick' : 'Add Single Stick (Manual Entry)'}
             </h2>
           </div>
@@ -349,15 +352,15 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
             <button
               type="button"
               onClick={openSections.identity && openSections.dimensions ? collapseAllSections : expandAllSections}
-              className="text-[11px] px-2 py-1 bg-[#241E1B] hover:bg-[#2C2621] text-[#A89F94] hover:text-[#E5E1DA] rounded border border-[#2C2621] transition cursor-pointer flex items-center gap-1"
+              className="text-[11px] px-2 py-1 bg-card-hover hover:bg-line text-text-muted hover:text-text rounded border border-line transition cursor-pointer flex items-center gap-1"
               title="Expand or Condense all form sections"
             >
-              <Layers className="w-3 h-3 text-[#C5A059]" />
+              <Layers className="w-3 h-3 text-gold" />
               <span>{openSections.identity && openSections.dimensions ? 'Condense All' : 'Expand All'}</span>
             </button>
             <button
               onClick={onClose}
-              className="text-[#A89F94] hover:text-[#E5E1DA] p-1.5 rounded hover:bg-[#241E1B] transition cursor-pointer"
+              className="text-text-muted hover:text-text p-1.5 rounded hover:bg-card-hover transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -366,8 +369,8 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
 
         {/* Batch Importer Quick Banner */}
         {onOpenBasketImporter && !cigarToEdit && (
-          <div className="px-6 py-2.5 bg-[#171412] border-b border-[#2C2621] flex flex-wrap items-center justify-between gap-3 text-xs">
-            <span className="text-[#A89F94] text-[11px]">
+          <div className="px-6 py-2.5 bg-[#171412] border-b border-line flex flex-wrap items-center justify-between gap-3 text-xs">
+            <span className="text-text-muted text-[11px]">
               Want to import multiple cigars or extract directly from a URL, HTML file, or cart?
             </span>
             <button
@@ -376,7 +379,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 onClose();
                 onOpenBasketImporter();
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#241E1B] hover:bg-[#2C2621] text-[#C5A059] border border-[#C5A059]/30 rounded text-xs font-semibold transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-card-hover hover:bg-line text-gold border border-gold/30 rounded text-xs font-semibold transition cursor-pointer"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               <span>Open Basket Batch Importer →</span>
@@ -400,21 +403,21 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
         {/* Manual Form Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
           {/* Section 1: Stick Identity */}
-          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+          <div className="border border-line rounded-lg overflow-hidden bg-header">
             <div
               onClick={() => toggleSection('identity')}
-              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+              className="px-4 py-2.5 bg-section-header flex items-center justify-between cursor-pointer border-b border-line select-none"
             >
-              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+              <span className="text-xs font-bold uppercase tracking-wider text-gold">
                 1. Stick Identity & Brand
               </span>
-              {openSections.identity ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+              {openSections.identity ? <ChevronUp className="w-3.5 h-3.5 text-text-muted" /> : <ChevronDown className="w-3.5 h-3.5 text-text-muted" />}
             </div>
 
             {openSections.identity && (
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                     Brand *
                   </label>
                   <input
@@ -423,12 +426,12 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                     placeholder="e.g. Montecristo, Partagás, Padrón"
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                     Cigar Name / Line *
                   </label>
                   <input
@@ -440,7 +443,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                       setName(e.target.value);
                       if (!line) setLine(e.target.value);
                     }}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -448,21 +451,21 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
           </div>
 
           {/* Section 2: Vitola & Dimensions */}
-          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+          <div className="border border-line rounded-lg overflow-hidden bg-header">
             <div
               onClick={() => toggleSection('dimensions')}
-              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+              className="px-4 py-2.5 bg-section-header flex items-center justify-between cursor-pointer border-b border-line select-none"
             >
-              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+              <span className="text-xs font-bold uppercase tracking-wider text-gold">
                 2. Vitola & Dimensions
               </span>
-              {openSections.dimensions ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+              {openSections.dimensions ? <ChevronUp className="w-3.5 h-3.5 text-text-muted" /> : <ChevronDown className="w-3.5 h-3.5 text-text-muted" />}
             </div>
 
             {openSections.dimensions && (
               <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                     Vitola Shape
                   </label>
                   <input
@@ -470,12 +473,12 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                     placeholder="e.g. Robusto, Pirámides, Churchill"
                     value={vitola}
                     onChange={(e) => setVitola(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                     Length (inches)
                   </label>
                   <input
@@ -484,12 +487,12 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                     placeholder="5.0"
                     value={lengthInches}
                     onChange={(e) => setLengthInches(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                     Ring Gauge (RG)
                   </label>
                   <input
@@ -497,7 +500,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                     placeholder="50"
                     value={ringGauge}
                     onChange={(e) => setRingGauge(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -505,21 +508,21 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
           </div>
 
           {/* Section 3: Blend & Origin */}
-          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+          <div className="border border-line rounded-lg overflow-hidden bg-header">
             <div
               onClick={() => toggleSection('blend')}
-              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+              className="px-4 py-2.5 bg-section-header flex items-center justify-between cursor-pointer border-b border-line select-none"
             >
-              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+              <span className="text-xs font-bold uppercase tracking-wider text-gold">
                 3. Blend & Terroir
               </span>
-              {openSections.blend ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+              {openSections.blend ? <ChevronUp className="w-3.5 h-3.5 text-text-muted" /> : <ChevronDown className="w-3.5 h-3.5 text-text-muted" />}
             </div>
 
             {openSections.blend && (
               <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                     Country of Origin
                   </label>
                   <input
@@ -527,12 +530,12 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                     placeholder="e.g. Cuba, Nicaragua, Dominican Republic"
                     value={countryOrigin}
                     onChange={(e) => setCountryOrigin(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                     Wrapper Leaf
                   </label>
                   <input
@@ -540,24 +543,24 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                     placeholder="e.g. Cuban Habano, Ecuadorian Shade, Maduro"
                     value={wrapper}
                     onChange={(e) => setWrapper(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                     Strength Profile
                   </label>
                   <select
                     value={strength}
                     onChange={(e) => setStrength(e.target.value as StrengthRating)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   >
-                    <option value="Mild">Mild</option>
-                    <option value="Mild-Medium">Mild-Medium</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Medium-Full">Medium-Full</option>
-                    <option value="Full">Full</option>
+                    {STRENGTH_LEVELS.map((lvl) => (
+                      <option key={lvl} value={lvl}>
+                        {lvl}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -565,28 +568,28 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
           </div>
 
           {/* Section 4: Humidor Placement & Pricing */}
-          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+          <div className="border border-line rounded-lg overflow-hidden bg-header">
             <div
               onClick={() => toggleSection('placement')}
-              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+              className="px-4 py-2.5 bg-section-header flex items-center justify-between cursor-pointer border-b border-line select-none"
             >
-              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+              <span className="text-xs font-bold uppercase tracking-wider text-gold">
                 4. Humidor Placement, Pricing & Aging
               </span>
-              {openSections.placement ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+              {openSections.placement ? <ChevronUp className="w-3.5 h-3.5 text-text-muted" /> : <ChevronDown className="w-3.5 h-3.5 text-text-muted" />}
             </div>
 
             {openSections.placement && (
               <div className="p-4 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                       Target Humidor *
                     </label>
                     <select
                       value={humidorId}
                       onChange={(e) => setHumidorId(e.target.value)}
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                      className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                     >
                       {humidors.map((h) => (
                         <option key={h.id} value={h.id}>
@@ -597,7 +600,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                       Quantity (Sticks) *
                     </label>
                     <input
@@ -605,12 +608,12 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                       min="1"
                       value={quantity}
                       onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                      className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                       Target Rest (Months)
                     </label>
                     <input
@@ -618,14 +621,50 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                       min="0"
                       value={targetRestMonths}
                       onChange={(e) => setTargetRestMonths(parseInt(e.target.value, 10) || 0)}
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                      className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
+                      Status
+                    </label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as CigarStatus)}
+                      className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
+                    >
+                      <option value="ready">Ready to Smoke 💨</option>
+                      <option value="resting">Resting in Humidor ⏳</option>
+                      <option value="aging">Long-term Aging 🪵</option>
+                      <option value="special_occasion">Special Occasion Reserve 🌟</option>
+                      <option value="archived">Archived / Emptied</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="flex items-center justify-between text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
+                      <span>Personal Rating</span>
+                      <span className="text-gold normal-case tracking-normal">
+                        {personalRating ? `${personalRating}/100` : 'Not rated'}
+                      </span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={personalRating || '0'}
+                      onChange={(e) => setPersonalRating(e.target.value)}
+                      className="w-full accent-gold mt-2.5"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                       Purchase Price per Stick ({currency})
                     </label>
                     <input
@@ -634,12 +673,12 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                       placeholder="24.50"
                       value={purchasePrice}
                       onChange={(e) => setPurchasePrice(e.target.value)}
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                      className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                       Shop / Retailer
                     </label>
                     <input
@@ -647,19 +686,19 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                       placeholder="e.g. C.Gars Ltd, Havana House, Smoke King"
                       value={vendor}
                       onChange={(e) => setVendor(e.target.value)}
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                      className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                       Purchase Date
                     </label>
                     <input
                       type="date"
                       value={purchaseDate}
                       onChange={(e) => setPurchaseDate(e.target.value)}
-                      className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                      className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                     />
                   </div>
                 </div>
@@ -668,15 +707,15 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
           </div>
 
           {/* Section 5: Flavor Tags & Notes */}
-          <div className="border border-[#2C2621] rounded-lg overflow-hidden bg-[#161311]">
+          <div className="border border-line rounded-lg overflow-hidden bg-header">
             <div
               onClick={() => toggleSection('flavors')}
-              className="px-4 py-2.5 bg-[#1F1A17] flex items-center justify-between cursor-pointer border-b border-[#2C2621] select-none"
+              className="px-4 py-2.5 bg-section-header flex items-center justify-between cursor-pointer border-b border-line select-none"
             >
-              <span className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
+              <span className="text-xs font-bold uppercase tracking-wider text-gold">
                 5. Flavor Profile & Notes
               </span>
-              {openSections.flavors ? <ChevronUp className="w-3.5 h-3.5 text-[#A89F94]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A89F94]" />}
+              {openSections.flavors ? <ChevronUp className="w-3.5 h-3.5 text-text-muted" /> : <ChevronDown className="w-3.5 h-3.5 text-text-muted" />}
             </div>
 
             {openSections.flavors && (
@@ -691,8 +730,8 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                         onClick={() => toggleFlavorTag(tag)}
                         className={`px-2 py-1 rounded text-xs transition cursor-pointer ${
                           isSelected
-                            ? 'bg-[#C5A059] text-[#0F0D0C] font-semibold'
-                            : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621]'
+                            ? 'bg-gold text-ink font-semibold'
+                            : 'bg-surface text-text-muted hover:text-text border border-line'
                         }`}
                       >
                         {tag}
@@ -702,7 +741,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F94] mb-1">
+                  <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-muted mb-1">
                     Personal Notes / Aging Goals
                   </label>
                   <textarea
@@ -710,7 +749,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                     placeholder="e.g. Gifted from friends; rest for 12 months before lighting."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -718,13 +757,13 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-3 border-t border-[#2C2621] flex flex-wrap items-center justify-between gap-3">
+          <div className="pt-3 border-t border-line flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               {onAddToWishlist && (
                 <button
                   type="button"
                   onClick={handleSaveToWishlist}
-                  className="px-3 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] text-xs font-semibold rounded transition cursor-pointer flex items-center gap-1.5"
+                  className="px-3 py-2 bg-surface hover:bg-card-hover text-text-muted hover:text-gold border border-line text-xs font-semibold rounded transition cursor-pointer flex items-center gap-1.5"
                 >
                   <Bookmark className="w-3.5 h-3.5" />
                   <span>Save to Wishlist</span>
@@ -734,7 +773,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                 <button
                   type="button"
                   onClick={handleSaveToResearch}
-                  className="px-3 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] text-xs font-semibold rounded transition cursor-pointer flex items-center gap-1.5"
+                  className="px-3 py-2 bg-surface hover:bg-card-hover text-text-muted hover:text-gold border border-line text-xs font-semibold rounded transition cursor-pointer flex items-center gap-1.5"
                 >
                   <BookOpen className="w-3.5 h-3.5" />
                   <span>Save to Research</span>
@@ -746,13 +785,13 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#E5E1DA] rounded text-xs transition cursor-pointer"
+                className="px-4 py-2 bg-surface hover:bg-card-hover text-text-muted hover:text-text rounded text-xs transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-xs uppercase tracking-wider rounded shadow-sm transition cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2 bg-gold hover:brightness-110 text-ink font-bold text-xs uppercase tracking-wider rounded shadow-sm transition cursor-pointer flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
                 <span>{cigarToEdit ? 'Save Changes' : 'Stock Cigar to Humidor'}</span>

@@ -278,25 +278,25 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs overflow-y-auto">
       <div
-        className="relative w-full max-w-3xl bg-[#181412] border border-[#2C2621] rounded-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-3xl bg-modal border border-line rounded-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-[#2C2621] flex items-center justify-between bg-[#13110F]">
+        <div className="p-5 border-b border-line flex items-center justify-between bg-surface">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059]">
+            <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/30 flex items-center justify-center text-gold">
               <Sliders className="w-4 h-4" />
             </div>
             <div>
               <h2 className="text-lg font-serif font-bold text-white">Full Suite Customization Settings</h2>
-              <p className="text-xs text-[#A89F94]">
+              <p className="text-xs text-text-muted">
                 Customize navigation tabs, humidor sync rules, retailer price merging, and dashboard layouts
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-[#A89F94] hover:text-white hover:bg-[#2C2621] rounded-lg transition cursor-pointer"
+            className="p-1.5 text-text-muted hover:text-white hover:bg-line rounded-lg transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -305,15 +305,15 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
         {/* Content */}
         <div className="p-5 space-y-6 max-h-[75vh] overflow-y-auto">
           {/* Quick Presets */}
-          <div className="p-4 bg-[#13110F] border border-[#2C2621] rounded-xl space-y-3">
+          <div className="p-4 bg-surface border border-line rounded-xl space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#C5A059] uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Layout Presets</span>
               </span>
               <button
                 onClick={handleResetDefaults}
-                className="text-xs text-[#A89F94] hover:text-white flex items-center gap-1 transition cursor-pointer"
+                className="text-xs text-text-muted hover:text-white flex items-center gap-1 transition cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset All Defaults</span>
@@ -325,40 +325,40 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                 onClick={() => handleApplyPreset('all')}
                 className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
                   !settings.streamlinedMode
-                    ? 'bg-[#2C2621] border-[#C5A059] text-white'
-                    : 'bg-[#181412] border-[#2C2621] text-[#A89F94] hover:border-[#3D352E]'
+                    ? 'bg-line border-gold text-white'
+                    : 'bg-modal border-line text-text-muted hover:border-line-hover'
                 }`}
               >
                 <div>
                   <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Maximize2 className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <Maximize2 className="w-3.5 h-3.5 text-gold" />
                     <span>Connoisseur Full View</span>
                   </div>
-                  <p className="text-[11px] text-[#A89F94] mt-0.5">
+                  <p className="text-[11px] text-text-muted mt-0.5">
                     All analytics, 3-thirds flavor wheels, pairings, aging radars
                   </p>
                 </div>
-                {!settings.streamlinedMode && <Check className="w-4 h-4 text-[#C5A059] shrink-0" />}
+                {!settings.streamlinedMode && <Check className="w-4 h-4 text-gold shrink-0" />}
               </button>
 
               <button
                 onClick={() => handleApplyPreset('minimalist')}
                 className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
                   settings.streamlinedMode
-                    ? 'bg-[#2C2621] border-[#C5A059] text-white'
-                    : 'bg-[#181412] border-[#2C2621] text-[#A89F94] hover:border-[#3D352E]'
+                    ? 'bg-line border-gold text-white'
+                    : 'bg-modal border-line text-text-muted hover:border-line-hover'
                 }`}
               >
                 <div>
                   <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Minimize2 className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <Minimize2 className="w-3.5 h-3.5 text-gold" />
                     <span>Streamlined Minimalist</span>
                   </div>
-                  <p className="text-[11px] text-[#A89F94] mt-0.5">
+                  <p className="text-[11px] text-text-muted mt-0.5">
                     Focus strictly on your active Humidor vault, fast search, and price tracking
                   </p>
                 </div>
-                {settings.streamlinedMode && <Check className="w-4 h-4 text-[#C5A059] shrink-0" />}
+                {settings.streamlinedMode && <Check className="w-4 h-4 text-gold shrink-0" />}
               </button>
             </div>
           </div>
@@ -367,10 +367,10 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <LayoutGrid className="w-3.5 h-3.5 text-[#C5A059]" />
+                <LayoutGrid className="w-3.5 h-3.5 text-gold" />
                 <span>Primary Navigation Tabs</span>
               </h3>
-              <span className="text-[11px] text-[#A89F94]">Toggle which views appear in your top bar</span>
+              <span className="text-[11px] text-text-muted">Toggle which views appear in your top bar</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -390,18 +390,18 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                     onClick={() => toggleTab(key)}
                     className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
                       isVisible
-                        ? 'bg-[#1F1A17] border-[#C5A059]/40 text-white'
-                        : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] opacity-50 hover:opacity-100'
+                        ? 'bg-section-header border-gold/40 text-white'
+                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-[#C5A059]' : 'text-[#A89F94]'}`} />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
                       <span className="text-xs font-semibold truncate">{label}</span>
                     </div>
                     {isVisible ? (
-                      <Eye className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
+                      <Eye className="w-3.5 h-3.5 text-gold shrink-0" />
                     ) : (
-                      <EyeOff className="w-3.5 h-3.5 text-[#A89F94] shrink-0" />
+                      <EyeOff className="w-3.5 h-3.5 text-text-muted shrink-0" />
                     )}
                   </button>
                 );
@@ -413,10 +413,10 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Store className="w-3.5 h-3.5 text-[#C5A059]" />
+                <Store className="w-3.5 h-3.5 text-gold" />
                 <span>Retailer Pricing, Currency & Site-Wide Sync Rules</span>
               </h3>
-              <span className="text-[11px] text-[#A89F94]">Configure automatic price propagation</span>
+              <span className="text-[11px] text-text-muted">Configure automatic price propagation</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -453,20 +453,20 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                     onClick={() => (isSync ? togglePriceSyncOption(item.key) : toggleResearchOption(item.key))}
                     className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-start justify-between gap-2.5 ${
                       isChecked
-                        ? 'bg-[#1F1A17] border-[#C5A059]/40 text-white'
-                        : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] opacity-60 hover:opacity-100'
+                        ? 'bg-section-header border-gold/40 text-white'
+                        : 'bg-surface border-line text-text-muted opacity-60 hover:opacity-100'
                     }`}
                   >
                     <div className="space-y-0.5 min-w-0">
-                      <div className="text-xs font-semibold text-[#E5E1DA]">{item.label}</div>
-                      <div className="text-[11px] text-[#A89F94] leading-tight">{item.desc}</div>
+                      <div className="text-xs font-semibold text-text">{item.label}</div>
+                      <div className="text-[11px] text-text-muted leading-tight">{item.desc}</div>
                     </div>
                     {isChecked ? (
-                      <span className="px-1.5 py-0.5 bg-[#C5A059]/20 text-[#C5A059] border border-[#C5A059]/30 rounded text-[10px] font-bold uppercase shrink-0">
+                      <span className="px-1.5 py-0.5 bg-gold/20 text-gold border border-gold/30 rounded text-[10px] font-bold uppercase shrink-0">
                         Enabled
                       </span>
                     ) : (
-                      <span className="px-1.5 py-0.5 bg-[#2C2621] text-[#A89F94] rounded text-[10px] font-medium uppercase shrink-0">
+                      <span className="px-1.5 py-0.5 bg-line text-text-muted rounded text-[10px] font-medium uppercase shrink-0">
                         Disabled
                       </span>
                     )}
@@ -480,10 +480,10 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Layers className="w-3.5 h-3.5 text-[#C5A059]" />
+                <Layers className="w-3.5 h-3.5 text-gold" />
                 <span>Dashboard Modules</span>
               </h3>
-              <span className="text-[11px] text-[#A89F94]">Control widgets on the main dashboard</span>
+              <span className="text-[11px] text-text-muted">Control widgets on the main dashboard</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -502,15 +502,15 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                     onClick={() => toggleDashboardSection(key)}
                     className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
                       isVisible
-                        ? 'bg-[#1F1A17] border-[#C5A059]/40 text-white'
-                        : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] opacity-50 hover:opacity-100'
+                        ? 'bg-section-header border-gold/40 text-white'
+                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
                     }`}
                   >
                     <span className="text-xs font-medium">{label}</span>
                     {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
                     ) : (
-                      <span className="text-[10px] text-[#A89F94]">Hidden</span>
+                      <span className="text-[10px] text-text-muted">Hidden</span>
                     )}
                   </button>
                 );
@@ -522,10 +522,10 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Flame className="w-3.5 h-3.5 text-[#C5A059]" />
+                <Flame className="w-3.5 h-3.5 text-gold" />
                 <span>Cigar Detail & Specification Cards</span>
               </h3>
-              <span className="text-[11px] text-[#A89F94]">Show/hide analytical sections on cigar dossiers</span>
+              <span className="text-[11px] text-text-muted">Show/hide analytical sections on cigar dossiers</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -546,18 +546,18 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                     onClick={() => toggleCigarField(key)}
                     className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
                       isVisible
-                        ? 'bg-[#1F1A17] border-[#C5A059]/40 text-white'
-                        : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] opacity-50 hover:opacity-100'
+                        ? 'bg-section-header border-gold/40 text-white'
+                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-[#C5A059]' : 'text-[#A89F94]'}`} />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
                       <span className="text-xs font-semibold truncate">{label}</span>
                     </div>
                     {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
                     ) : (
-                      <span className="text-[10px] text-[#A89F94]">Off</span>
+                      <span className="text-[10px] text-text-muted">Off</span>
                     )}
                   </button>
                 );
@@ -569,10 +569,10 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Bookmark className="w-3.5 h-3.5 text-[#C5A059]" />
+                <Bookmark className="w-3.5 h-3.5 text-gold" />
                 <span>Wishlist & Cigar Hunting View Fields</span>
               </h3>
-              <span className="text-[11px] text-[#A89F94]">Configure columns and card items in Wishlist</span>
+              <span className="text-[11px] text-text-muted">Configure columns and card items in Wishlist</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -592,18 +592,18 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                     onClick={() => toggleWishlistField(key)}
                     className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
                       isVisible
-                        ? 'bg-[#1F1A17] border-[#C5A059]/40 text-white'
-                        : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] opacity-50 hover:opacity-100'
+                        ? 'bg-section-header border-gold/40 text-white'
+                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-[#C5A059]' : 'text-[#A89F94]'}`} />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
                       <span className="text-xs font-semibold truncate">{label}</span>
                     </div>
                     {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
                     ) : (
-                      <span className="text-[10px] text-[#A89F94]">Off</span>
+                      <span className="text-[10px] text-text-muted">Off</span>
                     )}
                   </button>
                 );
@@ -615,10 +615,10 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Archive className="w-3.5 h-3.5 text-[#C5A059]" />
+                <Archive className="w-3.5 h-3.5 text-gold" />
                 <span>Humidor Vault Inventory Columns</span>
               </h3>
-              <span className="text-[11px] text-[#A89F94]">Configure columns and card data in Humidor</span>
+              <span className="text-[11px] text-text-muted">Configure columns and card data in Humidor</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -641,18 +641,18 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                     onClick={() => toggleHumidorField(key)}
                     className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
                       isVisible
-                        ? 'bg-[#1F1A17] border-[#C5A059]/40 text-white'
-                        : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] opacity-50 hover:opacity-100'
+                        ? 'bg-section-header border-gold/40 text-white'
+                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-[#C5A059]' : 'text-[#A89F94]'}`} />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
                       <span className="text-xs font-semibold truncate">{label}</span>
                     </div>
                     {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
                     ) : (
-                      <span className="text-[10px] text-[#A89F94]">Off</span>
+                      <span className="text-[10px] text-text-muted">Off</span>
                     )}
                   </button>
                 );
@@ -664,10 +664,10 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Wine className="w-3.5 h-3.5 text-[#C5A059]" />
+                <Wine className="w-3.5 h-3.5 text-gold" />
                 <span>Tasting Journal (Smoked) Log Fields</span>
               </h3>
-              <span className="text-[11px] text-[#A89F94]">Configure card and table fields in Tasting Journal</span>
+              <span className="text-[11px] text-text-muted">Configure card and table fields in Tasting Journal</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -688,18 +688,18 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                     onClick={() => toggleJournalField(key)}
                     className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
                       isVisible
-                        ? 'bg-[#1F1A17] border-[#C5A059]/40 text-white'
-                        : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] opacity-50 hover:opacity-100'
+                        ? 'bg-section-header border-gold/40 text-white'
+                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-[#C5A059]' : 'text-[#A89F94]'}`} />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
                       <span className="text-xs font-semibold truncate">{label}</span>
                     </div>
                     {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
                     ) : (
-                      <span className="text-[10px] text-[#A89F94]">Off</span>
+                      <span className="text-[10px] text-text-muted">Off</span>
                     )}
                   </button>
                 );
@@ -711,10 +711,10 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <BarChart3 className="w-3.5 h-3.5 text-[#C5A059]" />
+                <BarChart3 className="w-3.5 h-3.5 text-gold" />
                 <span>Export Suite Modules & Backup Formats</span>
               </h3>
-              <span className="text-[11px] text-[#A89F94]">
+              <span className="text-[11px] text-text-muted">
                 Choose which download formats & options appear in Export Suite
               </span>
             </div>
@@ -746,20 +746,20 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                     onClick={() => toggleExportSuiteOption(opt.key)}
                     className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-start justify-between gap-2.5 ${
                       isVisible
-                        ? 'bg-[#1F1A17] border-[#C5A059]/40 text-white'
-                        : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] opacity-60 hover:opacity-100'
+                        ? 'bg-section-header border-gold/40 text-white'
+                        : 'bg-surface border-line text-text-muted opacity-60 hover:opacity-100'
                     }`}
                   >
                     <div className="space-y-0.5 min-w-0">
-                      <div className="text-xs font-semibold text-[#E5E1DA]">{opt.label}</div>
-                      <div className="text-[11px] text-[#A89F94] leading-tight">{opt.desc}</div>
+                      <div className="text-xs font-semibold text-text">{opt.label}</div>
+                      <div className="text-[11px] text-text-muted leading-tight">{opt.desc}</div>
                     </div>
                     {isVisible ? (
-                      <span className="px-1.5 py-0.5 bg-[#C5A059]/20 text-[#C5A059] border border-[#C5A059]/30 rounded text-[10px] font-bold uppercase shrink-0">
+                      <span className="px-1.5 py-0.5 bg-gold/20 text-gold border border-gold/30 rounded text-[10px] font-bold uppercase shrink-0">
                         Visible
                       </span>
                     ) : (
-                      <span className="px-1.5 py-0.5 bg-[#2C2621] text-[#A89F94] rounded text-[10px] font-medium uppercase shrink-0">
+                      <span className="px-1.5 py-0.5 bg-line text-text-muted rounded text-[10px] font-medium uppercase shrink-0">
                         Hidden
                       </span>
                     )}
@@ -771,13 +771,13 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#2C2621] bg-[#13110F] flex items-center justify-between">
-          <div className="text-xs text-[#A89F94]">
+        <div className="p-4 border-t border-line bg-surface flex items-center justify-between">
+          <div className="text-xs text-text-muted">
             All configuration changes persist safely in local storage
           </div>
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm transition cursor-pointer"
+            className="px-5 py-2 bg-gold hover:brightness-110 text-ink font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm transition cursor-pointer"
           >
             Apply & Save
           </button>

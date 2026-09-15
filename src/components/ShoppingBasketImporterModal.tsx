@@ -597,30 +597,30 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-[#161311] border border-[#2C2621] rounded-xl w-full max-w-5xl my-auto text-[#E5E1DA] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+      <div className="bg-header border border-line rounded-xl w-full max-w-5xl my-auto text-text shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[#2C2621] flex items-center justify-between bg-[#1A1614] shrink-0">
+        <div className="px-5 py-4 border-b border-line flex items-center justify-between bg-panel-header shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-[#C5A059]/15 text-[#C5A059] rounded-lg border border-[#C5A059]/30">
+            <div className="p-2.5 bg-gold/15 text-gold rounded-lg border border-gold/30">
               <ShoppingCart className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-serif text-white font-medium">
+                <h2 className="text-ink sm:text-lg font-serif text-white font-medium">
                   Shopping Basket & Order HTML Importer
                 </h2>
-                <span className="px-2 py-0.5 bg-[#C5A059]/20 text-[#C5A059] text-[10px] font-bold uppercase tracking-wider rounded-sm border border-[#C5A059]/30">
+                <span className="px-2 py-0.5 bg-gold/20 text-gold text-[10px] font-bold uppercase tracking-wider rounded-sm border border-gold/30">
                   Multi-Cigar AI Extraction
                 </span>
               </div>
-              <p className="text-xs text-[#A89F94] mt-0.5">
+              <p className="text-xs text-text-muted mt-0.5">
                 Upload or paste a shopping basket / invoice HTML containing multiple cigars to automatically extract and populate them into your Research Database.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-[#A89F94] hover:text-white p-2 rounded-lg hover:bg-[#2C2621] transition cursor-pointer"
+            className="text-text-muted hover:text-white p-2 rounded-lg hover:bg-line transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -630,8 +630,8 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
         <div className="p-5 overflow-y-auto space-y-5 flex-1 text-xs sm:text-sm">
           {/* Notification Toast */}
           {actionSuccessNotice && (
-            <div className="p-3.5 bg-[#2E281F] border border-[#C5A059]/50 rounded-lg flex items-center gap-3 text-[#C5A059] shadow-md animate-fadeIn">
-              <CheckCircle2 className="w-5 h-5 shrink-0 text-[#C5A059]" />
+            <div className="p-3.5 bg-[#2E281F] border border-gold/50 rounded-lg flex items-center gap-3 text-gold shadow-md animate-fadeIn">
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-gold" />
               <p className="font-medium text-xs sm:text-sm leading-relaxed">{actionSuccessNotice}</p>
             </div>
           )}
@@ -648,13 +648,13 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
           )}
 
           {/* Mode Switcher Tabs */}
-          <div className="flex border-b border-[#2C2621] gap-1 pb-1">
+          <div className="flex border-b border-line gap-1 pb-1">
             <button
               onClick={() => setInputMode('file')}
               className={`px-3.5 py-2 rounded-t-lg font-semibold text-xs transition cursor-pointer flex items-center gap-2 border-b-2 ${
                 inputMode === 'file'
-                  ? 'border-[#C5A059] text-[#C5A059] bg-[#241E1B]'
-                  : 'border-transparent text-[#A89F94] hover:text-[#E5E1DA] hover:bg-[#1A1614]'
+                  ? 'border-gold text-gold bg-card-hover'
+                  : 'border-transparent text-text-muted hover:text-text hover:bg-panel-header'
               }`}
             >
               <UploadCloud className="w-4 h-4" />
@@ -664,8 +664,8 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
               onClick={() => setInputMode('paste')}
               className={`px-3.5 py-2 rounded-t-lg font-semibold text-xs transition cursor-pointer flex items-center gap-2 border-b-2 ${
                 inputMode === 'paste'
-                  ? 'border-[#C5A059] text-[#C5A059] bg-[#241E1B]'
-                  : 'border-transparent text-[#A89F94] hover:text-[#E5E1DA] hover:bg-[#1A1614]'
+                  ? 'border-gold text-gold bg-card-hover'
+                  : 'border-transparent text-text-muted hover:text-text hover:bg-panel-header'
               }`}
             >
               <FileCode className="w-4 h-4" />
@@ -675,8 +675,8 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
               onClick={() => setInputMode('url')}
               className={`px-3.5 py-2 rounded-t-lg font-semibold text-xs transition cursor-pointer flex items-center gap-2 border-b-2 ${
                 inputMode === 'url'
-                  ? 'border-[#C5A059] text-[#C5A059] bg-[#241E1B]'
-                  : 'border-transparent text-[#A89F94] hover:text-[#E5E1DA] hover:bg-[#1A1614]'
+                  ? 'border-gold text-gold bg-card-hover'
+                  : 'border-transparent text-text-muted hover:text-text hover:bg-panel-header'
               }`}
             >
               <ShoppingCart className="w-4 h-4" />
@@ -716,36 +716,36 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                   onClick={() => fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center gap-3 ${
                     isDraggingFile
-                      ? 'border-[#C5A059] bg-[#C5A059]/10'
-                      : 'border-[#2C2621] bg-[#13110F] hover:border-[#C5A059]/60 hover:bg-[#1A1614]'
+                      ? 'border-gold bg-gold/10'
+                      : 'border-line bg-surface hover:border-gold/60 hover:bg-panel-header'
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-full bg-[#241E1B] border border-[#2C2621] flex items-center justify-center text-[#C5A059]">
+                  <div className="w-12 h-12 rounded-full bg-card-hover border border-line flex items-center justify-center text-gold">
                     <UploadCloud className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="font-semibold text-white text-sm">
                       Click to choose or Drag & Drop your Saved Basket HTML
                     </p>
-                    <p className="text-xs text-[#A89F94] mt-1">
+                    <p className="text-xs text-text-muted mt-1">
                       Supports .html, .htm, .mhtml from C.Gars Ltd, Havana House, Smoke King, Sautter, etc.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2.5 py-1 bg-[#1A1614] border border-[#2C2621] text-[#A89F94] rounded text-[11px]">
+                    <span className="px-2.5 py-1 bg-panel-header border border-line text-text-muted rounded text-[11px]">
                       Tip: In browser, press Ctrl+S / Cmd+S on your basket page and save as HTML
                     </span>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 bg-[#13110F] border border-[#2C2621] rounded-xl flex items-center justify-between">
+                <div className="p-4 bg-surface border border-line rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-[#C5A059]/15 text-[#C5A059] rounded-lg border border-[#C5A059]/30">
+                    <div className="p-2.5 bg-gold/15 text-gold rounded-lg border border-gold/30">
                       <FileCode className="w-6 h-6" />
                     </div>
                     <div>
                       <p className="font-bold text-white text-sm">{htmlFileName}</p>
-                      <p className="text-xs text-[#A89F94] mt-0.5">
+                      <p className="text-xs text-text-muted mt-0.5">
                         Size: {htmlFileSize} &bull; Ready for multi-cigar extraction
                       </p>
                     </div>
@@ -753,7 +753,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1.5 bg-[#1A1614] hover:bg-[#2C2621] text-[#E5E1DA] border border-[#2C2621] rounded text-xs font-semibold transition cursor-pointer"
+                      className="px-3 py-1.5 bg-panel-header hover:bg-line text-text border border-line rounded text-xs font-semibold transition cursor-pointer"
                     >
                       Change File
                     </button>
@@ -763,7 +763,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                         setHtmlFileSize(null);
                         setHtmlFileContent('');
                       }}
-                      className="p-1.5 text-[#A89F94] hover:text-red-400 transition cursor-pointer"
+                      className="p-1.5 text-text-muted hover:text-red-400 transition cursor-pointer"
                       title="Remove file"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -778,12 +778,12 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
           {inputMode === 'paste' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-[#A89F94]">
+                <label className="text-xs font-semibold text-text-muted">
                   Paste Shopping Basket HTML Source or Cart Text:
                 </label>
                 <button
                   onClick={() => setPastedContent(SAMPLE_BASKET_HTML)}
-                  className="text-xs text-[#C5A059] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                  className="text-xs text-gold hover:underline flex items-center gap-1 cursor-pointer font-medium"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Load Sample C.Gars Ltd Basket HTML (5 Cigars)</span>
@@ -794,7 +794,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                 placeholder="Paste the raw HTML source code of your shopping basket (e.g. <table>, <tr>, cart items) or copied basket text..."
                 value={pastedContent}
                 onChange={(e) => setPastedContent(e.target.value)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-lg p-3 text-xs font-mono text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059] placeholder-[#A89F94]/50"
+                className="w-full bg-surface border border-line rounded-lg p-3 text-xs font-mono text-text focus:outline-hidden focus:border-gold placeholder-text-muted/50"
               />
             </div>
           )}
@@ -802,7 +802,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
           {/* Tab 3: URL */}
           {inputMode === 'url' && (
             <div className="space-y-3">
-              <label className="text-xs font-semibold text-[#A89F94]">
+              <label className="text-xs font-semibold text-text-muted">
                 Retailer Shopping Cart / Basket Web Address:
               </label>
               <input
@@ -810,29 +810,29 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                 placeholder="https://www.cgarsltd.co.uk/shopping_cart.php or receipt URL..."
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-lg p-3 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059] placeholder-[#A89F94]/50"
+                className="w-full bg-surface border border-line rounded-lg p-3 text-xs text-text focus:outline-hidden focus:border-gold placeholder-text-muted/50"
               />
-              <p className="text-[11px] text-[#A89F94]/80">
+              <p className="text-[11px] text-text-muted/80">
                 Note: Some e-commerce cart sessions require login; if the web link is empty or private, use the <strong>Upload Saved HTML File</strong> or <strong>Paste Basket HTML</strong> tab.
               </p>
             </div>
           )}
 
           {/* Auto-Add to Research Checkbox & Extract Trigger Button */}
-          <div className="p-4 bg-[#1A1614] border border-[#2C2621] rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="p-4 bg-panel-header border border-line rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <label className="flex items-start sm:items-center gap-3 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={autoAddToResearch}
                 onChange={(e) => setAutoAddToResearch(e.target.checked)}
-                className="w-4 h-4 rounded text-[#C5A059] focus:ring-[#C5A059] border-[#2C2621] bg-[#13110F] mt-0.5 sm:mt-0"
+                className="w-4 h-4 rounded text-gold focus:ring-gold border-line bg-surface mt-0.5 sm:mt-0"
               />
               <div>
                 <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
+                  <Sparkles className="w-3.5 h-3.5 text-gold" />
                   <span>Automatically add all extracted cigars to Research Database</span>
                 </span>
-                <p className="text-[11px] text-[#A89F94]">
+                <p className="text-[11px] text-text-muted">
                   Populates complete tasting transitions, flavor profiles, vitola dimensions, critic ratings, and spirit pairings directly into your Research Library.
                 </p>
               </div>
@@ -841,7 +841,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
             <button
               onClick={handleProcessBasketExtraction}
               disabled={loading}
-              className="px-5 py-2.5 bg-[#C5A059] hover:brightness-110 disabled:opacity-50 text-[#0F0D0C] font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              className="px-5 py-2.5 bg-gold hover:brightness-110 disabled:opacity-50 text-ink font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
               {loading ? (
                 <>
@@ -861,17 +861,17 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
           {extractedItems.length > 0 && (
             <div className="space-y-4 pt-2">
               {/* Basket Overview Banner */}
-              <div className="p-4 bg-[#1F1A17] border border-[#C5A059]/40 rounded-xl flex flex-wrap items-center justify-between gap-3">
+              <div className="p-4 bg-section-header border border-gold/40 rounded-xl flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#C5A059]/20 text-[#C5A059] flex items-center justify-center font-bold text-sm border border-[#C5A059]/40">
+                  <div className="w-9 h-9 rounded-full bg-gold/20 text-gold flex items-center justify-center font-bold text-sm border border-gold/40">
                     {extractedItems.length}
                   </div>
                   <div>
-                    <h3 className="font-serif font-semibold text-white text-sm sm:text-base">
+                    <h3 className="font-serif font-semibold text-white text-sm sm:text-ink">
                       {extractedResult?.vendorName || 'Retailer Basket'} &bull; {extractedItems.length} Cigar Lines Detected
                     </h3>
-                    <p className="text-xs text-[#A89F94]">
-                      Total Sticks: <strong className="text-[#E5E1DA]">{extractedResult?.itemCount || extractedItems.reduce((s, i) => s + (i.quantity || 1), 0)}</strong> &bull; Total Value: <strong className="text-[#C5A059]">{extractedResult?.currency || '£'}{(extractedResult?.basketTotal || selectedTotalValue).toFixed(2)}</strong>
+                    <p className="text-xs text-text-muted">
+                      Total Sticks: <strong className="text-text">{extractedResult?.itemCount || extractedItems.reduce((s, i) => s + (i.quantity || 1), 0)}</strong> &bull; Total Value: <strong className="text-gold">{extractedResult?.currency || '£'}{(extractedResult?.basketTotal || selectedTotalValue).toFixed(2)}</strong>
                     </p>
                   </div>
                 </div>
@@ -880,36 +880,36 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={handleBatchAddToResearch}
-                    className="px-3 py-1.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-xs uppercase tracking-wider rounded-md shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1.5 bg-gold hover:brightness-110 text-ink font-bold text-xs uppercase tracking-wider rounded-md shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <BookOpen className="w-3.5 h-3.5" />
                     <span>Add Selected ({selectedCount}) to Research</span>
                   </button>
 
-                  <div className="flex items-center gap-1.5 bg-[#13110F] p-1 rounded-md border border-[#2C2621]">
+                  <div className="flex items-center gap-1.5 bg-surface p-1 rounded-md border border-line">
                     <select
                       value={selectedHumidorId}
                       onChange={(e) => setSelectedHumidorId(e.target.value)}
-                      className="bg-transparent text-xs text-[#E5E1DA] focus:outline-hidden pr-2 font-medium"
+                      className="bg-transparent text-xs text-text focus:outline-hidden pr-2 font-medium"
                     >
                       {humidors.map((h) => (
-                        <option key={h.id} value={h.id} className="bg-[#161311] text-[#E5E1DA]">
+                        <option key={h.id} value={h.id} className="bg-header text-text">
                           {h.name}
                         </option>
                       ))}
                     </select>
                     <button
                       onClick={handleBatchAddToHumidor}
-                      className="px-2.5 py-1 bg-[#2C2621] hover:bg-[#3D352E] text-white text-xs font-semibold rounded transition cursor-pointer flex items-center gap-1"
+                      className="px-2.5 py-1 bg-line hover:bg-line-hover text-white text-xs font-semibold rounded transition cursor-pointer flex items-center gap-1"
                     >
-                      <Package className="w-3.5 h-3.5 text-[#C5A059]" />
+                      <Package className="w-3.5 h-3.5 text-gold" />
                       <span>Stock ({selectedSticks} sticks)</span>
                     </button>
                   </div>
 
                   <button
                     onClick={handleBatchAddToWishlist}
-                    className="px-3 py-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] text-xs font-semibold rounded-md transition flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1.5 bg-surface hover:bg-card-hover text-gold border border-line text-xs font-semibold rounded-md transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <Bookmark className="w-3.5 h-3.5" />
                     <span>Wishlist ({selectedCount})</span>
@@ -918,8 +918,8 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
               </div>
 
               {/* Table / Grid of Extracted Cigars */}
-              <div className="border border-[#2C2621] rounded-xl overflow-hidden bg-[#13110F]">
-                <div className="px-4 py-2.5 bg-[#1A1614] border-b border-[#2C2621] flex items-center justify-between text-xs text-[#A89F94]">
+              <div className="border border-line rounded-xl overflow-hidden bg-surface">
+                <div className="px-4 py-2.5 bg-panel-header border-b border-line flex items-center justify-between text-xs text-text-muted">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={handleToggleSelectAll}
@@ -929,7 +929,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                         type="checkbox"
                         checked={extractedItems.length > 0 && extractedItems.every((i) => i.selected)}
                         onChange={handleToggleSelectAll}
-                        className="w-3.5 h-3.5 rounded text-[#C5A059] border-[#2C2621]"
+                        className="w-3.5 h-3.5 rounded text-gold border-line"
                       />
                       <span>Select All ({extractedItems.length})</span>
                     </button>
@@ -937,7 +937,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                   <span>Click individual buttons for quick single-stick actions</span>
                 </div>
 
-                <div className="divide-y divide-[#2C2621] max-h-[420px] overflow-y-auto">
+                <div className="divide-y divide-line max-h-[420px] overflow-y-auto">
                   {extractedItems.map((item, index) => {
                     const matchInResearch = findMatchingResearchCigar(
                       { brand: item.brand, line: item.line || item.name, name: item.name, vitola: item.vitola },
@@ -948,7 +948,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                       <div
                         key={item.id || index}
                         className={`p-4 transition flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                          item.selected ? 'bg-[#181412]' : 'bg-[#13110F] opacity-75'
+                          item.selected ? 'bg-modal' : 'bg-surface opacity-75'
                         }`}
                       >
                         {/* Left: Checkbox + Brand Info */}
@@ -957,7 +957,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                             type="checkbox"
                             checked={item.selected}
                             onChange={() => handleToggleSelectItem(index)}
-                            className="w-4 h-4 mt-1 rounded text-[#C5A059] border-[#2C2621] cursor-pointer"
+                            className="w-4 h-4 mt-1 rounded text-gold border-line cursor-pointer"
                           />
                           <div className="space-y-1.5 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
@@ -969,10 +969,10 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                                   Cuban
                                 </span>
                               )}
-                              <span className="px-1.5 py-0.5 bg-[#2C2621] text-[#C5A059] text-[10px] font-semibold rounded-xs">
+                              <span className="px-1.5 py-0.5 bg-line text-gold text-[10px] font-semibold rounded-xs">
                                 {item.vitola}
                               </span>
-                              <span className="text-[11px] text-[#A89F94]">
+                              <span className="text-[11px] text-text-muted">
                                 {item.lengthInches ? `${item.lengthInches}"` : ''} {item.ringGauge ? `x ${item.ringGauge} RG` : ''}
                               </span>
                             </div>
@@ -992,11 +992,11 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                               )}
                             </div>
 
-                            <p className="text-xs text-[#A89F94] flex flex-wrap items-center gap-x-3 gap-y-1">
-                              <span>Origin: <strong className="text-[#E5E1DA]">{item.countryOrigin}</strong></span>
-                              <span>Wrapper: <strong className="text-[#E5E1DA]">{item.wrapper}</strong></span>
-                              <span>Strength: <strong className="text-[#E5E1DA]">{item.strength}</strong></span>
-                              <span>Resting: <strong className="text-[#C5A059]">{item.idealRestMonths} mo</strong></span>
+                            <p className="text-xs text-text-muted flex flex-wrap items-center gap-x-3 gap-y-1">
+                              <span>Origin: <strong className="text-text">{item.countryOrigin}</strong></span>
+                              <span>Wrapper: <strong className="text-text">{item.wrapper}</strong></span>
+                              <span>Strength: <strong className="text-text">{item.strength}</strong></span>
+                              <span>Resting: <strong className="text-gold">{item.idealRestMonths} mo</strong></span>
                             </p>
 
                             {/* Flavor tags */}
@@ -1005,7 +1005,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                                 {item.flavorTags.slice(0, 4).map((tag, tIdx) => (
                                   <span
                                     key={tIdx}
-                                    className="px-1.5 py-0.5 bg-[#1F1A17] border border-[#2C2621] text-[#A89F94] text-[10px] rounded-xs"
+                                    className="px-1.5 py-0.5 bg-section-header border border-line text-text-muted text-[10px] rounded-xs"
                                   >
                                     {tag}
                                   </span>
@@ -1018,18 +1018,18 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                       {/* Middle: Quantity & Price */}
                       <div className="flex items-center gap-4 shrink-0 pl-7 md:pl-0">
                         <div className="flex items-center gap-1.5">
-                          <label className="text-[11px] text-[#A89F94]">Qty:</label>
-                          <div className="flex items-center bg-[#13110F] border border-[#2C2621] rounded">
+                          <label className="text-[11px] text-text-muted">Qty:</label>
+                          <div className="flex items-center bg-surface border border-line rounded">
                             <button
                               onClick={() => handleUpdateItemQuantity(index, (item.quantity || 1) - 1)}
-                              className="px-2 py-0.5 text-xs text-[#A89F94] hover:text-white hover:bg-[#2C2621]"
+                              className="px-2 py-0.5 text-xs text-text-muted hover:text-white hover:bg-line"
                             >
                               -
                             </button>
                             <span className="px-2 text-xs font-bold text-white">{item.quantity || 1}</span>
                             <button
                               onClick={() => handleUpdateItemQuantity(index, (item.quantity || 1) + 1)}
-                              className="px-2 py-0.5 text-xs text-[#A89F94] hover:text-white hover:bg-[#2C2621]"
+                              className="px-2 py-0.5 text-xs text-text-muted hover:text-white hover:bg-line"
                             >
                               +
                             </button>
@@ -1037,10 +1037,10 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                         </div>
 
                         <div className="text-right">
-                          <p className="text-xs font-bold text-[#C5A059]">
+                          <p className="text-xs font-bold text-gold">
                             {item.currency || '£'}{(item.totalPrice || (item.purchasePrice || 0) * (item.quantity || 1)).toFixed(2)}
                           </p>
-                          <p className="text-[10px] text-[#A89F94]">
+                          <p className="text-[10px] text-text-muted">
                             {item.currency || '£'}{(item.purchasePrice || 0).toFixed(2)} / stick
                           </p>
                         </div>
@@ -1050,7 +1050,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                       <div className="flex flex-wrap items-center gap-1.5 pl-7 md:pl-0 shrink-0">
                         <button
                           onClick={() => handleSingleResearch(item)}
-                          className="px-2.5 py-1 bg-[#C5A059]/15 hover:bg-[#C5A059]/30 text-[#C5A059] border border-[#C5A059]/40 rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1"
+                          className="px-2.5 py-1 bg-gold/15 hover:bg-gold/30 text-gold border border-gold/40 rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1"
                           title="Save this cigar to Research Database"
                         >
                           <BookOpen className="w-3 h-3" />
@@ -1059,7 +1059,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
 
                         <button
                           onClick={() => handleSingleHumidor(item)}
-                          className="px-2.5 py-1 bg-[#2C2621] hover:bg-[#3D352E] text-[#E5E1DA] rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1"
+                          className="px-2.5 py-1 bg-line hover:bg-line-hover text-text rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1"
                           title="Add to selected humidor"
                         >
                           <Plus className="w-3 h-3" />
@@ -1068,7 +1068,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
 
                         <button
                           onClick={() => handleSingleWishlist(item)}
-                          className="px-2 py-1 bg-[#1A1614] hover:bg-[#241E1B] text-[#A89F94] hover:text-white border border-[#2C2621] rounded text-xs transition cursor-pointer"
+                          className="px-2 py-1 bg-panel-header hover:bg-card-hover text-text-muted hover:text-white border border-line rounded text-xs transition cursor-pointer"
                           title="Add to wishlist"
                         >
                           <Bookmark className="w-3 h-3" />
@@ -1086,7 +1086,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
                               });
                               onClose();
                             }}
-                            className="px-2 py-1 bg-[#8B5E3C]/20 hover:bg-[#8B5E3C]/40 text-[#D4A373] border border-[#8B5E3C]/40 rounded text-xs transition cursor-pointer"
+                            className="px-2 py-1 bg-cedar/20 hover:bg-cedar/40 text-cedar-light border border-cedar/40 rounded text-xs transition cursor-pointer"
                             title="Log immediate smoke session"
                           >
                             <Flame className="w-3 h-3" />
@@ -1100,20 +1100,20 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
               </div>
 
               {/* Bottom Quick-Done Bar */}
-              <div className="p-4 bg-[#1A1614] border border-[#2C2621] rounded-xl flex flex-wrap items-center justify-between gap-3">
-                <div className="text-xs text-[#A89F94]">
-                  Selected: <strong className="text-white">{selectedCount} lines</strong> ({selectedSticks} sticks) &bull; Value: <strong className="text-[#C5A059]">{extractedResult?.currency || '£'}{selectedTotalValue.toFixed(2)}</strong>
+              <div className="p-4 bg-panel-header border border-line rounded-xl flex flex-wrap items-center justify-between gap-3">
+                <div className="text-xs text-text-muted">
+                  Selected: <strong className="text-white">{selectedCount} lines</strong> ({selectedSticks} sticks) &bull; Value: <strong className="text-gold">{extractedResult?.currency || '£'}{selectedTotalValue.toFixed(2)}</strong>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={onClose}
-                    className="px-4 py-2 bg-[#2C2621] hover:bg-[#3D352E] text-[#E5E1DA] font-semibold text-xs rounded-lg transition cursor-pointer"
+                    className="px-4 py-2 bg-line hover:bg-line-hover text-text font-semibold text-xs rounded-lg transition cursor-pointer"
                   >
                     Done & Close
                   </button>
                   <button
                     onClick={handleBatchAddToResearch}
-                    className="px-4 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 bg-gold hover:brightness-110 text-ink font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <BookOpen className="w-3.5 h-3.5" />
                     <span>Save All to Research Database</span>

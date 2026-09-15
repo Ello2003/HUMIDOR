@@ -26,7 +26,8 @@ import {
   Copy,
   Store,
 } from 'lucide-react';
-import { Cigar, Humidor, StrengthRating, CigarStatus, WishlistItem, CigarResearchItem, VendorPriceEntry, AppSettings } from '../types';
+import { Cigar, Humidor, StrengthRating, CigarStatus, WishlistItem, CigarResearchItem, VendorPriceEntry, AppSettings, STRENGTH_LEVELS } from '../types';
+import { generateId } from '../utils/idUtils';
 import { calculateRestDays } from '../utils/exportUtils';
 import { formatCurrency } from '../utils/currencyUtils';
 import { canonicalizeVendorName, estimateAccurateSmokeTime } from '../utils/researchUtils';
@@ -654,14 +655,14 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
     <div className="space-y-6">
       {/* Notice Banner */}
       {inventoryNotice && (
-        <div className="p-3 bg-[#1C1816] border border-[#C5A059]/40 rounded-lg text-xs text-[#E5E1DA] flex items-center justify-between shadow-sm animate-in fade-in duration-200">
+        <div className="p-3 bg-card border border-gold/40 rounded-lg text-xs text-text flex items-center justify-between shadow-sm animate-in fade-in duration-200">
           <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-[#C5A059]" />
+            <Check className="w-4 h-4 text-gold" />
             <span>{inventoryNotice}</span>
           </div>
           <button
             onClick={() => setInventoryNotice(null)}
-            className="text-[#A89F94] hover:text-[#E5E1DA] text-xs cursor-pointer p-1"
+            className="text-text-muted hover:text-text text-xs cursor-pointer p-1"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -669,14 +670,14 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
       )}
 
       {/* Humidor Selectors Bar */}
-      <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-[#2C2621]">
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-line">
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setSelectedHumidorId('all')}
             className={`px-3.5 py-1.5 rounded-md text-xs uppercase tracking-wider font-semibold transition cursor-pointer ${
               selectedHumidorId === 'all'
-                ? 'bg-[#C5A059] text-[#0F0D0C]'
-                : 'bg-[#1C1816] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621]'
+                ? 'bg-gold text-ink'
+                : 'bg-card text-text-muted hover:text-text border border-line'
             }`}
           >
             All Vaults ({cigars.reduce((a, b) => a + b.quantity, 0)} sticks)
@@ -689,12 +690,12 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                 onClick={() => setSelectedHumidorId(h.id)}
                 className={`px-3.5 py-1.5 rounded-md text-xs uppercase tracking-wider font-medium transition flex items-center gap-2 cursor-pointer ${
                   selectedHumidorId === h.id
-                    ? 'bg-[#C5A059] text-[#0F0D0C]'
-                    : 'bg-[#1C1816] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621]'
+                    ? 'bg-gold text-ink'
+                    : 'bg-card text-text-muted hover:text-text border border-line'
                 }`}
               >
                 <span>{h.name}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded ${selectedHumidorId === h.id ? 'bg-[#0F0D0C] text-[#C5A059]' : 'bg-[#13110F] text-[#C5A059]'}`}>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded ${selectedHumidorId === h.id ? 'bg-ink text-gold' : 'bg-surface text-gold'}`}>
                   {count}
                 </span>
               </button>
@@ -706,9 +707,9 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
           {onOpenHumidors && (
             <button
               onClick={onOpenHumidors}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#1C1816] hover:bg-[#241E1B] text-[#E5E1DA] hover:text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/50 rounded-md text-xs uppercase tracking-wider font-semibold transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-card hover:bg-card-hover text-text hover:text-gold border border-line hover:border-gold/50 rounded-md text-xs uppercase tracking-wider font-semibold transition cursor-pointer"
             >
-              <Box className="w-3.5 h-3.5 text-[#C5A059]" />
+              <Box className="w-3.5 h-3.5 text-gold" />
               <span>Humidor Setup</span>
             </button>
           )}
@@ -716,24 +717,24 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="p-4 bg-[#1C1816] border border-[#2C2621] rounded-lg space-y-3 shadow-sm">
+      <div className="p-4 bg-card border border-line rounded-lg space-y-3 shadow-sm">
         {/* Search Bar + Primary Dropdowns Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
           {/* Search Input */}
           <div className="relative sm:col-span-2 lg:col-span-2">
-            <Search className="w-4 h-4 text-[#A89F94] absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-text-muted absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Search by brand, name, vitola, notes, wrapper, or flavor..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md pl-9 pr-8 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059] placeholder-[#A89F94]/60"
+              className="w-full bg-surface border border-line rounded-md pl-9 pr-8 py-2 text-xs text-text focus:outline-hidden focus:border-gold placeholder-text-muted/60"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-2.5 text-[#A89F94] hover:text-[#E5E1DA] p-0.5 rounded cursor-pointer"
+                className="absolute right-2.5 top-2.5 text-text-muted hover:text-text p-0.5 rounded cursor-pointer"
                 title="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
@@ -743,13 +744,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
           {/* 1. Brand Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Brand ({availableBrands.length})
             </label>
             <select
               value={brandFilter}
               onChange={(e) => setBrandFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Brands</option>
               {availableBrands.map((b) => (
@@ -762,13 +763,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
           {/* 2. Wrapper Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Wrapper Leaf ({availableWrappers.length})
             </label>
             <select
               value={wrapperFilter}
               onChange={(e) => setWrapperFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Wrappers</option>
               {availableWrappers.map((w) => (
@@ -781,13 +782,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
           {/* 3. Vitola Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Vitola Shape ({availableVitolas.length})
             </label>
             <select
               value={vitolaFilter}
               onChange={(e) => setVitolaFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Vitolas</option>
               {availableVitolas.map((v) => (
@@ -800,13 +801,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
           {/* 4. Smoke Time Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               ⏱️ Smoke Duration
             </label>
             <select
               value={smokeTimeFilter}
               onChange={(e) => setSmokeTimeFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Durations</option>
               <option value="quick">⚡ Quick (≤45m)</option>
@@ -818,13 +819,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
           {/* 5. Strength Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Strength Body
             </label>
             <select
               value={strengthFilter}
               onChange={(e) => setStrengthFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Strengths</option>
               <option value="Mild">Mild</option>
@@ -838,13 +839,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
           {/* 6. Resting Status */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Resting Status
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Resting Statuses</option>
               <option value="ready">Ready to Smoke 💨</option>
@@ -856,13 +857,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
           {/* 7. Origin Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Country Origin ({availableOrigins.length})
             </label>
             <select
               value={originFilter}
               onChange={(e) => setOriginFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Origins</option>
               {availableOrigins.map((o) => (
@@ -875,13 +876,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
           {/* 8. Sort By */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Sort Order
             </label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="rating-desc">★ Rating: Highest First</option>
               <option value="brand-asc">🔤 Brand (A to Z)</option>
@@ -896,11 +897,11 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
         </div>
 
         {/* Togglable Quick Filter Chips Bar */}
-        <div className="pt-2 border-t border-[#2C2621]/60 space-y-2">
+        <div className="pt-2 border-t border-line/60 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Pill Category Switcher */}
             <div className="flex items-center gap-1 overflow-x-auto py-0.5">
-              <span className="text-[10px] uppercase font-bold text-[#A89F94] mr-1 shrink-0">
+              <span className="text-[10px] uppercase font-bold text-text-muted mr-1 shrink-0">
                 Quick Toggle:
               </span>
               {[
@@ -916,8 +917,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                   onClick={() => setActivePillCategory(cat.id as any)}
                   className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer font-medium shrink-0 ${
                     activePillCategory === cat.id
-                      ? 'bg-[#C5A059]/20 text-[#C5A059] border border-[#C5A059]/50 font-bold'
-                      : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border border-[#2C2621]'
+                      ? 'bg-gold/20 text-gold border border-gold/50 font-bold'
+                      : 'bg-surface text-text-muted hover:text-text border border-line'
                   }`}
                 >
                   {cat.label}
@@ -929,7 +930,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
             <button
               type="button"
               onClick={() => setShowQuickPillBar(!showQuickPillBar)}
-              className="text-[10px] text-[#A89F94] hover:text-[#C5A059] flex items-center gap-1 cursor-pointer ml-auto"
+              className="text-[10px] text-text-muted hover:text-gold flex items-center gap-1 cursor-pointer ml-auto"
             >
               <span>{showQuickPillBar ? 'Collapse Chips' : 'Expand Chips'}</span>
             </button>
@@ -946,8 +947,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                     onClick={() => setWrapperFilter('all')}
                     className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                       wrapperFilter === 'all'
-                        ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                        : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621]'
+                        ? 'bg-gold text-ink border-gold font-bold'
+                        : 'bg-surface text-text-muted hover:text-text border-line'
                     }`}
                   >
                     All Wrappers
@@ -961,8 +962,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                         onClick={() => setWrapperFilter(isActive ? 'all' : wType)}
                         className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                           isActive
-                            ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                            : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621] hover:border-[#3D352E]'
+                            ? 'bg-gold text-ink border-gold font-bold'
+                            : 'bg-surface text-text-muted hover:text-text border-line hover:border-line-hover'
                         }`}
                       >
                         {wType}
@@ -980,8 +981,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                     onClick={() => setVitolaFilter('all')}
                     className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                       vitolaFilter === 'all'
-                        ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                        : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621]'
+                        ? 'bg-gold text-ink border-gold font-bold'
+                        : 'bg-surface text-text-muted hover:text-text border-line'
                     }`}
                   >
                     All Vitolas
@@ -995,8 +996,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                         onClick={() => setVitolaFilter(isActive ? 'all' : vType)}
                         className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                           isActive
-                            ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                            : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621] hover:border-[#3D352E]'
+                            ? 'bg-gold text-ink border-gold font-bold'
+                            : 'bg-surface text-text-muted hover:text-text border-line hover:border-line-hover'
                         }`}
                       >
                         {vType}
@@ -1014,8 +1015,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                     onClick={() => setSmokeTimeFilter('all')}
                     className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                       smokeTimeFilter === 'all'
-                        ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                        : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621]'
+                        ? 'bg-gold text-ink border-gold font-bold'
+                        : 'bg-surface text-text-muted hover:text-text border-line'
                     }`}
                   >
                     All Durations
@@ -1034,8 +1035,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                         onClick={() => setSmokeTimeFilter(isActive ? 'all' : (dur.id as any))}
                         className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                           isActive
-                            ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                            : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621] hover:border-[#3D352E]'
+                            ? 'bg-gold text-ink border-gold font-bold'
+                            : 'bg-surface text-text-muted hover:text-text border-line hover:border-line-hover'
                         }`}
                       >
                         {dur.label}
@@ -1053,13 +1054,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                     onClick={() => setStrengthFilter('all')}
                     className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                       strengthFilter === 'all'
-                        ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                        : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621]'
+                        ? 'bg-gold text-ink border-gold font-bold'
+                        : 'bg-surface text-text-muted hover:text-text border-line'
                     }`}
                   >
                     All Strengths
                   </button>
-                  {['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'].map((str) => {
+                  {STRENGTH_LEVELS.map((str) => {
                     const isActive = strengthFilter === str;
                     return (
                       <button
@@ -1068,8 +1069,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                         onClick={() => setStrengthFilter(isActive ? 'all' : str)}
                         className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                           isActive
-                            ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                            : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621] hover:border-[#3D352E]'
+                            ? 'bg-gold text-ink border-gold font-bold'
+                            : 'bg-surface text-text-muted hover:text-text border-line hover:border-line-hover'
                         }`}
                       >
                         {str}
@@ -1087,8 +1088,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                     onClick={() => setStatusFilter('all')}
                     className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                       statusFilter === 'all'
-                        ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                        : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621]'
+                        ? 'bg-gold text-ink border-gold font-bold'
+                        : 'bg-surface text-text-muted hover:text-text border-line'
                     }`}
                   >
                     All Statuses
@@ -1107,8 +1108,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                         onClick={() => setStatusFilter(isActive ? 'all' : st.id)}
                         className={`text-[11px] px-2.5 py-0.5 rounded-full transition cursor-pointer border ${
                           isActive
-                            ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                            : 'bg-[#13110F] text-[#A89F94] hover:text-[#E5E1DA] border-[#2C2621] hover:border-[#3D352E]'
+                            ? 'bg-gold text-ink border-gold font-bold'
+                            : 'bg-surface text-text-muted hover:text-text border-line hover:border-line-hover'
                         }`}
                       >
                         {st.label}
@@ -1123,7 +1124,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                 <button
                   type="button"
                   onClick={resetAllFilters}
-                  className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#241E1B] text-[#C5A059] hover:text-white border border-[#382E26] flex items-center gap-1 cursor-pointer ml-auto"
+                  className="text-[11px] px-2.5 py-0.5 rounded-full bg-card-hover text-gold hover:text-white border border-line-warm flex items-center gap-1 cursor-pointer ml-auto"
                 >
                   <X className="w-3 h-3" />
                   <span>Reset All</span>
@@ -1134,18 +1135,18 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
         </div>
 
         {/* View Switcher, Inline Display Settings & Result Summary */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#2C2621] text-xs text-[#A89F94]">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-line text-xs text-text-muted">
           <div className="flex items-center gap-2 flex-wrap">
             <div>
-              Showing <strong className="text-[#C5A059] font-serif">{filteredCigars.length}</strong> distinct lines (
-              <strong className="text-[#C5A059] font-serif">{totalFilteredSticks}</strong> total sticks,{' '}
-              <strong className="text-[#E5E1DA]">{formatCurrency(totalFilteredValue, '£')}</strong> valuation)
+              Showing <strong className="text-gold font-serif">{filteredCigars.length}</strong> distinct lines (
+              <strong className="text-gold font-serif">{totalFilteredSticks}</strong> total sticks,{' '}
+              <strong className="text-text">{formatCurrency(totalFilteredValue, '£')}</strong> valuation)
             </div>
             {(selectedHumidorId !== 'all' || searchQuery || statusFilter !== 'all' || strengthFilter !== 'all' || brandFilter !== 'all' || wrapperFilter !== 'all' || vitolaFilter !== 'all' || smokeTimeFilter !== 'all' || originFilter !== 'all' || sortBy !== 'rating-desc') && (
               <button
                 type="button"
                 onClick={resetAllFilters}
-                className="text-[11px] px-2 py-0.5 rounded bg-[#241E1B] hover:bg-[#2C2621] text-[#C5A059] hover:text-white border border-[#3D352E] flex items-center gap-1 cursor-pointer transition"
+                className="text-[11px] px-2 py-0.5 rounded bg-card-hover hover:bg-line text-gold hover:text-white border border-line-hover flex items-center gap-1 cursor-pointer transition"
                 title="Reset all filters back to default"
               >
                 <X className="w-3 h-3" />
@@ -1161,8 +1162,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
               onClick={() => setShowDisplayOptions(!showDisplayOptions)}
               className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-xs font-semibold uppercase tracking-wider transition cursor-pointer ${
                 showDisplayOptions
-                  ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059]'
-                  : 'bg-[#13110F] text-[#A89F94] border-[#2C2621] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink border-gold'
+                  : 'bg-surface text-text-muted border-line hover:text-text'
               }`}
               title="Inline Display Settings & Presets"
             >
@@ -1171,12 +1172,12 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
             </button>
 
             {/* View Mode Switcher */}
-            <div className="flex items-center bg-[#13110F] p-0.5 rounded border border-[#2C2621]">
+            <div className="flex items-center bg-surface p-0.5 rounded border border-line">
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
                 className={`p-1.5 rounded transition cursor-pointer ${
-                  viewMode === 'grid' ? 'bg-[#C5A059] text-[#0F0D0C]' : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                  viewMode === 'grid' ? 'bg-gold text-ink' : 'text-text-muted hover:text-text'
                 }`}
                 title="Card Grid View"
               >
@@ -1186,7 +1187,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                 type="button"
                 onClick={() => setViewMode('table')}
                 className={`p-1.5 rounded transition cursor-pointer ${
-                  viewMode === 'table' ? 'bg-[#C5A059] text-[#0F0D0C]' : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                  viewMode === 'table' ? 'bg-gold text-ink' : 'text-text-muted hover:text-text'
                 }`}
                 title="Database Table View"
               >
@@ -1199,41 +1200,41 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
       {/* Inline Display Settings & Presets Panel */}
       {showDisplayOptions && (
-        <div className="p-4 bg-[#161311] border border-[#2C2621] rounded-lg space-y-3 shadow-sm animate-in fade-in duration-200">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2C2621] pb-3">
+        <div className="p-4 bg-header border border-line rounded-lg space-y-3 shadow-sm animate-in fade-in duration-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
             <div className="flex items-center gap-2">
-              <Eye className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#E5E1DA]">
+              <Eye className="w-3.5 h-3.5 text-gold" />
+              <span className="text-xs font-bold uppercase tracking-wider text-text">
                 Humidor Field Visibility & View Presets
               </span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] uppercase font-semibold text-[#A89F94] mr-1">Presets:</span>
+              <span className="text-[10px] uppercase font-semibold text-text-muted mr-1">Presets:</span>
               <button
                 type="button"
                 onClick={() => applyPreset('all')}
-                className="px-2 py-1 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
+                className="px-2 py-1 bg-surface hover:bg-card-hover text-gold border border-line rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
               >
                 All Details
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('keySpecs')}
-                className="px-2 py-1 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
+                className="px-2 py-1 bg-surface hover:bg-card-hover text-text border border-line rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
               >
                 Key Specs
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('agingFocus')}
-                className="px-2 py-1 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
+                className="px-2 py-1 bg-surface hover:bg-card-hover text-text border border-line rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
               >
                 Resting & Aging
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('priceHunter')}
-                className="px-2 py-1 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
+                className="px-2 py-1 bg-surface hover:bg-card-hover text-text border border-line rounded text-[10px] font-semibold uppercase tracking-wider cursor-pointer"
               >
                 Price Hunter
               </button>
@@ -1263,15 +1264,15 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                   }
                   className={`flex items-center justify-between px-2.5 py-1.5 rounded text-[11px] font-medium border transition cursor-pointer ${
                     active
-                      ? 'bg-[#1F1A16] border-[#C5A059]/50 text-[#C5A059]'
-                      : 'bg-[#13110F] border-[#2C2621] text-[#A89F94]/60 line-through'
+                      ? 'bg-[#1F1A16] border-gold/50 text-gold'
+                      : 'bg-surface border-line text-text-muted/60 line-through'
                   }`}
                 >
                   <span className="truncate mr-1">{f.label}</span>
                   {active ? (
-                    <Check className="w-3 h-3 text-[#C5A059] shrink-0" />
+                    <Check className="w-3 h-3 text-gold shrink-0" />
                   ) : (
-                    <EyeOff className="w-3 h-3 text-[#A89F94]/40 shrink-0" />
+                    <EyeOff className="w-3 h-3 text-text-muted/40 shrink-0" />
                   )}
                 </button>
               );
@@ -1282,10 +1283,10 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
       {/* Empty State when no results match search/filter */}
       {filteredCigars.length === 0 && (
-        <div className="text-center py-16 px-4 bg-[#1C1816] border border-[#2C2621] rounded-lg">
-          <Search className="w-10 h-10 text-[#A89F94]/50 mx-auto mb-3" />
-          <h3 className="text-base font-serif font-bold text-[#E5E1DA]">No Cigars Found</h3>
-          <p className="text-xs text-[#A89F94] mt-1 max-w-md mx-auto">
+        <div className="text-center py-16 px-4 bg-card border border-line rounded-lg">
+          <Search className="w-10 h-10 text-text-muted/50 mx-auto mb-3" />
+          <h3 className="text-base font-serif font-bold text-text">No Cigars Found</h3>
+          <p className="text-xs text-text-muted mt-1 max-w-md mx-auto">
             {searchQuery
               ? `No sticks in your inventory matched "${searchQuery}". Try searching for a different brand, name, or wrapper type.`
               : 'No sticks match the currently active filters in your vault.'}
@@ -1294,7 +1295,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="px-4 py-2 bg-[#241E1B] hover:bg-[#2C2621] text-[#C5A059] border border-[#382E26] rounded text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 bg-card-hover hover:bg-line text-gold border border-line-warm rounded text-xs font-semibold cursor-pointer"
               >
                 Clear Search Term
               </button>
@@ -1307,7 +1308,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                 setOriginFilter('all');
                 setSelectedHumidorId('all');
               }}
-              className="px-4 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded text-xs font-bold uppercase tracking-wider cursor-pointer"
+              className="px-4 py-2 bg-gold hover:brightness-110 text-ink rounded text-xs font-bold uppercase tracking-wider cursor-pointer"
             >
               Reset All Filters
             </button>
@@ -1330,8 +1331,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                 key={cigar.id}
                 className={`rounded-lg border transition-all duration-200 flex flex-col justify-between p-5 ${
                   isOutOfStock
-                    ? 'bg-[#13110F] border-[#2C2621] opacity-60'
-                    : 'bg-[#1C1816] border-[#2C2621] hover:border-[#3D352E] shadow-sm'
+                    ? 'bg-surface border-line opacity-60'
+                    : 'bg-card border-line hover:border-line-hover shadow-sm'
                 }`}
               >
                 <div>
@@ -1339,15 +1340,15 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex-1 min-w-0">
                       {editingNameId === cigar.id ? (
-                        <div className="space-y-1.5 p-2 bg-[#13110F] border border-[#C5A059] rounded-md mb-2 animate-in fade-in">
-                          <div className="text-[10px] uppercase font-bold text-[#C5A059]">Edit Cigar Name (Syncs Everywhere)</div>
+                        <div className="space-y-1.5 p-2 bg-surface border border-gold rounded-md mb-2 animate-in fade-in">
+                          <div className="text-[10px] uppercase font-bold text-gold">Edit Cigar Name (Syncs Everywhere)</div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <input
                               type="text"
                               placeholder="Brand"
                               value={inlineBrand}
                               onChange={(e) => setInlineBrand(e.target.value)}
-                              className="bg-[#1C1816] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                              className="bg-card border border-line rounded px-2 py-1 text-xs text-text focus:border-gold focus:outline-hidden"
                             />
                             <input
                               type="text"
@@ -1358,21 +1359,21 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                                 if (e.key === 'Enter') handleSaveInlineEdit(cigar);
                                 if (e.key === 'Escape') setEditingNameId(null);
                               }}
-                              className="bg-[#1C1816] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                              className="bg-card border border-line rounded px-2 py-1 text-xs text-text focus:border-gold focus:outline-hidden"
                             />
                           </div>
                           <div className="flex items-center gap-2 pt-1">
                             <button
                               type="button"
                               onClick={() => handleSaveInlineEdit(cigar)}
-                              className="px-2.5 py-1 bg-[#C5A059] text-[#0F0D0C] rounded font-bold text-xs hover:brightness-110 cursor-pointer"
+                              className="px-2.5 py-1 bg-gold text-ink rounded font-bold text-xs hover:brightness-110 cursor-pointer"
                             >
                               Save & Sync
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingNameId(null)}
-                              className="px-2 py-1 bg-[#2C2621] text-[#A89F94] hover:text-white rounded text-xs cursor-pointer"
+                              className="px-2 py-1 bg-line text-text-muted hover:text-white rounded text-xs cursor-pointer"
                             >
                               Cancel
                             </button>
@@ -1381,13 +1382,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                       ) : (
                         <div>
                           <div className="flex items-center gap-1.5 group">
-                            <div className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[#C5A059]">
+                            <div className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold">
                               {cigar.brand}
                             </div>
                             <button
                               type="button"
                               onClick={() => handleStartInlineEdit(cigar)}
-                              className="opacity-0 group-hover:opacity-100 text-[#A89F94] hover:text-[#C5A059] transition cursor-pointer p-0.5"
+                              className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-gold transition cursor-pointer p-0.5"
                               title="Edit name inline (syncs across humidor, wishlist, research & smoke logs)"
                             >
                               <Edit2 className="w-2.5 h-2.5" />
@@ -1395,7 +1396,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                           </div>
                           <h3
                             onClick={() => handleStartInlineEdit(cigar)}
-                            className="font-serif font-semibold text-base text-[#E5E1DA] leading-snug hover:text-[#C5A059] cursor-pointer transition"
+                            className="font-serif font-semibold text-base text-text leading-snug hover:text-gold cursor-pointer transition"
                             title="Click to edit name inline"
                           >
                             {cigar.name}
@@ -1404,7 +1405,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                       )}
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
                         {displayFields.vitolaSpecs && (
-                          <span className="text-xs text-[#A89F94]">
+                          <span className="text-xs text-text-muted">
                             {cigar.vitola}{' '}
                             {cigar.lengthInches ? `• ${cigar.lengthInches}"` : ''}
                             {cigar.ringGauge ? ` x ${cigar.ringGauge} RG` : ''}
@@ -1412,10 +1413,10 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                         )}
                         {displayFields.smokeTime && (
                           <span
-                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-[#13110F] text-[#C5A059] border border-[#2C2621] font-mono font-medium"
+                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-surface text-gold border border-line font-mono font-medium"
                             title="Calculated smoke duration based on vitola & gauge"
                           >
-                            <Clock className="w-3 h-3 text-[#C5A059]" />
+                            <Clock className="w-3 h-3 text-gold" />
                             <span>⏱️ {smokeDurationText}</span>
                           </span>
                         )}
@@ -1424,12 +1425,12 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
                     <button
                       onClick={() => onToggleFavorite(cigar.id)}
-                      className="p-1 rounded text-[#C5A059] hover:bg-[#2C2621] transition cursor-pointer"
+                      className="p-1 rounded text-gold hover:bg-line transition cursor-pointer"
                       title={cigar.isFavorite ? 'Remove favorite' : 'Mark favorite'}
                     >
                       <Star
                         className={`w-4 h-4 ${
-                          cigar.isFavorite ? 'fill-[#C5A059] text-[#C5A059]' : 'text-[#3D352E] hover:text-[#C5A059]'
+                          cigar.isFavorite ? 'fill-gold text-gold' : 'text-line-hover hover:text-gold'
                         }`}
                       />
                     </button>
@@ -1437,23 +1438,23 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
                   {/* Wrapper & Blend Info */}
                   {(displayFields.wrapperOrigin || displayFields.strength) && (
-                    <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md text-xs space-y-1.5 my-3">
+                    <div className="p-3 bg-surface border border-line rounded-md text-xs space-y-1.5 my-3">
                       {displayFields.wrapperOrigin && (
                         <div className="flex justify-between">
-                          <span className="text-[#A89F94]">Wrapper:</span>
-                          <span className="font-medium text-[#E5E1DA] truncate ml-2">{cigar.wrapper}</span>
+                          <span className="text-text-muted">Wrapper:</span>
+                          <span className="font-medium text-text truncate ml-2">{cigar.wrapper}</span>
                         </div>
                       )}
                       {displayFields.wrapperOrigin && (
                         <div className="flex justify-between">
-                          <span className="text-[#A89F94]">Origin / Terroir:</span>
-                          <span className="font-serif text-[#C5A059]">{cigar.countryOrigin}</span>
+                          <span className="text-text-muted">Origin / Terroir:</span>
+                          <span className="font-serif text-gold">{cigar.countryOrigin}</span>
                         </div>
                       )}
                       {displayFields.strength && (
                         <div className="flex justify-between">
-                          <span className="text-[#A89F94]">Strength:</span>
-                          <span className="font-medium text-[#E5E1DA]">{cigar.strength}</span>
+                          <span className="text-text-muted">Strength:</span>
+                          <span className="font-medium text-text">{cigar.strength}</span>
                         </div>
                       )}
                     </div>
@@ -1462,10 +1463,10 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                   {/* Humidor & Resting Pill */}
                   {displayFields.humidorResting && (
                     <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-wider mb-3">
-                      <span className="px-2 py-0.5 rounded bg-[#13110F] text-[#A89F94] border border-[#2C2621]">
+                      <span className="px-2 py-0.5 rounded bg-surface text-text-muted border border-line">
                         📍 {humidor?.name || 'Vault'}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-[#13110F] text-[#C5A059] border border-[#2C2621] font-serif">
+                      <span className="px-2 py-0.5 rounded bg-surface text-gold border border-line font-serif">
                         ⏳ {restDays}d rested
                       </span>
                     </div>
@@ -1477,13 +1478,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                       {cigar.flavorTags.slice(0, 3).map((tag) => (
                         <span
                           key={tag}
-                          className="text-[10px] px-2 py-0.5 rounded bg-[#13110F] text-[#A89F94] border border-[#2C2621]"
+                          className="text-[10px] px-2 py-0.5 rounded bg-surface text-text-muted border border-line"
                         >
                           {tag}
                         </span>
                       ))}
                       {cigar.flavorTags.length > 3 && (
-                        <span className="text-[10px] px-1.5 py-0.5 text-[#A89F94]">
+                        <span className="text-[10px] px-1.5 py-0.5 text-text-muted">
                           +{cigar.flavorTags.length - 3}
                         </span>
                       )}
@@ -1492,25 +1493,25 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
                   {/* Notes / Collector Quote */}
                   {displayFields.notes && cigar.notes && (
-                    <p className="text-xs text-[#A89F94] italic line-clamp-2 mb-3 bg-[#13110F] p-2.5 rounded border border-[#2C2621]/60">
+                    <p className="text-xs text-text-muted italic line-clamp-2 mb-3 bg-surface p-2.5 rounded border border-line/60">
                       "{cigar.notes}"
                     </p>
                   )}
 
                   {/* Multi-Retailer Price Comparison Section */}
                   {displayFields.retailerQuotes && ((cigar.vendorPrices && cigar.vendorPrices.length > 0) || quickQuoteCigarId === cigar.id) && (
-                    <div className="mb-3 p-2.5 rounded bg-[#13110F] border border-[#2C2621] text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#A89F94] mb-2 font-medium">
+                    <div className="mb-3 p-2.5 rounded bg-surface border border-line text-xs">
+                      <div className="flex items-center justify-between text-[11px] text-text-muted mb-2 font-medium">
                         <span className="flex items-center gap-1">
-                          <Store className="w-3.5 h-3.5 text-[#C5A059]" />
-                          <span className="text-[#E5E1DA] font-semibold">
+                          <Store className="w-3.5 h-3.5 text-gold" />
+                          <span className="text-text font-semibold">
                             Retailer Quotes ({cigar.vendorPrices?.length || 0})
                           </span>
                         </span>
                         {quickQuoteCigarId !== cigar.id && (
                           <button
                             onClick={() => handleStartQuickQuote(cigar.id)}
-                            className="text-[#C5A059] hover:underline flex items-center gap-0.5 text-[10px] font-semibold cursor-pointer"
+                            className="text-gold hover:underline flex items-center gap-0.5 text-[10px] font-semibold cursor-pointer"
                           >
                             <Plus className="w-3 h-3" /> Add Quote
                           </button>
@@ -1523,27 +1524,27 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                           {cigar.vendorPrices.map((vp, idx) => (
                             <div
                               key={vp.id || idx}
-                              className="flex items-center justify-between text-[11px] py-0.5 border-b border-[#2C2621]/40 last:border-0 group/quote"
+                              className="flex items-center justify-between text-[11px] py-0.5 border-b border-line/40 last:border-0 group/quote"
                             >
                               <div className="flex items-center gap-1.5 truncate max-w-[150px]">
-                                <span className="text-[#E5E1DA] truncate">{vp.vendor}</span>
+                                <span className="text-text truncate">{vp.vendor}</span>
                                 {vp.packageType && vp.packageType !== 'Single' && (
-                                  <span className="text-[9px] text-[#A89F94]">({vp.packageType})</span>
+                                  <span className="text-[9px] text-text-muted">({vp.packageType})</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-1.5">
                                 {idx === 0 && cigar.vendorPrices && cigar.vendorPrices.length > 1 && (
-                                  <span className="text-[9px] px-1 py-0.2 bg-[#C5A059]/20 text-[#C5A059] font-bold rounded border border-[#C5A059]/40">
+                                  <span className="text-[9px] px-1 py-0.2 bg-gold/20 text-gold font-bold rounded border border-gold/40">
                                     Best
                                   </span>
                                 )}
-                                <span className="font-serif font-semibold text-[#E5E1DA]">
+                                <span className="font-serif font-semibold text-text">
                                   {formatCurrency(vp.price, vp.currency || cigar.currency || '£')}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteQuote(cigar, vp.id, vp.vendor)}
-                                  className="text-[#A89F94] hover:text-red-400 p-0.5 rounded transition cursor-pointer"
+                                  className="text-text-muted hover:text-red-400 p-0.5 rounded transition cursor-pointer"
                                   title={`Delete ${vp.vendor} quote`}
                                 >
                                   <X className="w-2.5 h-2.5" />
@@ -1556,8 +1557,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
                       {/* Inline Quick Add Form */}
                       {quickQuoteCigarId === cigar.id && (
-                        <div className="pt-2 border-t border-[#2C2621] space-y-2">
-                          <div className="text-[10px] uppercase font-bold tracking-wider text-[#C5A059]">
+                        <div className="pt-2 border-t border-line space-y-2">
+                          <div className="text-[10px] uppercase font-bold tracking-wider text-gold">
                             Add Retailer Price Quote:
                           </div>
 
@@ -1568,8 +1569,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                                 key={preset}
                                 className={`group inline-flex items-center gap-0.5 text-[10px] pl-1.5 pr-1 py-0.5 rounded border transition ${
                                   quickQuoteVendor === preset
-                                    ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059] font-bold'
-                                    : 'bg-[#1C1816] text-[#A89F94] border-[#2C2621] hover:text-[#E5E1DA]'
+                                    ? 'bg-gold text-ink border-gold font-bold'
+                                    : 'bg-card text-text-muted border-line hover:text-text'
                                 }`}
                               >
                                 <button
@@ -1609,19 +1610,19 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                                     }
                                   }}
                                   autoFocus
-                                  className="text-[10px] px-1 py-0.5 bg-[#13110F] border border-[#C5A059] rounded text-[#E5E1DA] w-20 focus:outline-hidden"
+                                  className="text-[10px] px-1 py-0.5 bg-surface border border-gold rounded text-text w-20 focus:outline-hidden"
                                 />
                                 <button
                                   type="button"
                                   onClick={handleAddNewQuickTag}
-                                  className="text-[10px] px-1 py-0.5 bg-[#C5A059] text-[#0F0D0C] font-bold rounded cursor-pointer"
+                                  className="text-[10px] px-1 py-0.5 bg-gold text-ink font-bold rounded cursor-pointer"
                                 >
                                   Add
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setShowAddTagInput(false)}
-                                  className="text-[10px] text-[#A89F94] hover:text-white px-0.5 cursor-pointer"
+                                  className="text-[10px] text-text-muted hover:text-white px-0.5 cursor-pointer"
                                 >
                                   ✕
                                 </button>
@@ -1630,7 +1631,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setShowAddTagInput(true)}
-                                className="text-[10px] px-1.5 py-0.5 bg-[#1C1816] text-[#A89F94] hover:text-[#C5A059] border border-dashed border-[#2C2621] rounded cursor-pointer"
+                                className="text-[10px] px-1.5 py-0.5 bg-card text-text-muted hover:text-gold border border-dashed border-line rounded cursor-pointer"
                                 title="Add custom quick shop tag"
                               >
                                 + Tag
@@ -1644,13 +1645,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                               value={quickQuoteVendor}
                               onChange={(e) => setQuickQuoteVendor(e.target.value)}
                               placeholder="Retailer name..."
-                              className="px-2 py-1 bg-[#1C1816] border border-[#2C2621] rounded text-[11px] text-[#E5E1DA] focus:border-[#C5A059] outline-none"
+                              className="px-2 py-1 bg-card border border-line rounded text-[11px] text-text focus:border-gold outline-none"
                             />
                             <div className="flex gap-1">
                               <select
                                 value={quickQuoteCurrency}
                                 onChange={(e) => setQuickQuoteCurrency(e.target.value)}
-                                className="px-1.5 py-1 bg-[#1C1816] border border-[#2C2621] rounded text-[11px] text-[#E5E1DA] focus:border-[#C5A059] outline-none"
+                                className="px-1.5 py-1 bg-card border border-line rounded text-[11px] text-text focus:border-gold outline-none"
                               >
                                 <option value="£">£</option>
                                 <option value="$">$</option>
@@ -1663,7 +1664,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                                 value={quickQuoteValue}
                                 onChange={(e) => setQuickQuoteValue(e.target.value)}
                                 placeholder="Price..."
-                                className="w-full px-2 py-1 bg-[#1C1816] border border-[#2C2621] rounded text-[11px] text-[#E5E1DA] focus:border-[#C5A059] outline-none"
+                                className="w-full px-2 py-1 bg-card border border-line rounded text-[11px] text-text focus:border-gold outline-none"
                               />
                             </div>
                           </div>
@@ -1675,14 +1676,14 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                                 setQuickQuoteCigarId(null);
                                 setQuickQuoteValue('');
                               }}
-                              className="px-2 py-1 text-[10px] text-[#A89F94] hover:text-[#E5E1DA] rounded cursor-pointer"
+                              className="px-2 py-1 text-[10px] text-text-muted hover:text-text rounded cursor-pointer"
                             >
                               Cancel
                             </button>
                             <button
                               type="button"
                               onClick={() => handleSaveQuickQuote(cigar)}
-                              className="px-2.5 py-1 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-[10px] rounded transition cursor-pointer"
+                              className="px-2.5 py-1 bg-gold hover:brightness-110 text-ink font-bold text-[10px] rounded transition cursor-pointer"
                             >
                               Save Quote
                             </button>
@@ -1694,13 +1695,13 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                 </div>
 
                 {/* Bottom Action Footer */}
-                <div className="pt-3 border-t border-[#2C2621] space-y-3">
+                <div className="pt-3 border-t border-line space-y-3">
                   {/* Stock Stepper & Price */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => onUpdateQuantity(cigar.id, Math.max(0, cigar.quantity - 1))}
-                        className="w-7 h-7 rounded bg-[#13110F] hover:bg-[#2C2621] text-[#E5E1DA] flex items-center justify-center border border-[#2C2621] transition cursor-pointer"
+                        className="w-7 h-7 rounded bg-surface hover:bg-line text-text flex items-center justify-center border border-line transition cursor-pointer"
                         title="Deduct 1 stick"
                       >
                         <Minus className="w-3 h-3" />
@@ -1710,22 +1711,22 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                       </span>
                       <button
                         onClick={() => onUpdateQuantity(cigar.id, cigar.quantity + 1)}
-                        className="w-7 h-7 rounded bg-[#13110F] hover:bg-[#2C2621] text-[#E5E1DA] flex items-center justify-center border border-[#2C2621] transition cursor-pointer"
+                        className="w-7 h-7 rounded bg-surface hover:bg-line text-text flex items-center justify-center border border-line transition cursor-pointer"
                         title="Add 1 stick"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
-                      <span className="text-xs text-[#A89F94]">sticks</span>
+                      <span className="text-xs text-text-muted">sticks</span>
                     </div>
 
                     <div className="text-right">
                       {displayFields.pricing && (
-                        <div className="text-xs font-serif text-[#E5E1DA]">
+                        <div className="text-xs font-serif text-text">
                           {cigar.purchasePrice !== undefined ? `${formatCurrency(cigar.purchasePrice, cigar.currency || '£')}/ea` : '—'}
                         </div>
                       )}
                       {displayFields.rating && cigar.personalRating && (
-                        <div className="text-[11px] font-serif font-bold text-[#C5A059]">
+                        <div className="text-[11px] font-serif font-bold text-gold">
                           ★ {cigar.personalRating}/100
                         </div>
                       )}
@@ -1739,8 +1740,8 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                       disabled={isOutOfStock}
                       className={`w-full flex items-center justify-center gap-2 py-2.5 rounded text-xs uppercase tracking-wider font-bold transition cursor-pointer shadow-sm ${
                         isOutOfStock
-                          ? 'bg-[#13110F] text-[#3D352E] border border-[#2C2621] cursor-not-allowed'
-                          : 'bg-[#C5A059] hover:brightness-110 text-[#0F0D0C]'
+                          ? 'bg-surface text-line-hover border border-line cursor-not-allowed'
+                          : 'bg-gold hover:brightness-110 text-ink'
                       }`}
                     >
                       <Flame className="w-4 h-4" />
@@ -1749,7 +1750,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                   </div>
 
                   {/* Mini actions row */}
-                  <div className="flex justify-between items-center gap-2 text-[#A89F94] text-xs pt-1.5 border-t border-[#2C2621]/60">
+                  <div className="flex justify-between items-center gap-2 text-text-muted text-xs pt-1.5 border-t border-line/60">
                     <div className="flex items-center gap-2">
                       {onAddToWishlist && (
                         <button
@@ -1764,10 +1765,10 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                             });
                             showNotice(`Added "${cigar.brand} ${cigar.name}" to your Wishlist!`);
                           }}
-                          className="hover:text-[#C5A059] flex items-center gap-1 cursor-pointer text-[11px]"
+                          className="hover:text-gold flex items-center gap-1 cursor-pointer text-[11px]"
                           title="Bookmark to Wishlist"
                         >
-                          <Bookmark className="w-3 h-3 text-[#C5A059]" />
+                          <Bookmark className="w-3 h-3 text-gold" />
                           <span>Wishlist</span>
                         </button>
                       )}
@@ -1775,7 +1776,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                         <button
                           onClick={() => {
                             const newRes: CigarResearchItem = {
-                              id: `res-inv-${Date.now()}`,
+                              id: generateId('res-inv'),
                               brand: cigar.brand,
                               line: cigar.line || cigar.name,
                               vitola: cigar.vitola || 'Robusto',
@@ -1806,10 +1807,10 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                             onAddToResearch(newRes);
                             showNotice(`Saved "${cigar.brand} ${cigar.name}" to Research Database!`);
                           }}
-                          className="hover:text-[#C5A059] flex items-center gap-1 cursor-pointer text-[11px]"
+                          className="hover:text-gold flex items-center gap-1 cursor-pointer text-[11px]"
                           title="Save to Research Database"
                         >
-                          <BookOpen className="w-3 h-3 text-[#C5A059]" />
+                          <BookOpen className="w-3 h-3 text-gold" />
                           <span>Research DB</span>
                         </button>
                       )}
@@ -1838,7 +1839,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
                       <button
                         onClick={() => onEditCigar(cigar)}
-                        className="hover:text-[#E5E1DA] flex items-center gap-1 cursor-pointer"
+                        className="hover:text-text flex items-center gap-1 cursor-pointer"
                       >
                         <Edit2 className="w-3 h-3" />
                         <span>Edit</span>
@@ -1858,7 +1859,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                           </button>
                           <button
                             onClick={() => setConfirmDeleteId(null)}
-                            className="px-1.5 py-0.5 bg-[#2C2621] hover:bg-[#3D352E] text-[#A89F94] rounded text-[10px] cursor-pointer transition"
+                            className="px-1.5 py-0.5 bg-line hover:bg-line-hover text-text-muted rounded text-[10px] cursor-pointer transition"
                           >
                             No
                           </button>
@@ -1883,10 +1884,10 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
       {/* Table View */}
       {filteredCigars.length > 0 && viewMode === 'table' && (
-        <div className="bg-[#1C1816] border border-[#2C2621] rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-card border border-line rounded-lg overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-[#E5E1DA]">
-              <thead className="bg-[#13110F] text-[#A89F94] uppercase tracking-wider font-semibold border-b border-[#2C2621]">
+            <table className="w-full text-left text-xs text-text">
+              <thead className="bg-surface text-text-muted uppercase tracking-wider font-semibold border-b border-line">
                 <tr>
                   <th className="p-3">Brand & Name</th>
                   {displayFields.vitolaSpecs && <th className="p-3">Vitola / Specs</th>}
@@ -1902,7 +1903,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                   <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#2C2621]">
+              <tbody className="divide-y divide-line">
                 {filteredCigars.map((c) => {
                   const rest = calculateRestDays(c.purchaseDate);
                   const hum = humidorMap.get(c.humidorId);
@@ -1910,23 +1911,23 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                   const smokeDurationText = c.smokeTimeRange || smokeEstimate.range;
 
                   return (
-                    <tr key={c.id} className="hover:bg-[#241E1B] transition">
+                    <tr key={c.id} className="hover:bg-card-hover transition">
                       <td className="p-3">
                         <div className="font-semibold text-white">{c.brand}</div>
-                        <div className="text-[#A89F94]">{c.name}</div>
+                        <div className="text-text-muted">{c.name}</div>
                       </td>
                       {displayFields.vitolaSpecs && (
                         <td className="p-3">
                           <div>{c.vitola}</div>
-                          <div className="text-[#A89F94] text-[10px]">
+                          <div className="text-text-muted text-[10px]">
                             {c.lengthInches ? `${c.lengthInches}"` : ''} {c.ringGauge ? `x ${c.ringGauge}` : ''}
                           </div>
                         </td>
                       )}
                       {displayFields.smokeTime && (
                         <td className="p-3 whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#13110F] text-[#C5A059] border border-[#2C2621] font-mono text-[11px] font-medium">
-                            <Clock className="w-3 h-3 text-[#C5A059]" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface text-gold border border-line font-mono text-[11px] font-medium">
+                            <Clock className="w-3 h-3 text-gold" />
                             <span>⏱️ {smokeDurationText}</span>
                           </span>
                         </td>
@@ -1934,59 +1935,59 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                       {displayFields.wrapperOrigin && (
                         <td className="p-3">
                           <div>{c.wrapper}</div>
-                          <div className="text-[#C5A059] font-serif text-[10px]">{c.countryOrigin}</div>
+                          <div className="text-gold font-serif text-[10px]">{c.countryOrigin}</div>
                         </td>
                       )}
                       {displayFields.strength && (
                         <td className="p-3">
-                          <span className="px-2 py-0.5 rounded bg-[#13110F] text-[#E5E1DA] border border-[#2C2621] text-[11px]">
+                          <span className="px-2 py-0.5 rounded bg-surface text-text border border-line text-[11px]">
                             {c.strength}
                           </span>
                         </td>
                       )}
                       {displayFields.humidorResting && (
-                        <td className="p-3 text-[#A89F94]">{hum?.name || 'Main Vault'}</td>
+                        <td className="p-3 text-text-muted">{hum?.name || 'Main Vault'}</td>
                       )}
                       {displayFields.humidorResting && (
                         <td className="p-3">
-                          <div className="font-serif text-[#C5A059]">{rest}d</div>
-                          <div className="text-[10px] text-[#A89F94]">{c.status}</div>
+                          <div className="font-serif text-gold">{rest}d</div>
+                          <div className="text-[10px] text-text-muted">{c.status}</div>
                         </td>
                       )}
                       <td className="p-3">
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => onUpdateQuantity(c.id, Math.max(0, c.quantity - 1))}
-                            className="p-1 text-[#A89F94] hover:text-[#E5E1DA]"
+                            className="p-1 text-text-muted hover:text-text"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="font-serif font-bold text-white w-6 text-center">{c.quantity}</span>
                           <button
                             onClick={() => onUpdateQuantity(c.id, c.quantity + 1)}
-                            className="p-1 text-[#A89F94] hover:text-[#E5E1DA]"
+                            className="p-1 text-text-muted hover:text-text"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
                       </td>
                       {displayFields.pricing && (
-                        <td className="p-3 font-serif text-[#E5E1DA]">
+                        <td className="p-3 font-serif text-text">
                           <div>{c.purchasePrice !== undefined ? formatCurrency(c.purchasePrice, c.currency || '£') : '—'}</div>
                           {displayFields.retailerQuotes && c.vendorPrices && c.vendorPrices.length > 0 && (
-                            <div className="text-[10px] text-[#C5A059] font-sans font-medium">
+                            <div className="text-[10px] text-gold font-sans font-medium">
                               {c.vendorPrices.length} quote{c.vendorPrices.length > 1 ? 's' : ''} ({c.vendorPrices.map((v) => v.vendor).slice(0, 2).join(', ')}{c.vendorPrices.length > 2 ? '...' : ''})
                             </div>
                           )}
                         </td>
                       )}
                       {displayFields.rating && (
-                        <td className="p-3 font-serif font-bold text-[#C5A059]">
+                        <td className="p-3 font-serif font-bold text-gold">
                           {c.personalRating ? `★ ${c.personalRating}` : '—'}
                         </td>
                       )}
                       {displayFields.notes && (
-                        <td className="p-3 max-w-xs truncate text-[#A89F94] italic">
+                        <td className="p-3 max-w-xs truncate text-text-muted italic">
                           {c.notes || '—'}
                         </td>
                       )}
@@ -2005,7 +2006,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                                 });
                                 showNotice(`Added "${c.brand} ${c.name}" to Wishlist!`);
                               }}
-                              className="p-1.5 text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/40 rounded cursor-pointer transition"
+                              className="p-1.5 text-text-muted hover:text-gold border border-line hover:border-gold/40 rounded cursor-pointer transition"
                               title="Add to Wishlist"
                             >
                               <Bookmark className="w-3.5 h-3.5" />
@@ -2013,14 +2014,14 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
                           )}
                           <button
                             onClick={() => onSmokeCigar(c.id)}
-                            className="px-3 py-1 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded font-bold text-xs uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                            className="px-3 py-1 bg-gold hover:brightness-110 text-ink rounded font-bold text-xs uppercase tracking-wider flex items-center gap-1 cursor-pointer"
                           >
                             <Flame className="w-3 h-3" />
                             <span>Smoke</span>
                           </button>
                           <button
                             onClick={() => onEditCigar(c)}
-                            className="p-1 text-[#A89F94] hover:text-[#E5E1DA] cursor-pointer"
+                            className="p-1 text-text-muted hover:text-text cursor-pointer"
                             title="Edit"
                           >
                             <Edit2 className="w-3.5 h-3.5" />

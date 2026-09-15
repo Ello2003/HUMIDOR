@@ -1,4 +1,5 @@
 import { Cigar, Humidor, SmokeLog, WishlistItem, CigarAppData, CigarResearchItem } from '../types';
+import { formatDate, formatDateLong } from './dateUtils';
 
 /**
  * Utility to download text/data as a local file in browser
@@ -346,7 +347,7 @@ export function exportJournalMarkdown(logs: SmokeLog[], cigars: Cigar[]) {
 `;
 
   logs.forEach((l, index) => {
-    const dateFormatted = l.smokedAt ? new Date(l.smokedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown Date';
+    const dateFormatted = formatDateLong(l.smokedAt);
     md += `### ${index + 1}. ${l.cigarBrand} ${l.cigarName} (${l.vitola})
 - **Date & Location:** ${dateFormatted} at *${l.location}* ${l.occasion ? `(${l.occasion})` : ''}
 - **Score:** ⭐ **${l.overallScore}/100** (${l.starRating}/5 Stars) | **Verdict:** \`${l.wouldRebuy}\`
@@ -484,7 +485,7 @@ export function exportPrintableReport(cigars: Cigar[], humidors: Humidor[], logs
   <div class="header">
     <div>
       <h1>🍂 Personal Humidor Vault & Tasting Ledger</h1>
-      <div class="subtitle">Private Connoisseur Collection Report • Generated ${new Date().toLocaleDateString()}</div>
+      <div class="subtitle">Private Connoisseur Collection Report • Generated ${formatDate(new Date().toISOString())}</div>
     </div>
     <div style="text-align: right;">
       <div style="font-weight: 700; color: #78350f;">Personal Collector Edition</div>
@@ -566,7 +567,7 @@ export function exportPrintableReport(cigars: Cigar[], humidors: Humidor[], logs
     <tbody>
       ${logs
         .map((l) => {
-          const date = l.smokedAt ? new Date(l.smokedAt).toLocaleDateString() : '';
+          const date = l.smokedAt ? formatDate(l.smokedAt) : '';
           return `
         <tr>
           <td>${date}<br><span style="color:#78716c; font-size:10px;">${l.location}</span></td>

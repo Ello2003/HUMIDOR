@@ -1,5 +1,22 @@
 export type StrengthRating = 'Mild' | 'Mild-Medium' | 'Medium' | 'Medium-Full' | 'Full' | 'Full-Bodied';
 
+/**
+ * Single source of truth for the strength options offered anywhere in the
+ * UI (filters, dropdowns, distribution widgets). Previously
+ * `CigarResearchHub`, `DashboardOverview`, and `HumidorInventory` each
+ * hardcoded their own 5-item list that omitted `'Full-Bodied'` even though
+ * it's a valid `StrengthRating` -- meaning a cigar tagged Full-Bodied could
+ * never be found via those filters.
+ */
+export const STRENGTH_LEVELS: StrengthRating[] = [
+  'Mild',
+  'Mild-Medium',
+  'Medium',
+  'Medium-Full',
+  'Full',
+  'Full-Bodied',
+];
+
 export type CigarStatus = 'resting' | 'ready' | 'aging' | 'special_occasion' | 'archived';
 
 export type HumidorType =
@@ -35,7 +52,12 @@ export interface Cigar {
   boxCode?: string;
   targetRestMonths: number;
   notes?: string;
-  personalRating?: number; // 1-100 or 1-5
+  /**
+   * Personal rating on a 0-100 scale (matches `criticRating` and the
+   * Research DB's rating slider) -- NOT a 1-5 star scale. Every UI that
+   * reads or writes it should assume 0-100.
+   */
+  personalRating?: number;
   isFavorite: boolean;
   status: CigarStatus;
   flavorTags: string[];

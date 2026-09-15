@@ -27,28 +27,28 @@ export const HumidorManagerDrawer: React.FC<HumidorManagerDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="relative w-full max-w-2xl bg-[#1C1816] border border-[#2C2621] rounded-lg shadow-2xl overflow-hidden text-[#E5E1DA]">
-        <div className="px-6 py-4 bg-[#13110F] border-b border-[#2C2621] flex items-center justify-between">
+      <div className="relative w-full max-w-2xl bg-card border border-line rounded-lg shadow-2xl overflow-hidden text-text">
+        <div className="px-6 py-4 bg-surface border-b border-line flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-[#1C1816] border border-[#2C2621] flex items-center justify-center text-[#C5A059]">
+            <div className="w-8 h-8 rounded bg-card border border-line flex items-center justify-center text-gold">
               <Box className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-serif font-semibold text-[#E5E1DA]">Humidor Vaults & Storage</h2>
-              <p className="text-xs text-[#A89F94]">Manage climate control, capacity & sensor monitoring</p>
+              <h2 className="text-base font-serif font-semibold text-text">Humidor Vaults & Storage</h2>
+              <p className="text-xs text-text-muted">Manage climate control, capacity & sensor monitoring</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={onOpenAddHumidor}
-              className="px-3 py-1.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm transition cursor-pointer"
+              className="px-3 py-1.5 bg-gold hover:brightness-110 text-ink rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Humidor</span>
             </button>
             <button
               onClick={onClose}
-              className="text-[#A89F94] hover:text-[#E5E1DA] p-1.5 rounded hover:bg-[#241E1B] transition cursor-pointer"
+              className="text-text-muted hover:text-text p-1.5 rounded hover:bg-card-hover transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -63,12 +63,12 @@ export const HumidorManagerDrawer: React.FC<HumidorManagerDrawerProps> = ({
             return (
               <div
                 key={h.id}
-                className="p-5 bg-[#13110F] border border-[#2C2621] rounded-lg space-y-3 shadow-sm"
+                className="p-5 bg-surface border border-line rounded-lg space-y-3 shadow-sm"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-serif font-semibold text-[#E5E1DA] text-sm">{h.name}</h3>
-                    <p className="text-xs text-[#A89F94]">
+                    <h3 className="font-serif font-semibold text-text text-sm">{h.name}</h3>
+                    <p className="text-xs text-text-muted">
                       {h.type} • 📍 {h.location}
                     </p>
                   </div>
@@ -76,7 +76,7 @@ export const HumidorManagerDrawer: React.FC<HumidorManagerDrawerProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onEditHumidor(h)}
-                      className="p-1.5 bg-[#1C1816] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#E5E1DA] rounded border border-[#2C2621] transition cursor-pointer"
+                      className="p-1.5 bg-card hover:bg-card-hover text-text-muted hover:text-text rounded border border-line transition cursor-pointer"
                       title="Edit Humidor"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -95,7 +95,7 @@ export const HumidorManagerDrawer: React.FC<HumidorManagerDrawerProps> = ({
                           </button>
                           <button
                             onClick={() => setConfirmDeleteId(null)}
-                            className="px-2 py-1 bg-[#2C2621] hover:bg-[#3D352E] text-[#A89F94] text-[11px] rounded transition cursor-pointer"
+                            className="px-2 py-1 bg-line hover:bg-line-hover text-text-muted text-[11px] rounded transition cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -103,7 +103,7 @@ export const HumidorManagerDrawer: React.FC<HumidorManagerDrawerProps> = ({
                       ) : (
                         <button
                           onClick={() => setConfirmDeleteId(h.id)}
-                          className="p-1.5 bg-[#1C1816] hover:bg-[#241E1B] text-[#A89F94] hover:text-red-400 rounded border border-[#2C2621] transition cursor-pointer"
+                          className="p-1.5 bg-card hover:bg-card-hover text-text-muted hover:text-red-400 rounded border border-line transition cursor-pointer"
                           title="Delete Humidor"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -114,37 +114,37 @@ export const HumidorManagerDrawer: React.FC<HumidorManagerDrawerProps> = ({
                 </div>
 
                 {/* Metrics */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs p-3 bg-[#1C1816] rounded-md border border-[#2C2621]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs p-3 bg-card rounded-md border border-line">
                   <div>
-                    <span className="text-[#A89F94] text-[9px] uppercase tracking-wider block">Current RH</span>
-                    <strong className="text-[#C5A059] text-sm">{h.currentHumidity}%</strong>{' '}
-                    <span className="text-[10px] text-[#A89F94]/70">(Target {h.targetHumidity}%)</span>
+                    <span className="text-text-muted text-[9px] uppercase tracking-wider block">Current RH</span>
+                    <strong className="text-gold text-sm">{h.currentHumidity}%</strong>{' '}
+                    <span className="text-[10px] text-text-muted/70">(Target {h.targetHumidity}%)</span>
                   </div>
                   <div>
-                    <span className="text-[#A89F94] text-[9px] uppercase tracking-wider block">Temp</span>
-                    <strong className="text-[#E5E1DA] text-sm">
+                    <span className="text-text-muted text-[9px] uppercase tracking-wider block">Temp</span>
+                    <strong className="text-text text-sm">
                       {h.currentTemp}°{h.tempUnit || 'F'}
                     </strong>
                   </div>
                   <div>
-                    <span className="text-[#A89F94] text-[9px] uppercase tracking-wider block">Capacity</span>
-                    <strong className="text-[#E5E1DA] text-sm">
+                    <span className="text-text-muted text-[9px] uppercase tracking-wider block">Capacity</span>
+                    <strong className="text-text text-sm">
                       {count} / {h.maxCapacity} ({percent}%)
                     </strong>
                   </div>
                   <div>
-                    <span className="text-[#A89F94] text-[9px] uppercase tracking-wider block">Hygrometer</span>
-                    <strong className="text-[#A89F94] text-xs truncate block">{h.hygrometerModel || 'Digital'}</strong>
+                    <span className="text-text-muted text-[9px] uppercase tracking-wider block">Hygrometer</span>
+                    <strong className="text-text-muted text-xs truncate block">{h.hygrometerModel || 'Digital'}</strong>
                   </div>
                 </div>
 
                 {/* Humidification note */}
-                <div className="flex flex-wrap items-center justify-between text-xs text-[#A89F94] pt-1">
+                <div className="flex flex-wrap items-center justify-between text-xs text-text-muted pt-1">
                   <span>📦 Pack: {h.bovedaPackType}</span>
                   <span>🗓️ Refreshed: {h.bovedaInstalledDate || 'Recently'}</span>
                 </div>
 
-                {h.notes && <p className="text-xs text-[#A89F94] italic bg-[#1C1816] p-2 rounded border border-[#2C2621]/60">"{h.notes}"</p>}
+                {h.notes && <p className="text-xs text-text-muted italic bg-card p-2 rounded border border-line/60">"{h.notes}"</p>}
               </div>
             );
           })}

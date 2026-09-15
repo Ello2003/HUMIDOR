@@ -54,7 +54,10 @@ import {
   WishlistItem,
   ReviewScoreEntry,
   SmokeLog,
+  STRENGTH_LEVELS,
 } from '../types';
+import { formatDateShort } from '../utils/dateUtils';
+import { generateId } from '../utils/idUtils';
 import { formatCurrency } from '../utils/currencyUtils';
 import {
   mergeVendorPriceIntoCigar,
@@ -1031,7 +1034,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     'Oscuro',
   ];
 
-  const strengthTypes: StrengthRating[] = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
+  const strengthTypes: StrengthRating[] = STRENGTH_LEVELS;
 
   // Toggle card expansion
   const toggleCardExpansion = (id: string) => {
@@ -1185,7 +1188,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     if (!newBrand.trim() || !newLine.trim()) return;
 
     const newCigar: CigarResearchItem = {
-      id: `custom-res-${Date.now()}`,
+      id: generateId('custom-res'),
       brand: newBrand.trim(),
       line: newLine.trim(),
       vitola: newVitola.trim(),
@@ -1320,32 +1323,32 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
       )}
 
       {/* Top Banner & Tab Navigation */}
-      <div className="p-6 bg-[#161311] border border-[#2C2621] rounded-lg shadow-sm">
+      <div className="p-6 bg-header border border-line rounded-lg shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#13110F] text-[#C5A059] border border-[#2C2621] text-[10px] font-semibold uppercase tracking-widest mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-surface text-gold border border-line text-[10px] font-semibold uppercase tracking-widest mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-gold" />
               <span>AI powered research</span>
             </div>
             <h1 className="text-xl sm:text-3xl font-serif text-white font-normal flex items-center gap-3">
               <span>Research</span>
-              <span className="text-sm font-sans font-medium px-2.5 py-0.5 rounded-full bg-[#1C1816] text-[#C5A059] border border-[#2C2621]">
+              <span className="text-sm font-sans font-medium px-2.5 py-0.5 rounded-full bg-card text-gold border border-line">
                 {researchDatabase.length}
               </span>
             </h1>
-            <p className="text-xs sm:text-sm text-[#A89F94] mt-1 max-w-3xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-text-muted mt-1 max-w-3xl leading-relaxed">
               Curated Cigar Encyclopedia
             </p>
           </div>
 
           {/* Sub-tab pills */}
-          <div className="flex flex-wrap bg-[#13110F] p-1 rounded-md border border-[#2C2621] text-xs gap-1">
+          <div className="flex flex-wrap bg-surface p-1 rounded-md border border-line text-xs gap-1">
             <button
               onClick={() => setActiveMainTab('database')}
               className={`px-3 py-2 rounded font-semibold text-xs transition cursor-pointer flex items-center gap-1.5 ${
                 activeMainTab === 'database'
-                  ? 'bg-[#C5A059] text-[#0F0D0C] shadow-xs'
-                  : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink shadow-xs'
+                  : 'text-text-muted hover:text-text'
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
@@ -1355,8 +1358,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               onClick={() => setActiveMainTab('dossier')}
               className={`px-3 py-2 rounded font-medium text-xs transition cursor-pointer flex items-center gap-1.5 ${
                 activeMainTab === 'dossier'
-                  ? 'bg-[#C5A059] text-[#0F0D0C] font-bold shadow-xs'
-                  : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink font-bold shadow-xs'
+                  : 'text-text-muted hover:text-text'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -1366,8 +1369,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               onClick={() => setActiveMainTab('sommelier')}
               className={`px-3 py-2 rounded font-medium text-xs transition cursor-pointer flex items-center gap-1.5 ${
                 activeMainTab === 'sommelier'
-                  ? 'bg-[#C5A059] text-[#0F0D0C] font-bold shadow-xs'
-                  : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink font-bold shadow-xs'
+                  : 'text-text-muted hover:text-text'
               }`}
             >
               <Coffee className="w-3.5 h-3.5" />
@@ -1381,22 +1384,22 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
       {activeMainTab === 'database' && (
         <div className="space-y-6">
           {/* Controls, Filters & JSON Export Bar */}
-          <div className="p-5 bg-[#161311] border border-[#2C2621] rounded-lg space-y-4 shadow-sm">
+          <div className="p-5 bg-header border border-line rounded-lg space-y-4 shadow-sm">
             {/* Search Input and Export Buttons */}
             <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-[#A89F94] absolute left-3.5 top-3" />
+                <Search className="w-4 h-4 text-text-muted absolute left-3.5 top-3" />
                 <input
                   type="text"
                   placeholder="Search by brand, line, vitola, wrapper, origin, or flavor notes (e.g. Padron, Habano, Espresso, Nicaragua)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md pl-10 pr-9 py-2.5 text-xs sm:text-sm text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059] placeholder-[#A89F94]/50"
+                  className="w-full bg-surface border border-line rounded-md pl-10 pr-9 py-2.5 text-xs sm:text-sm text-text focus:outline-hidden focus:border-gold placeholder-text-muted/50"
                 />
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="absolute right-3 top-3 text-[#A89F94] hover:text-[#E5E1DA]"
+                    className="absolute right-3 top-3 text-text-muted hover:text-text"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1407,10 +1410,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setIsAddCustomOpen(true)}
-                  className="px-3.5 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold uppercase tracking-wider text-[11px] rounded-md shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-2 bg-gold hover:brightness-110 text-ink font-bold uppercase tracking-wider text-[11px] rounded-md shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                   title="Add custom cigar to research database"
                 >
-                  <Plus className="w-3.5 h-3.5 text-[#0F0D0C]" />
+                  <Plus className="w-3.5 h-3.5 text-ink" />
                   <span>Add Stick</span>
                 </button>
 
@@ -1424,10 +1427,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         showFeedback('No duplicate cigars detected. Database is clean!');
                       }
                     }}
-                    className="px-3 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-2 bg-surface hover:bg-card-hover text-gold border border-line text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer"
                     title="Scan for duplicate cigars by brand/line/vitola and merge vendor prices, notes & ratings"
                   >
-                    <CopyCheck className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <CopyCheck className="w-3.5 h-3.5 text-gold" />
                     <span>Merge Duplicates</span>
                   </button>
                 )}
@@ -1436,7 +1439,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 {onResetResearchDatabase && (
                   <button
                     onClick={() => setConfirmModalType('reset')}
-                    className="px-3 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-2 bg-surface hover:bg-card-hover text-text-muted hover:text-gold border border-line text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer"
                     title="Restore default curated research catalog"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -1447,7 +1450,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 {onClearResearchDatabase && (
                   <button
                     onClick={() => setConfirmModalType('clear')}
-                    className="px-3 py-2 bg-[#13110F] hover:bg-[#2C1515] text-[#A89F94] hover:text-red-400 border border-[#2C2621] hover:border-red-900/60 text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-2 bg-surface hover:bg-danger-bg text-text-muted hover:text-red-400 border border-line hover:border-red-900/60 text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer"
                     title="Clear research database completely"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -1458,16 +1461,16 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
             </div>
 
             {/* Multi-criteria Filter Dropdowns (Brand, Vitola, Smoke Time, Origin, Wrapper Type, Strength, Price, Sort) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 pt-2 border-t border-[#2C2621]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 pt-2 border-t border-line">
               {/* 1. Brand Filter */}
               <div>
-                <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+                <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
                   Brand ({uniqueBrands.length})
                 </label>
                 <select
                   value={selectedBrand}
                   onChange={(e) => setSelectedBrand(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="ALL">All Brands</option>
                   {uniqueBrands.map((b) => (
@@ -1480,13 +1483,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* 2. Vitola Filter */}
               <div>
-                <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+                <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
                   Vitola ({uniqueVitolas.length})
                 </label>
                 <select
                   value={selectedVitola}
                   onChange={(e) => setSelectedVitola(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="ALL">All Vitolas</option>
                   {uniqueVitolas.map((v) => (
@@ -1499,13 +1502,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* 3. Smoke Time Filter */}
               <div>
-                <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+                <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
                   ⏱️ Smoke Time
                 </label>
                 <select
                   value={selectedSmokeTime}
                   onChange={(e) => setSelectedSmokeTime(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="ALL">All Durations</option>
                   <option value="quick">⚡ Quick (≤45m)</option>
@@ -1517,13 +1520,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* 4. Origin Filter */}
               <div>
-                <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+                <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
                   Origin Country
                 </label>
                 <select
                   value={selectedOrigin}
                   onChange={(e) => setSelectedOrigin(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="ALL">All Origins</option>
                   {uniqueOrigins.map((o) => (
@@ -1536,13 +1539,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* 5. Wrapper Type Filter */}
               <div>
-                <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+                <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
                   Wrapper Leaf
                 </label>
                 <select
                   value={selectedWrapperType}
                   onChange={(e) => setSelectedWrapperType(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="ALL">All Wrappers</option>
                   {wrapperTypes.map((w) => (
@@ -1555,13 +1558,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* 6. Strength Filter */}
               <div>
-                <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+                <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
                   Strength Body
                 </label>
                 <select
                   value={selectedStrength}
                   onChange={(e) => setSelectedStrength(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="ALL">All Strengths</option>
                   {strengthTypes.map((s) => (
@@ -1574,13 +1577,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* 7. Average Price Range */}
               <div>
-                <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+                <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
                   Average Price
                 </label>
                 <select
                   value={selectedPriceFilter}
                   onChange={(e) => setSelectedPriceFilter(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="ALL">All Price Tiers</option>
                   <option value="under15">Under £15 (Value)</option>
@@ -1591,13 +1594,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* 8. Sort by */}
               <div>
-                <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+                <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
                   Sort Order
                 </label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="criticRating">★ Critic Rating (High→Low)</option>
                   <option value="personalRating">⭐ My Rating (High→Low)</option>
@@ -1612,13 +1615,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
             {/* Quick Segment Filter Chips */}
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[10px] text-[#A89F94] font-semibold uppercase tracking-wider mr-1">Quick Views:</span>
+              <span className="text-[10px] text-text-muted font-semibold uppercase tracking-wider mr-1">Quick Views:</span>
               <button
                 onClick={() => setQuickFilter('all')}
                 className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                   quickFilter === 'all'
-                    ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                    : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                    ? 'bg-gold text-ink font-bold'
+                    : 'bg-surface text-text-muted border border-line hover:text-text'
                 }`}
               >
                 All Cigars ({researchDatabase.length})
@@ -1627,19 +1630,19 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 onClick={() => setQuickFilter('myNotes')}
                 className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1 ${
                   quickFilter === 'myNotes'
-                    ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                    : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                    ? 'bg-gold text-ink font-bold'
+                    : 'bg-surface text-text-muted border border-line hover:text-text'
                 }`}
               >
-                <Star className="w-3 h-3 text-[#C5A059]" />
+                <Star className="w-3 h-3 text-gold" />
                 <span>My Rated & Noted ({researchDatabase.filter((c) => c.personalRating || c.personalNotes).length})</span>
               </button>
               <button
                 onClick={() => setQuickFilter('favorites')}
                 className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1 ${
                   quickFilter === 'favorites'
-                    ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                    : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                    ? 'bg-gold text-ink font-bold'
+                    : 'bg-surface text-text-muted border border-line hover:text-text'
                 }`}
               >
                 <Heart className="w-3 h-3 text-red-400" />
@@ -1649,8 +1652,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 onClick={() => setQuickFilter('cuban')}
                 className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                   quickFilter === 'cuban'
-                    ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                    : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                    ? 'bg-gold text-ink font-bold'
+                    : 'bg-surface text-text-muted border border-line hover:text-text'
                 }`}
               >
                 🇨🇺 Cuban Classics ({researchDatabase.filter((c) => c.isCuban || /cuba/i.test(c.countryOrigin)).length})
@@ -1659,8 +1662,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 onClick={() => setQuickFilter('nicaragua')}
                 className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                   quickFilter === 'nicaragua'
-                    ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                    : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                    ? 'bg-gold text-ink font-bold'
+                    : 'bg-surface text-text-muted border border-line hover:text-text'
                 }`}
               >
                 🇳🇮 Nicaraguan Blends ({researchDatabase.filter((c) => /nicaragua/i.test(c.countryOrigin)).length})
@@ -1669,8 +1672,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 onClick={() => setQuickFilter('dominican')}
                 className={`text-[10px] px-2.5 py-1 rounded transition cursor-pointer ${
                   quickFilter === 'dominican'
-                    ? 'bg-[#C5A059] text-[#0F0D0C] font-bold'
-                    : 'bg-[#13110F] text-[#A89F94] border border-[#2C2621] hover:text-[#E5E1DA]'
+                    ? 'bg-gold text-ink font-bold'
+                    : 'bg-surface text-text-muted border border-line hover:text-text'
                 }`}
               >
                 🇩🇴 Dominican Legends ({researchDatabase.filter((c) => /dominican/i.test(c.countryOrigin)).length})
@@ -1698,14 +1701,14 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           </div>
 
           {/* Results Count & View / Inline Display Customization Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[#161311] border border-[#2C2621] rounded-lg text-xs text-[#A89F94] shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-header border border-line rounded-lg text-xs text-text-muted shadow-xs">
             <div className="flex flex-wrap items-center gap-3">
               <span>
-                Showing <strong className="text-[#E5E1DA]">{filteredDatabase.length}</strong> of {researchDatabase.length} researched cigars
+                Showing <strong className="text-text">{filteredDatabase.length}</strong> of {researchDatabase.length} researched cigars
               </span>
-              <span className="hidden md:inline text-[#2C2621]">•</span>
+              <span className="hidden md:inline text-line">•</span>
               <span className="hidden md:inline">
-                Avg Price: <strong className="text-[#C5A059]">{formatCurrency(filteredDatabase.reduce((acc, c) => acc + c.averagePrice, 0) / (filteredDatabase.length || 1), '£')}</strong>
+                Avg Price: <strong className="text-gold">{formatCurrency(filteredDatabase.reduce((acc, c) => acc + c.averagePrice, 0) / (filteredDatabase.length || 1), '£')}</strong>
               </span>
             </div>
 
@@ -1717,24 +1720,24 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 onClick={() => setShowDisplayOptions(!showDisplayOptions)}
                 className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
                   showDisplayOptions
-                    ? 'bg-[#C5A059]/20 border-[#C5A059] text-[#C5A059]'
-                    : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] hover:text-[#E5E1DA]'
+                    ? 'bg-gold/20 border-gold text-gold'
+                    : 'bg-surface border-line text-text-muted hover:text-text'
                 }`}
                 title="Customize visible details on cards or rows"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[#C5A059]" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-gold" />
                 <span>Display: {!showReviews ? 'Key Specs Only' : 'Custom'}</span>
               </button>
 
               {/* Grid vs Table View Mode Switcher */}
-              <div className="flex bg-[#13110F] p-0.5 rounded border border-[#2C2621]">
+              <div className="flex bg-surface p-0.5 rounded border border-line">
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
                   className={`px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer ${
                     viewMode === 'grid'
-                      ? 'bg-[#C5A059] text-[#0F0D0C] shadow-xs'
-                      : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                      ? 'bg-gold text-ink shadow-xs'
+                      : 'text-text-muted hover:text-text'
                   }`}
                   title="Grid Cards View"
                 >
@@ -1746,8 +1749,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   onClick={() => setViewMode('table')}
                   className={`px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer ${
                     viewMode === 'table'
-                      ? 'bg-[#C5A059] text-[#0F0D0C] shadow-xs'
-                      : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                      ? 'bg-gold text-ink shadow-xs'
+                      : 'text-text-muted hover:text-text'
                   }`}
                   title="Database Table View"
                 >
@@ -1760,10 +1763,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
           {/* Inline Display Settings Panel */}
           {showDisplayOptions && (
-            <div className="p-3.5 bg-[#13110F] border border-[#2C2621] rounded-lg text-xs space-y-2.5 animate-in fade-in duration-150">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#2C2621] pb-2">
-                <span className="text-[11px] uppercase tracking-wider font-bold text-[#C5A059] flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5 text-[#C5A059]" />
+            <div className="p-3.5 bg-surface border border-line rounded-lg text-xs space-y-2.5 animate-in fade-in duration-150">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
+                <span className="text-[11px] uppercase tracking-wider font-bold text-gold flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-gold" />
                   <span>Customize Research Visibility</span>
                 </span>
 
@@ -1781,8 +1784,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     }}
                     className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition cursor-pointer ${
                       !showReviews && !showFlavorProfile && !showPersonalNotes
-                        ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059]'
-                        : 'bg-[#1C1816] text-[#A89F94] border-[#2C2621] hover:text-[#E5E1DA]'
+                        ? 'bg-gold text-ink border-gold'
+                        : 'bg-card text-text-muted border-line hover:text-text'
                     }`}
                   >
                     ⚡ Key Specs Only
@@ -1799,8 +1802,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     }}
                     className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition cursor-pointer ${
                       showReviews && showFlavorProfile && showPersonalNotes && showPairings
-                        ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059]'
-                        : 'bg-[#1C1816] text-[#A89F94] border-[#2C2621] hover:text-[#E5E1DA]'
+                        ? 'bg-gold text-ink border-gold'
+                        : 'bg-card text-text-muted border-line hover:text-text'
                     }`}
                   >
                     ✦ Full Details
@@ -1816,11 +1819,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   onClick={() => setShowReviews(!showReviews)}
                   className={`px-2.5 py-1 rounded text-[11px] font-medium border flex items-center gap-1.5 transition cursor-pointer ${
                     showReviews
-                      ? 'bg-[#1C1816] text-[#E5E1DA] border-[#C5A059]/60'
-                      : 'bg-[#13110F] text-[#A89F94]/60 border-[#2C2621] line-through'
+                      ? 'bg-card text-text border-gold/60'
+                      : 'bg-surface text-text-muted/60 border-line line-through'
                   }`}
                 >
-                  {showReviews ? <Eye className="w-3 h-3 text-[#C5A059]" /> : <EyeOff className="w-3 h-3 text-[#A89F94]" />}
+                  {showReviews ? <Eye className="w-3 h-3 text-gold" /> : <EyeOff className="w-3 h-3 text-text-muted" />}
                   <span>Reviews & Quotes</span>
                 </button>
 
@@ -1830,11 +1833,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   onClick={() => setShowFlavorProfile(!showFlavorProfile)}
                   className={`px-2.5 py-1 rounded text-[11px] font-medium border flex items-center gap-1.5 transition cursor-pointer ${
                     showFlavorProfile
-                      ? 'bg-[#1C1816] text-[#E5E1DA] border-[#C5A059]/60'
-                      : 'bg-[#13110F] text-[#A89F94]/60 border-[#2C2621] line-through'
+                      ? 'bg-card text-text border-gold/60'
+                      : 'bg-surface text-text-muted/60 border-line line-through'
                   }`}
                 >
-                  {showFlavorProfile ? <Eye className="w-3 h-3 text-[#C5A059]" /> : <EyeOff className="w-3 h-3 text-[#A89F94]" />}
+                  {showFlavorProfile ? <Eye className="w-3 h-3 text-gold" /> : <EyeOff className="w-3 h-3 text-text-muted" />}
                   <span>Flavor Tags</span>
                 </button>
 
@@ -1844,11 +1847,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   onClick={() => setShowRetailerQuotes(!showRetailerQuotes)}
                   className={`px-2.5 py-1 rounded text-[11px] font-medium border flex items-center gap-1.5 transition cursor-pointer ${
                     showRetailerQuotes
-                      ? 'bg-[#1C1816] text-[#E5E1DA] border-[#C5A059]/60'
-                      : 'bg-[#13110F] text-[#A89F94]/60 border-[#2C2621] line-through'
+                      ? 'bg-card text-text border-gold/60'
+                      : 'bg-surface text-text-muted/60 border-line line-through'
                   }`}
                 >
-                  {showRetailerQuotes ? <Eye className="w-3 h-3 text-[#C5A059]" /> : <EyeOff className="w-3 h-3 text-[#A89F94]" />}
+                  {showRetailerQuotes ? <Eye className="w-3 h-3 text-gold" /> : <EyeOff className="w-3 h-3 text-text-muted" />}
                   <span>Retailer Quotes</span>
                 </button>
 
@@ -1858,11 +1861,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   onClick={() => setShowPersonalNotes(!showPersonalNotes)}
                   className={`px-2.5 py-1 rounded text-[11px] font-medium border flex items-center gap-1.5 transition cursor-pointer ${
                     showPersonalNotes
-                      ? 'bg-[#1C1816] text-[#E5E1DA] border-[#C5A059]/60'
-                      : 'bg-[#13110F] text-[#A89F94]/60 border-[#2C2621] line-through'
+                      ? 'bg-card text-text border-gold/60'
+                      : 'bg-surface text-text-muted/60 border-line line-through'
                   }`}
                 >
-                  {showPersonalNotes ? <Eye className="w-3 h-3 text-[#C5A059]" /> : <EyeOff className="w-3 h-3 text-[#A89F94]" />}
+                  {showPersonalNotes ? <Eye className="w-3 h-3 text-gold" /> : <EyeOff className="w-3 h-3 text-text-muted" />}
                   <span>Personal Notes & Rating</span>
                 </button>
 
@@ -1872,11 +1875,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   onClick={() => setShowPairings(!showPairings)}
                   className={`px-2.5 py-1 rounded text-[11px] font-medium border flex items-center gap-1.5 transition cursor-pointer ${
                     showPairings
-                      ? 'bg-[#1C1816] text-[#E5E1DA] border-[#C5A059]/60'
-                      : 'bg-[#13110F] text-[#A89F94]/60 border-[#2C2621] line-through'
+                      ? 'bg-card text-text border-gold/60'
+                      : 'bg-surface text-text-muted/60 border-line line-through'
                   }`}
                 >
-                  {showPairings ? <Eye className="w-3 h-3 text-[#C5A059]" /> : <EyeOff className="w-3 h-3 text-[#A89F94]" />}
+                  {showPairings ? <Eye className="w-3 h-3 text-gold" /> : <EyeOff className="w-3 h-3 text-text-muted" />}
                   <span>Drink Pairings & Aging</span>
                 </button>
               </div>
@@ -1885,10 +1888,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
           {/* Empty State */}
           {filteredDatabase.length === 0 && (
-            <div className="p-12 text-center bg-[#161311] border border-[#2C2621] rounded-lg space-y-3">
-              <Search className="w-8 h-8 text-[#A89F94] mx-auto opacity-50" />
-              <h3 className="text-base font-serif text-[#E5E1DA]">No cigars found matching criteria</h3>
-              <p className="text-xs text-[#A89F94] max-w-md mx-auto">
+            <div className="p-12 text-center bg-header border border-line rounded-lg space-y-3">
+              <Search className="w-8 h-8 text-text-muted mx-auto opacity-50" />
+              <h3 className="text-base font-serif text-text">No cigars found matching criteria</h3>
+              <p className="text-xs text-text-muted max-w-md mx-auto">
                 Try widening your search terms or resetting the brand, origin, wrapper, or strength filters.
               </p>
               <button
@@ -1901,7 +1904,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   setSearchTerm('');
                   setQuickFilter('all');
                 }}
-                className="px-4 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded text-xs uppercase tracking-wider font-semibold transition cursor-pointer"
+                className="px-4 py-2 bg-surface hover:bg-card-hover text-gold border border-line rounded text-xs uppercase tracking-wider font-semibold transition cursor-pointer"
               >
                 Clear All Filters
               </button>
@@ -1910,10 +1913,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
           {/* Database Style Table View */}
           {filteredDatabase.length > 0 && viewMode === 'table' && (
-            <div className="bg-[#161311] border border-[#2C2621] rounded-lg overflow-hidden shadow-xs">
+            <div className="bg-header border border-line rounded-lg overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-[#E5E1DA]">
-                  <thead className="bg-[#13110F] text-[#A89F94] uppercase tracking-wider font-semibold border-b border-[#2C2621]">
+                <table className="w-full text-left text-xs text-text">
+                  <thead className="bg-surface text-text-muted uppercase tracking-wider font-semibold border-b border-line">
                     <tr>
                       <th className="p-3 font-semibold">Brand & Line</th>
                       <th className="p-3 font-semibold">Vitola / Specs</th>
@@ -1926,20 +1929,20 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       <th className="p-3 text-right font-semibold">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#2C2621]">
+                  <tbody className="divide-y divide-line">
                     {filteredDatabase.map((cigar) => {
                       return (
                         <tr key={cigar.id} className="hover:bg-[#1E1917]/70 transition group">
                           {/* Brand & Line with Inline Editing */}
                           <td className="p-3 align-top">
                             {editingNameId === cigar.id ? (
-                              <div className="space-y-1 p-2 bg-[#13110F] border border-[#C5A059] rounded min-w-[180px]">
+                              <div className="space-y-1 p-2 bg-surface border border-gold rounded min-w-[180px]">
                                 <input
                                   type="text"
                                   placeholder="Brand"
                                   value={inlineBrand}
                                   onChange={(e) => setInlineBrand(e.target.value)}
-                                  className="w-full bg-[#1C1816] border border-[#2C2621] rounded px-1.5 py-0.5 text-xs text-[#E5E1DA] focus:border-[#C5A059]"
+                                  className="w-full bg-card border border-line rounded px-1.5 py-0.5 text-xs text-text focus:border-gold"
                                 />
                                 <input
                                   type="text"
@@ -1950,18 +1953,18 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                     if (e.key === 'Enter') handleSaveInlineEdit(cigar);
                                     if (e.key === 'Escape') setEditingNameId(null);
                                   }}
-                                  className="w-full bg-[#1C1816] border border-[#2C2621] rounded px-1.5 py-0.5 text-xs text-[#E5E1DA] focus:border-[#C5A059]"
+                                  className="w-full bg-card border border-line rounded px-1.5 py-0.5 text-xs text-text focus:border-gold"
                                 />
                                 <div className="flex gap-1 pt-1">
                                   <button
                                     onClick={() => handleSaveInlineEdit(cigar)}
-                                    className="px-2 py-0.5 bg-[#C5A059] text-[#0F0D0C] rounded font-bold text-[10px]"
+                                    className="px-2 py-0.5 bg-gold text-ink rounded font-bold text-[10px]"
                                   >
                                     Save
                                   </button>
                                   <button
                                     onClick={() => setEditingNameId(null)}
-                                    className="px-1.5 py-0.5 bg-[#2C2621] text-[#A89F94] rounded text-[10px]"
+                                    className="px-1.5 py-0.5 bg-line text-text-muted rounded text-[10px]"
                                   >
                                     Cancel
                                   </button>
@@ -1970,10 +1973,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                             ) : (
                               <div>
                                 <div className="flex items-center gap-1">
-                                  <span className="text-[10px] uppercase font-bold text-[#C5A059] tracking-wider">{cigar.brand}</span>
+                                  <span className="text-[10px] uppercase font-bold text-gold tracking-wider">{cigar.brand}</span>
                                   <button
                                     onClick={() => handleStartInlineEdit(cigar)}
-                                    className="opacity-0 group-hover:opacity-100 text-[#A89F94] hover:text-[#C5A059] transition cursor-pointer"
+                                    className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-gold transition cursor-pointer"
                                     title="Edit name inline (syncs across all tabs)"
                                   >
                                     <Edit3 className="w-2.5 h-2.5" />
@@ -1981,7 +1984,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                 </div>
                                 <div
                                   onClick={() => handleStartInlineEdit(cigar)}
-                                  className="font-serif font-medium text-white text-sm hover:text-[#C5A059] cursor-pointer transition"
+                                  className="font-serif font-medium text-white text-sm hover:text-gold cursor-pointer transition"
                                   title="Click to edit name inline"
                                 >
                                   {cigar.line}
@@ -2000,13 +2003,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                             <div className="font-medium text-white">{cigar.vitola}</div>
                             <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                               {fields.dimensions && (
-                                <span className="text-[#A89F94] font-mono text-[10px]">
+                                <span className="text-text-muted font-mono text-[10px]">
                                   {cigar.lengthInches ? `${cigar.lengthInches}"` : ''} {cigar.ringGauge ? `x ${cigar.ringGauge} RG` : ''}
                                 </span>
                               )}
                               {cigar.smokeTimeRange && (
-                                <span className="inline-flex items-center gap-1 text-[10px] text-[#C5A059] font-mono bg-[#13110F] px-1.5 py-0.5 rounded border border-[#2C2621]">
-                                  <Clock className="w-2.5 h-2.5 text-[#C5A059]" />
+                                <span className="inline-flex items-center gap-1 text-[10px] text-gold font-mono bg-surface px-1.5 py-0.5 rounded border border-line">
+                                  <Clock className="w-2.5 h-2.5 text-gold" />
                                   {cigar.smokeTimeRange}
                                 </span>
                               )}
@@ -2016,11 +2019,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           {/* Wrapper & Origin */}
                           <td className="p-3 align-top">
                             <div className="text-[11px]">{cigar.wrapperType} ({cigar.wrapper})</div>
-                            <div className="text-[#C5A059] text-[10px] flex items-center gap-1 mt-0.5">
-                              <Globe className="w-2.5 h-2.5 text-[#A89F94]" />
+                            <div className="text-gold text-[10px] flex items-center gap-1 mt-0.5">
+                              <Globe className="w-2.5 h-2.5 text-text-muted" />
                               <span>{cigar.countryOrigin}</span>
                               {cigar.isCuban && (
-                                <span className="text-[8px] px-1 py-0.2 bg-[#8B5E3C]/30 text-[#C5A059] border border-[#8B5E3C]/60 rounded font-semibold">
+                                <span className="text-[8px] px-1 py-0.2 bg-cedar/30 text-gold border border-cedar/60 rounded font-semibold">
                                   Cuba
                                 </span>
                               )}
@@ -2029,7 +2032,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
                           {/* Strength */}
                           <td className="p-3 align-top">
-                            <span className="px-2 py-0.5 rounded bg-[#13110F] text-[#E5E1DA] border border-[#2C2621] text-[10px] font-medium whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded bg-surface text-text border border-line text-[10px] font-medium whitespace-nowrap">
                               {cigar.strength}
                             </span>
                           </td>
@@ -2037,10 +2040,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           {/* Retailer Quotes & Avg Price */}
                           <td className="p-3 align-top">
                             <div className="flex items-center gap-1.5 mb-1">
-                              <span className="font-serif font-bold text-sm text-[#C5A059]">
+                              <span className="font-serif font-bold text-sm text-gold">
                                 {formatCurrency(cigar.averagePrice, '£')}
                               </span>
-                              <span className="text-[9px] text-[#A89F94] uppercase tracking-wider">avg</span>
+                              <span className="text-[9px] text-text-muted uppercase tracking-wider">avg</span>
                             </div>
 
                             {showRetailerQuotes && (
@@ -2050,14 +2053,14 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                     {cigar.vendorPrices.map((vp) => (
                                       <span
                                         key={vp.id}
-                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#13110F] border border-[#2C2621] text-[10px] text-[#E5E1DA]"
+                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface border border-line text-[10px] text-text"
                                       >
-                                        <span className="text-[#A89F94] font-medium truncate max-w-[80px]">{vp.vendor}:</span>
-                                        <strong className="text-[#C5A059] font-mono">{formatCurrency(vp.price, vp.currency || '£')}</strong>
+                                        <span className="text-text-muted font-medium truncate max-w-[80px]">{vp.vendor}:</span>
+                                        <strong className="text-gold font-mono">{formatCurrency(vp.price, vp.currency || '£')}</strong>
                                         <button
                                           type="button"
                                           onClick={() => handleDeleteVendorPrice(cigar, vp.id, vp.vendor)}
-                                          className="text-[#A89F94] hover:text-red-400 ml-0.5 p-0.5 transition cursor-pointer"
+                                          className="text-text-muted hover:text-red-400 ml-0.5 p-0.5 transition cursor-pointer"
                                           title={`Delete ${vp.vendor} quote`}
                                         >
                                           <X className="w-2.5 h-2.5" />
@@ -2066,13 +2069,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                     ))}
                                   </div>
                                 ) : (
-                                  <span className="text-[10px] text-[#A89F94] italic block">No shop quotes logged</span>
+                                  <span className="text-[10px] text-text-muted italic block">No shop quotes logged</span>
                                 )}
 
                                 <button
                                   type="button"
                                   onClick={() => handleStartQuickRetailerAdd(cigar.id)}
-                                  className="text-[9px] text-[#C5A059] hover:underline flex items-center gap-0.5 font-semibold cursor-pointer pt-0.5"
+                                  className="text-[9px] text-gold hover:underline flex items-center gap-0.5 font-semibold cursor-pointer pt-0.5"
                                 >
                                   <Plus className="w-2.5 h-2.5" /> Add quote
                                 </button>
@@ -2084,43 +2087,43 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           <td className="p-3 align-top whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <div className="font-serif font-bold text-white flex items-center gap-1">
-                                <span className="text-[#C5A059]">★</span> {cigar.criticRating}
-                                <span className="text-[10px] text-[#A89F94]">/100</span>
+                                <span className="text-gold">★</span> {cigar.criticRating}
+                                <span className="text-[10px] text-text-muted">/100</span>
                               </div>
                               <button
                                 type="button"
                                 onClick={() => handleScanReviewScoresForCigar(cigar)}
                                 disabled={scanningReviewCigarId === cigar.id}
-                                className="p-1 text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] rounded cursor-pointer"
+                                className="p-1 text-text-muted hover:text-gold border border-line rounded cursor-pointer"
                                 title="Fetch multi-source review scores"
                               >
                                 {scanningReviewCigarId === cigar.id ? (
                                   <Loader2 className="w-2.5 h-2.5 animate-spin" />
                                 ) : (
-                                  <Star className="w-2.5 h-2.5 fill-[#C5A059] text-[#C5A059]" />
+                                  <Star className="w-2.5 h-2.5 fill-gold text-gold" />
                                 )}
                               </button>
                             </div>
                             {cigar.reviewScores && cigar.reviewScores.length > 0 && (
-                              <div className="text-[9px] text-[#A89F94] mt-0.5">
+                              <div className="text-[9px] text-text-muted mt-0.5">
                                 {cigar.reviewScores.length} critic scores
                               </div>
                             )}
                             {cigar.personalRating ? (
-                              <div className="text-[10px] text-[#C5A059] flex items-center gap-0.5 mt-0.5 font-semibold">
-                                <Star className="w-2.5 h-2.5 fill-[#C5A059]" /> {cigar.personalRating}/100
+                              <div className="text-[10px] text-gold flex items-center gap-0.5 mt-0.5 font-semibold">
+                                <Star className="w-2.5 h-2.5 fill-gold" /> {cigar.personalRating}/100
                               </div>
                             ) : null}
                           </td>
 
                           {/* Tasting Notes Overview */}
                           {showReviews && (
-                            <td className="p-3 align-top text-[11px] text-[#A89F94] leading-relaxed max-w-xs">
+                            <td className="p-3 align-top text-[11px] text-text-muted leading-relaxed max-w-xs">
                               <p className="italic line-clamp-2">"{cigar.reviewTastingNotes?.overview}"</p>
                               {showFlavorProfile && cigar.reviewTastingNotes?.dominantFlavorTags && (
                                 <div className="flex flex-wrap gap-1 mt-1 not-italic">
                                   {cigar.reviewTastingNotes.dominantFlavorTags.slice(0, 3).map((tag) => (
-                                    <span key={tag} className="text-[9px] px-1.5 py-0.2 rounded bg-[#13110F] text-[#E5E1DA] border border-[#2C2621]">
+                                    <span key={tag} className="text-[9px] px-1.5 py-0.2 rounded bg-surface text-text border border-line">
                                       {tag}
                                     </span>
                                   ))}
@@ -2135,11 +2138,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                               <button
                                 onClick={() => handleScanRetailerPricesForCigar(cigar)}
                                 disabled={scanningPriceCigarId === cigar.id}
-                                className="p-1.5 text-[#C5A059] bg-[#13110F] hover:bg-[#241E1B] border border-[#C5A059]/40 hover:border-[#C5A059] rounded cursor-pointer transition disabled:opacity-50"
+                                className="p-1.5 text-gold bg-surface hover:bg-card-hover border border-gold/40 hover:border-gold rounded cursor-pointer transition disabled:opacity-50"
                                 title="Scan UK Retailers (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff)"
                               >
                                 {scanningPriceCigarId === cigar.id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C5A059]" />
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-gold" />
                                 ) : (
                                   <Store className="w-3.5 h-3.5" />
                                 )}
@@ -2163,7 +2166,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                     personalRating: cigar.personalRating,
                                   })
                                 }
-                                className="p-1.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded font-bold text-[10px] cursor-pointer transition"
+                                className="p-1.5 bg-gold hover:brightness-110 text-ink rounded font-bold text-[10px] cursor-pointer transition"
                                 title="Add to Humidor"
                               >
                                 <Plus className="w-3.5 h-3.5" />
@@ -2177,7 +2180,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                     notes: `Avg Price: £${cigar.averagePrice.toFixed(2)}. ${cigar.reviewTastingNotes?.overview || ''}`,
                                   })
                                 }
-                                className="p-1.5 text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/40 rounded cursor-pointer transition"
+                                className="p-1.5 text-text-muted hover:text-gold border border-line hover:border-gold/40 rounded cursor-pointer transition"
                                 title="Add to Wishlist"
                               >
                                 <Bookmark className="w-3.5 h-3.5" />
@@ -2185,7 +2188,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                               {onDeleteResearchCigar && (
                                 <button
                                   onClick={() => setCigarToDelete(cigar)}
-                                  className="p-1.5 text-[#A89F94] hover:text-red-400 border border-[#2C2621] hover:border-red-900/60 rounded cursor-pointer transition"
+                                  className="p-1.5 text-text-muted hover:text-red-400 border border-line hover:border-red-900/60 rounded cursor-pointer transition"
                                   title="Delete from research database"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -2211,21 +2214,21 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               return (
                 <div
                   key={cigar.id}
-                  className="bg-[#161311] border border-[#2C2621] hover:border-[#3D352E] rounded-lg p-5 sm:p-6 transition shadow-xs flex flex-col justify-between space-y-5"
+                  className="bg-header border border-line hover:border-line-hover rounded-lg p-5 sm:p-6 transition shadow-xs flex flex-col justify-between space-y-5"
                 >
                   {/* Top Bar: Brand, Line, Origin, Avg Price, Ratings */}
-                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 border-b border-[#2C2621] pb-4">
+                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 border-b border-line pb-4">
                     <div className="space-y-1 flex-1 min-w-0">
                       {editingNameId === cigar.id ? (
-                        <div className="space-y-1.5 p-3 bg-[#13110F] border border-[#C5A059] rounded-md mb-2 animate-in fade-in max-w-md">
-                          <div className="text-[10px] uppercase font-bold text-[#C5A059]">Edit Cigar Line (Syncs Everywhere)</div>
+                        <div className="space-y-1.5 p-3 bg-surface border border-gold rounded-md mb-2 animate-in fade-in max-w-md">
+                          <div className="text-[10px] uppercase font-bold text-gold">Edit Cigar Line (Syncs Everywhere)</div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <input
                               type="text"
                               placeholder="Brand"
                               value={inlineBrand}
                               onChange={(e) => setInlineBrand(e.target.value)}
-                              className="bg-[#1C1816] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                              className="bg-card border border-line rounded px-2 py-1 text-xs text-text focus:border-gold focus:outline-hidden"
                             />
                             <input
                               type="text"
@@ -2236,21 +2239,21 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                 if (e.key === 'Enter') handleSaveInlineEdit(cigar);
                                 if (e.key === 'Escape') setEditingNameId(null);
                               }}
-                              className="bg-[#1C1816] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA] focus:border-[#C5A059] focus:outline-hidden"
+                              className="bg-card border border-line rounded px-2 py-1 text-xs text-text focus:border-gold focus:outline-hidden"
                             />
                           </div>
                           <div className="flex items-center gap-2 pt-1">
                             <button
                               type="button"
                               onClick={() => handleSaveInlineEdit(cigar)}
-                              className="px-2.5 py-1 bg-[#C5A059] text-[#0F0D0C] rounded font-bold text-xs hover:brightness-110 cursor-pointer"
+                              className="px-2.5 py-1 bg-gold text-ink rounded font-bold text-xs hover:brightness-110 cursor-pointer"
                             >
                               Save & Sync
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingNameId(null)}
-                              className="px-2 py-1 bg-[#2C2621] text-[#A89F94] hover:text-white rounded text-xs cursor-pointer"
+                              className="px-2 py-1 bg-line text-text-muted hover:text-white rounded text-xs cursor-pointer"
                             >
                               Cancel
                             </button>
@@ -2259,27 +2262,27 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       ) : (
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-[#C5A059]">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-gold">
                               {cigar.brand}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleStartInlineEdit(cigar)}
-                              className="text-[#A89F94] hover:text-[#C5A059] transition cursor-pointer p-0.5"
+                              className="text-text-muted hover:text-gold transition cursor-pointer p-0.5"
                               title="Edit name inline (syncs across all tabs)"
                             >
                               <Edit3 className="w-2.5 h-2.5" />
                             </button>
-                            <span className="text-[#3D352E]">•</span>
-                            <span className="text-xs text-[#E5E1DA] font-medium flex items-center gap-1">
-                              <Globe className="w-3 h-3 text-[#A89F94]" />
+                            <span className="text-line-hover">•</span>
+                            <span className="text-xs text-text font-medium flex items-center gap-1">
+                              <Globe className="w-3 h-3 text-text-muted" />
                               <span>{cigar.countryOrigin}</span>
-                              {cigar.isCuban && <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#8B5E3C]/30 text-[#C5A059] border border-[#8B5E3C]/60">Habanos Puro</span>}
+                              {cigar.isCuban && <span className="text-[10px] px-1.5 py-0.2 rounded bg-cedar/30 text-gold border border-cedar/60">Habanos Puro</span>}
                             </span>
                             {fields.dimensions && (
                               <>
-                                <span className="text-[#3D352E]">•</span>
-                                <span className="text-xs text-[#A89F94] font-mono">
+                                <span className="text-line-hover">•</span>
+                                <span className="text-xs text-text-muted font-mono">
                                   {cigar.vitola} ({cigar.lengthInches}" x {cigar.ringGauge} RG)
                                 </span>
                               </>
@@ -2288,7 +2291,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
                           <h2
                             onClick={() => handleStartInlineEdit(cigar)}
-                            className="text-xl sm:text-2xl font-serif text-white font-medium hover:text-[#C5A059] cursor-pointer transition"
+                            className="text-xl sm:text-2xl font-serif text-white font-medium hover:text-gold cursor-pointer transition"
                             title="Click to edit name inline"
                           >
                             {cigar.line}
@@ -2297,20 +2300,20 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       )}
 
                       <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-[#13110F] text-[#E5E1DA] border border-[#2C2621]">
-                          🌿 Wrapper: <strong className="text-[#C5A059]">{cigar.wrapperType}</strong> ({cigar.wrapper})
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-surface text-text border border-line">
+                          🌿 Wrapper: <strong className="text-gold">{cigar.wrapperType}</strong> ({cigar.wrapper})
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-[#13110F] text-[#E5E1DA] border border-[#2C2621]">
-                          🔥 Strength: <strong className="text-[#E5E1DA]">{cigar.strength}</strong>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-surface text-text border border-line">
+                          🔥 Strength: <strong className="text-text">{cigar.strength}</strong>
                         </span>
                         {cigar.smokeTimeRange && (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-[#13110F] text-[#C5A059] border border-[#2C2621] font-mono flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5 text-[#C5A059]" />
-                            <span>Smoke Time: <strong className="text-[#E5E1DA]">{cigar.smokeTimeRange}</strong></span>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-surface text-gold border border-line font-mono flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5 text-gold" />
+                            <span>Smoke Time: <strong className="text-text">{cigar.smokeTimeRange}</strong></span>
                           </span>
                         )}
                         {fields.factoryDetails && cigar.masterBlender && (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-[#13110F] text-[#A89F94] border border-[#2C2621]">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-surface text-text-muted border border-line">
                             Blender: {cigar.masterBlender}
                           </span>
                         )}
@@ -2322,13 +2325,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       <div className="flex items-center gap-3">
                         {/* Average Price Display */}
                         <div className="text-left lg:text-right">
-                          <div className="text-[10px] uppercase tracking-wider text-[#A89F94] font-semibold">
+                          <div className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">
                             Average Price
                           </div>
-                          <div className="text-lg sm:text-xl font-serif font-bold text-[#C5A059]">
+                          <div className="text-lg sm:text-xl font-serif font-bold text-gold">
                             {formatCurrency(cigar.averagePrice, '£')}
                           </div>
-                          <div className="text-[10px] text-[#A89F94]">
+                          <div className="text-[10px] text-text-muted">
                             {cigar.priceRange ? cigar.priceRange.replace(/\$/g, '£') : ''}
                           </div>
                         </div>
@@ -2336,11 +2339,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         {/* Critic Score Badge & Review Score Scanner */}
                         {fields.criticRatings && (
                           <div className="flex items-center gap-2">
-                            <div className="p-2 sm:px-3 sm:py-2 bg-[#13110F] border border-[#2C2621] rounded-md text-center">
-                              <div className="text-[9px] uppercase tracking-wider text-[#A89F94]">Critic Consensus</div>
-                              <div className="text-base sm:text-lg font-serif font-bold text-white flex items-center justify-center gap-1">
-                                <span className="text-[#C5A059]">★</span> {cigar.criticRating}
-                                <span className="text-[10px] text-[#A89F94]">/100</span>
+                            <div className="p-2 sm:px-3 sm:py-2 bg-surface border border-line rounded-md text-center">
+                              <div className="text-[9px] uppercase tracking-wider text-text-muted">Critic Consensus</div>
+                              <div className="text-ink sm:text-lg font-serif font-bold text-white flex items-center justify-center gap-1">
+                                <span className="text-gold">★</span> {cigar.criticRating}
+                                <span className="text-[10px] text-text-muted">/100</span>
                               </div>
                             </div>
 
@@ -2348,13 +2351,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                               type="button"
                               onClick={() => handleScanReviewScoresForCigar(cigar)}
                               disabled={scanningReviewCigarId === cigar.id}
-                              className="px-2.5 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/50 rounded-md text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 transition cursor-pointer disabled:opacity-50"
+                              className="px-2.5 py-2 bg-surface hover:bg-card-hover text-gold border border-line hover:border-gold/50 rounded-md text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 transition cursor-pointer disabled:opacity-50"
                               title="Fetch review scores from Cigar Aficionado, Smoke King, Halfwheel, etc."
                             >
                               {scanningReviewCigarId === cigar.id ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               ) : (
-                                <Star className="w-3.5 h-3.5 fill-[#C5A059]" />
+                                <Star className="w-3.5 h-3.5 fill-gold" />
                               )}
                               <span>{scanningReviewCigarId === cigar.id ? 'Scanning...' : 'Score AI'}</span>
                             </button>
@@ -2363,12 +2366,12 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
                         {/* User Rating Badge (if user has rated) */}
                         {cigar.personalRating ? (
-                          <div className="p-2 sm:px-3 sm:py-2 bg-[#1C1816] border border-[#C5A059]/50 rounded-md text-center">
-                            <div className="text-[9px] uppercase tracking-wider text-[#C5A059] font-semibold">My Rating</div>
-                            <div className="text-base sm:text-lg font-serif font-bold text-white flex items-center justify-center gap-0.5">
-                              <Star className="w-3.5 h-3.5 text-[#C5A059] fill-[#C5A059]" />
+                          <div className="p-2 sm:px-3 sm:py-2 bg-card border border-gold/50 rounded-md text-center">
+                            <div className="text-[9px] uppercase tracking-wider text-gold font-semibold">My Rating</div>
+                            <div className="text-ink sm:text-lg font-serif font-bold text-white flex items-center justify-center gap-0.5">
+                              <Star className="w-3.5 h-3.5 text-gold fill-gold" />
                               <span>{cigar.personalRating}</span>
-                              <span className="text-[10px] text-[#A89F94]">/100</span>
+                              <span className="text-[10px] text-text-muted">/100</span>
                             </div>
                           </div>
                         ) : null}
@@ -2379,7 +2382,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           className={`p-2 rounded border transition cursor-pointer ${
                             cigar.personalFavorite
                               ? 'bg-red-950/40 border-red-800 text-red-400'
-                              : 'bg-[#13110F] border-[#2C2621] text-[#A89F94] hover:text-red-400'
+                              : 'bg-surface border-line text-text-muted hover:text-red-400'
                           }`}
                           title={cigar.personalFavorite ? 'Marked as Favorite' : 'Add to Favorites'}
                         >
@@ -2393,13 +2396,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   <div className="space-y-3">
                     {/* Multi-Source Review Scores Badges (Cigar Aficionado, Smoke King, Halfwheel, etc.) */}
                     {cigar.reviewScores && cigar.reviewScores.length > 0 && (
-                      <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md space-y-2">
+                      <div className="p-3 bg-surface border border-line rounded-md space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] uppercase tracking-widest font-bold text-[#C5A059] flex items-center gap-1">
-                            <Award className="w-3 h-3 text-[#C5A059]" />
+                          <span className="text-[10px] uppercase tracking-widest font-bold text-gold flex items-center gap-1">
+                            <Award className="w-3 h-3 text-gold" />
                             <span>Critic Publication Ratings</span>
                           </span>
-                          <span className="text-[10px] text-[#A89F94]">
+                          <span className="text-[10px] text-text-muted">
                             {cigar.reviewScores.length} Sources Analyzed
                           </span>
                         </div>
@@ -2407,15 +2410,15 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           {cigar.reviewScores.map((score, sIdx) => (
                             <div
                               key={`${score.source}-${sIdx}`}
-                              className="px-2.5 py-1 bg-[#1C1816] border border-[#2C2621] rounded flex items-center gap-1.5 text-xs"
+                              className="px-2.5 py-1 bg-card border border-line rounded flex items-center gap-1.5 text-xs"
                             >
-                              <span className="text-[#A89F94] font-medium">{score.source}:</span>
-                              <span className="text-[#C5A059] font-bold font-mono">★ {score.score}</span>
+                              <span className="text-text-muted font-medium">{score.source}:</span>
+                              <span className="text-gold font-bold font-mono">★ {score.score}</span>
                               {(score.scale || score.maxScore) && (
-                                <span className="text-[10px] text-[#A89F94]/70">/{score.scale || score.maxScore}</span>
+                                <span className="text-[10px] text-text-muted/70">/{score.scale || score.maxScore}</span>
                               )}
                               {score.award && (
-                                <span className="text-[9px] px-1 py-0.2 bg-[#C5A059]/20 text-[#C5A059] rounded font-semibold">
+                                <span className="text-[9px] px-1 py-0.2 bg-gold/20 text-gold rounded font-semibold">
                                   {score.award}
                                 </span>
                               )}
@@ -2426,10 +2429,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     )}
 
                     {fields.criticRatings && showReviews && (
-                      <div className="p-3.5 bg-[#13110F] border border-[#2C2621] rounded-md text-xs sm:text-sm text-[#E5E1DA] font-serif italic leading-relaxed">
+                      <div className="p-3.5 bg-surface border border-line rounded-md text-xs sm:text-sm text-text font-serif italic leading-relaxed">
                         "{cigar.reviewTastingNotes?.overview}"
                         {cigar.reviewTastingNotes?.criticQuote && (
-                          <div className="mt-1 text-xs text-[#C5A059] not-italic font-sans">
+                          <div className="mt-1 text-xs text-gold not-italic font-sans">
                             — Critic Consensus: <em>{cigar.reviewTastingNotes.criticQuote}</em>
                           </div>
                         )}
@@ -2439,13 +2442,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     {/* Dominant Flavor Tags Chips */}
                     {fields.flavorProfiles && showFlavorProfile && (
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] text-[#A89F94] font-semibold uppercase tracking-wider mr-1">
+                        <span className="text-[10px] text-text-muted font-semibold uppercase tracking-wider mr-1">
                           Tasting Profile:
                         </span>
                         {(cigar.reviewTastingNotes?.dominantFlavorTags || []).map((tag) => (
                           <span
                             key={tag}
-                            className="text-[10px] px-2.5 py-0.5 rounded bg-[#13110F] text-[#E5E1DA] border border-[#2C2621]"
+                            className="text-[10px] px-2.5 py-0.5 rounded bg-surface text-text border border-line"
                           >
                             {tag}
                           </span>
@@ -2455,9 +2458,9 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
                     {/* Multi-Shop Retailer Pricing Comparison */}
                     {fields.vendorPriceComparison && showRetailerQuotes && (
-                      <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-lg space-y-2.5">
+                      <div className="p-3 bg-surface border border-line rounded-lg space-y-2.5">
                         <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                          <span className="text-[#C5A059] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="text-gold font-bold uppercase tracking-wider flex items-center gap-1.5">
                             <ShoppingCart className="w-3.5 h-3.5" />
                             <span>
                               Retailer Shop Prices ({cigar.vendorPrices?.length || 0} quote
@@ -2473,9 +2476,9 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                   ? setQuickPriceCigarId(null)
                                   : handleStartQuickRetailerAdd(cigar.id)
                               }
-                              className="text-[10px] px-2 py-0.5 bg-[#1C1816] hover:bg-[#2C2621] text-[#E5E1DA] hover:text-[#C5A059] border border-[#2C2621] rounded font-semibold flex items-center gap-1 cursor-pointer transition"
+                              className="text-[10px] px-2 py-0.5 bg-card hover:bg-line text-text hover:text-gold border border-line rounded font-semibold flex items-center gap-1 cursor-pointer transition"
                             >
-                              <Plus className="w-2.5 h-2.5 text-[#C5A059]" />
+                              <Plus className="w-2.5 h-2.5 text-gold" />
                               <span>{quickPriceCigarId === cigar.id ? 'Cancel' : 'Quick Add Quote'}</span>
                             </button>
 
@@ -2489,7 +2492,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                     price: cigar.averagePrice,
                                   })
                                 }
-                                className="text-[10px] text-[#C5A059] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                                className="text-[10px] text-gold hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                               >
                                 <Edit3 className="w-2.5 h-2.5" />
                                 <span>Manage All</span>
@@ -2500,7 +2503,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
                         {/* Quick Retailer Preset Buttons */}
                         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                          <span className="text-[10px] text-[#A89F94]">Quick quote:</span>
+                          <span className="text-[10px] text-text-muted">Quick quote:</span>
                           {['C.Gars Ltd', 'Havana House', 'Smoke King', 'Sautter London', 'Neptune'].map((vName) => {
                             const hasPriceFromVendor = (cigar.vendorPrices || []).some(
                               (vp) => vp.vendor.toLowerCase().includes(vName.toLowerCase().split(' ')[0])
@@ -2513,7 +2516,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                 className={`text-[10px] px-2 py-0.5 rounded border transition cursor-pointer flex items-center gap-1 ${
                                   hasPriceFromVendor
                                     ? 'bg-emerald-950/30 border-emerald-800/40 text-emerald-300'
-                                    : 'bg-[#181412] hover:bg-[#241E1B] text-[#A89F94] hover:text-[#C5A059] border-[#2C2621]'
+                                    : 'bg-modal hover:bg-card-hover text-text-muted hover:text-gold border-line'
                                 }`}
                               >
                                 <span>+{vName.split(' ')[0]}</span>
@@ -2524,14 +2527,14 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
                         {/* Inline Quick Add Form */}
                         {quickPriceCigarId === cigar.id && (
-                          <div className="p-2.5 bg-[#1C1816] border border-[#C5A059]/40 rounded-md space-y-2 animate-in fade-in duration-150">
+                          <div className="p-2.5 bg-card border border-gold/40 rounded-md space-y-2 animate-in fade-in duration-150">
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] uppercase font-bold text-[#C5A059] tracking-wider">
+                              <span className="text-[10px] uppercase font-bold text-gold tracking-wider">
                                 Add Retailer Quote for {cigar.line}
                               </span>
                               <button
                                 onClick={() => setQuickPriceCigarId(null)}
-                                className="text-[#A89F94] hover:text-white p-0.5"
+                                className="text-text-muted hover:text-white p-0.5"
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -2544,12 +2547,12 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                   placeholder="Retailer (e.g. C.Gars Ltd, Havana House)"
                                   value={quickPriceVendor}
                                   onChange={(e) => setQuickPriceVendor(e.target.value)}
-                                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-xs text-white font-medium focus:outline-hidden focus:border-[#C5A059]"
+                                  className="w-full bg-surface border border-line rounded px-2 py-1 text-xs text-white font-medium focus:outline-hidden focus:border-gold"
                                 />
                               </div>
 
                               <div className="flex items-center gap-1">
-                                <span className="text-xs text-[#C5A059] font-bold">{quickPriceCurrency}</span>
+                                <span className="text-xs text-gold font-bold">{quickPriceCurrency}</span>
                                 <input
                                   type="number"
                                   step="0.01"
@@ -2563,7 +2566,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                       handleSaveQuickRetailerPrice(cigar);
                                     }
                                   }}
-                                  className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-xs text-white font-bold focus:outline-hidden focus:border-[#C5A059]"
+                                  className="w-full bg-surface border border-line rounded px-2 py-1 text-xs text-white font-bold focus:outline-hidden focus:border-gold"
                                 />
                               </div>
 
@@ -2571,7 +2574,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleSaveQuickRetailerPrice(cigar)}
-                                  className="w-full py-1 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-xs uppercase tracking-wider rounded transition cursor-pointer"
+                                  className="w-full py-1 bg-gold hover:brightness-110 text-ink font-bold text-xs uppercase tracking-wider rounded transition cursor-pointer"
                                 >
                                   Save Quote
                                 </button>
@@ -2592,7 +2595,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                   className={`p-2 rounded border text-xs flex items-center justify-between gap-2 group ${
                                     isLowest
                                       ? 'bg-emerald-950/30 border-emerald-800/60 text-emerald-200'
-                                      : 'bg-[#181412] border-[#2C2621] text-[#E5E1DA]'
+                                      : 'bg-modal border-line text-text'
                                   }`}
                                 >
                                   <div className="space-y-0.5 min-w-0">
@@ -2604,19 +2607,19 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                         </span>
                                       )}
                                     </div>
-                                    <div className="text-[10px] text-[#A89F94] truncate">
-                                      {vp.packageType || 'Single'} &bull; {new Date(vp.recordedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    <div className="text-[10px] text-text-muted truncate">
+                                      {vp.packageType || 'Single'} &bull; {formatDateShort(vp.recordedAt)}
                                     </div>
                                   </div>
 
                                   <div className="flex items-center gap-1.5 shrink-0">
-                                    <div className="font-bold text-xs text-[#C5A059] font-mono">
+                                    <div className="font-bold text-xs text-gold font-mono">
                                       {formatCurrency(vp.price, vp.currency || '£')}
                                     </div>
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteVendorPrice(cigar, vp.id, vp.vendor)}
-                                      className="text-[#A89F94] hover:text-red-400 hover:bg-red-950/40 p-1 rounded transition cursor-pointer"
+                                      className="text-text-muted hover:text-red-400 hover:bg-red-950/40 p-1 rounded transition cursor-pointer"
                                       title={`Delete ${vp.vendor} quote`}
                                     >
                                       <X className="w-3 h-3" />
@@ -2627,7 +2630,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                             })}
                           </div>
                         ) : (
-                          <div className="text-[11px] text-[#A89F94] italic flex items-center justify-between">
+                          <div className="text-[11px] text-text-muted italic flex items-center justify-between">
                             <span>No vendor quotes logged yet. Baseline avg: {formatCurrency(cigar.averagePrice || 0, '£')}</span>
                             {onOpenPriceEditor && (
                               <button
@@ -2639,7 +2642,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                     price: cigar.averagePrice,
                                   })
                                 }
-                                className="px-2 py-0.5 bg-[#1C1816] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] rounded text-[10px] cursor-pointer"
+                                className="px-2 py-0.5 bg-card hover:bg-card-hover text-gold border border-line rounded text-[10px] cursor-pointer"
                               >
                                 + Add Retailer Price
                               </button>
@@ -2651,30 +2654,30 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
                     {/* Expandable 3-Thirds Progression & Blend Details */}
                     {isExpanded && (
-                      <div className="space-y-4 pt-3 border-t border-[#2C2621]">
+                      <div className="space-y-4 pt-3 border-t border-line">
                         {fields.tastingProgression && showReviews && (
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md text-xs space-y-1">
-                              <strong className="text-[#C5A059] text-[11px] font-semibold uppercase tracking-wider block">
+                            <div className="p-3 bg-surface border border-line rounded-md text-xs space-y-1">
+                              <strong className="text-gold text-[11px] font-semibold uppercase tracking-wider block">
                                 1st Third (Initial Light)
                               </strong>
-                              <p className="text-[#E5E1DA] leading-relaxed">
+                              <p className="text-text leading-relaxed">
                                 {cigar.reviewTastingNotes?.firstThird || 'Cedar, white pepper, and light cocoa.'}
                               </p>
                             </div>
-                            <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md text-xs space-y-1">
-                              <strong className="text-[#C5A059] text-[11px] font-semibold uppercase tracking-wider block">
+                            <div className="p-3 bg-surface border border-line rounded-md text-xs space-y-1">
+                              <strong className="text-gold text-[11px] font-semibold uppercase tracking-wider block">
                                 2nd Third (Sweet Spot)
                               </strong>
-                              <p className="text-[#E5E1DA] leading-relaxed">
+                              <p className="text-text leading-relaxed">
                                 {cigar.reviewTastingNotes?.secondThird || 'Caramel sweetness, espresso crema, and leather.'}
                               </p>
                             </div>
-                            <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md text-xs space-y-1">
-                              <strong className="text-[#C5A059] text-[11px] font-semibold uppercase tracking-wider block">
+                            <div className="p-3 bg-surface border border-line rounded-md text-xs space-y-1">
+                              <strong className="text-gold text-[11px] font-semibold uppercase tracking-wider block">
                                 Final Third (The Nub)
                               </strong>
-                              <p className="text-[#E5E1DA] leading-relaxed">
+                              <p className="text-text leading-relaxed">
                                 {cigar.reviewTastingNotes?.finalThird || 'Dark chocolate fudge, toasted nuts, and oak.'}
                               </p>
                             </div>
@@ -2684,23 +2687,23 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         {/* Pairings & Factory */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                           {fields.drinkPairings && showPairings && (
-                            <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md space-y-1">
-                              <strong className="text-[#C5A059] text-[10px] uppercase tracking-wider flex items-center gap-1">
+                            <div className="p-3 bg-surface border border-line rounded-md space-y-1">
+                              <strong className="text-gold text-[10px] uppercase tracking-wider flex items-center gap-1">
                                 <Coffee className="w-3 h-3" />
                                 <span>Sommelier Drink Pairings:</span>
                               </strong>
-                              <div className="text-[#E5E1DA]">
+                              <div className="text-text">
                                 {(cigar.recommendedPairings || []).join(' • ') || 'Bourbon, Espresso, Single Malt Scotch'}
                               </div>
                             </div>
                           )}
 
                           {fields.agingTimeline && (
-                            <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md space-y-1">
-                              <strong className="text-[#C5A059] text-[10px] uppercase tracking-wider block">
+                            <div className="p-3 bg-surface border border-line rounded-md space-y-1">
+                              <strong className="text-gold text-[10px] uppercase tracking-wider block">
                                 Factory Terroir & Aging Window:
                               </strong>
-                              <div className="text-[#E5E1DA]">
+                              <div className="text-text">
                                 {cigar.factoryTerroir || 'Tabacalera Private Reserve'} • Recommended Aging:{' '}
                                 <strong>{cigar.agingWindowMonths || 6} months</strong>
                               </div>
@@ -2713,20 +2716,20 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
                   {/* USER-SPECIFIC SECTION: Personal Connoisseur Rating & Notes */}
                   {showPersonalNotes && (
-                    <div className="p-4 bg-[#13110F] border border-[#2C2621] rounded-lg space-y-2.5">
+                    <div className="p-4 bg-surface border border-line rounded-lg space-y-2.5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-[#C5A059] flex items-center gap-1">
-                            <Edit3 className="w-3 h-3 text-[#C5A059]" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gold flex items-center gap-1">
+                            <Edit3 className="w-3 h-3 text-gold" />
                             <span>Personal Notes & Connoisseur Rating</span>
                           </span>
                           {cigar.personalWouldRebuy && (
-                            <span className="text-[9px] px-2 py-0.5 rounded bg-[#1C1816] text-[#C5A059] border border-[#2C2621]">
+                            <span className="text-[9px] px-2 py-0.5 rounded bg-card text-gold border border-line">
                               Verdict: {cigar.personalWouldRebuy}
                             </span>
                           )}
                           {cigar.personalTried && (
-                            <span className="text-[9px] px-2 py-0.5 rounded bg-[#1C1816] text-[#E5E1DA] border border-[#2C2621]">
+                            <span className="text-[9px] px-2 py-0.5 rounded bg-card text-text border border-line">
                               ✓ Tried / Smoked
                             </span>
                           )}
@@ -2737,7 +2740,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                             setSelectedCigarForReview(cigar);
                             setIsReviewModalOpen(true);
                           }}
-                          className="px-2.5 py-1 bg-[#1C1816] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/50 rounded text-[10px] font-semibold uppercase tracking-wider transition cursor-pointer flex items-center gap-1"
+                          className="px-2.5 py-1 bg-card hover:bg-card-hover text-gold border border-line hover:border-gold/50 rounded text-[10px] font-semibold uppercase tracking-wider transition cursor-pointer flex items-center gap-1"
                         >
                           <Edit3 className="w-3 h-3" />
                           <span>{cigar.personalNotes || cigar.personalRating ? 'Edit My Review' : '+ Add Personal Rating & Notes'}</span>
@@ -2746,20 +2749,20 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
                       {/* Display Personal Notes if available */}
                       {cigar.personalNotes || cigar.personalRating ? (
-                        <div className="space-y-1.5 text-xs text-[#E5E1DA]">
+                        <div className="space-y-1.5 text-xs text-text">
                           {cigar.personalNotes && (
-                            <p className="italic text-[#E5E1DA]/90 bg-[#161311] p-2.5 rounded border border-[#2C2621]/60">
+                            <p className="italic text-text/90 bg-header p-2.5 rounded border border-line/60">
                               "{cigar.personalNotes}"
                             </p>
                           )}
                           {cigar.personalPairingNotes && (
-                            <div className="text-[11px] text-[#A89F94]">
-                              <strong className="text-[#C5A059]">My Pairing:</strong> {cigar.personalPairingNotes}
+                            <div className="text-[11px] text-text-muted">
+                              <strong className="text-gold">My Pairing:</strong> {cigar.personalPairingNotes}
                             </div>
                           )}
                         </div>
                       ) : (
-                        <p className="text-[11px] text-[#A89F94]/70 italic">
+                        <p className="text-[11px] text-text-muted/70 italic">
                           No personal tasting notes or rating recorded yet. Add your personal impressions after smoking!
                         </p>
                       )}
@@ -2767,19 +2770,19 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   )}
 
                   {/* Card Bottom Actions */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#2C2621]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line">
                     <button
                       onClick={() => toggleCardExpansion(cigar.id)}
-                      className="text-[11px] text-[#A89F94] hover:text-[#E5E1DA] font-semibold flex items-center gap-1 cursor-pointer"
+                      className="text-[11px] text-text-muted hover:text-text font-semibold flex items-center gap-1 cursor-pointer"
                     >
                       {isExpanded ? (
                         <>
-                          <ChevronUp className="w-3.5 h-3.5 text-[#C5A059]" />
+                          <ChevronUp className="w-3.5 h-3.5 text-gold" />
                           <span>Hide 3-Thirds Progression</span>
                         </>
                       ) : (
                         <>
-                          <ChevronDown className="w-3.5 h-3.5 text-[#C5A059]" />
+                          <ChevronDown className="w-3.5 h-3.5 text-gold" />
                           <span>View 3-Thirds Progression & Blend Details</span>
                         </>
                       )}
@@ -2806,7 +2809,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                             personalRating: cigar.personalRating,
                           })
                         }
-                        className="px-3 py-1.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-[10px] uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-1.5 bg-gold hover:brightness-110 text-ink font-bold text-[10px] uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
                         title="Add this cigar to your humidor inventory"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -2823,10 +2826,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                             notes: `Avg Price: £${cigar.averagePrice.toFixed(2)}. ${cigar.reviewTastingNotes?.overview || ''}`,
                           })
                         }
-                        className="px-2.5 py-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 bg-surface hover:bg-card-hover text-text border border-line text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
                         title="Add to Wishlist"
                       >
-                        <Bookmark className="w-3 h-3 text-[#C5A059]" />
+                        <Bookmark className="w-3 h-3 text-gold" />
                         <span>Wishlist</span>
                       </button>
 
@@ -2841,7 +2844,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                               price: cigar.averagePrice,
                             })
                           }
-                          className="px-2.5 py-1.5 bg-[#13110F] hover:bg-[#241E1B] text-emerald-400 border border-[#2C2621] text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1.5 bg-surface hover:bg-card-hover text-emerald-400 border border-line text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
                           title="Manage multiple retailer prices"
                         >
                           <DollarSign className="w-3 h-3 text-emerald-400" />
@@ -2861,10 +2864,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                               cigar.countryOrigin
                             )
                           }
-                          className="px-2.5 py-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1.5 bg-surface hover:bg-card-hover text-text border border-line text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
                           title="Log a Tasting Smoke Session"
                         >
-                          <Flame className="w-3 h-3 text-[#C5A059]" />
+                          <Flame className="w-3 h-3 text-gold" />
                           <span>Smoke</span>
                         </button>
                       )}
@@ -2873,17 +2876,17 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       <button
                         onClick={() => handleScanRetailerPricesForCigar(cigar)}
                         disabled={scanningPriceCigarId === cigar.id}
-                        className="px-2.5 py-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#C5A059]/40 hover:border-[#C5A059] text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        className="px-2.5 py-1.5 bg-surface hover:bg-card-hover text-gold border border-gold/40 hover:border-gold text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
                         title="Scan UK Retailers (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff)"
                       >
                         {scanningPriceCigarId === cigar.id ? (
                           <>
-                            <Loader2 className="w-3 h-3 animate-spin text-[#C5A059]" />
+                            <Loader2 className="w-3 h-3 animate-spin text-gold" />
                             <span>Scanning...</span>
                           </>
                         ) : (
                           <>
-                            <Store className="w-3 h-3 text-[#C5A059]" />
+                            <Store className="w-3 h-3 text-gold" />
                             <span>🇬🇧 Scan UK</span>
                           </>
                         )}
@@ -2896,10 +2899,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           setActiveMainTab('dossier');
                           handleLookupDossier(`${cigar.brand} ${cigar.line} ${cigar.vitola}`);
                         }}
-                        className="px-2.5 py-1.5 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 bg-surface hover:bg-card-hover text-gold border border-line text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
                         title="Run Deep Live Gemini AI Research Analysis"
                       >
-                        <Sparkles className="w-3 h-3 text-[#C5A059]" />
+                        <Sparkles className="w-3 h-3 text-gold" />
                         <span>AI Research</span>
                       </button>
 
@@ -2907,7 +2910,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       {onDeleteResearchCigar && (
                         <button
                           onClick={() => setCigarToDelete(cigar)}
-                          className="px-2 py-1.5 bg-[#13110F] hover:bg-[#2C1515] text-[#A89F94] hover:text-red-400 border border-[#2C2621] hover:border-red-900/60 text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
+                          className="px-2 py-1.5 bg-surface hover:bg-danger-bg text-text-muted hover:text-red-400 border border-line hover:border-red-900/60 text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer"
                           title={`Delete ${cigar.brand} ${cigar.line} from research database`}
                         >
                           <Trash2 className="w-3 h-3" />
@@ -2927,25 +2930,25 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
       {activeMainTab === 'dossier' && (
         <div className="space-y-6">
           {/* UK Retailer Price Intelligence & Cross-App Sync Action Card */}
-          <div className="p-4 sm:p-5 bg-gradient-to-r from-[#1C1816] via-[#161311] to-[#13110F] border border-[#C5A059]/40 rounded-lg shadow-sm">
+          <div className="p-4 sm:p-5 bg-gradient-to-r from-card via-header to-surface border border-gold/40 rounded-lg shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#C5A059] flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-gold" />
                     <span>UK Retailer Price Intelligence & Cross-App Sync</span>
                   </span>
                 </div>
-                <div className="text-xs text-[#E5E1DA]">
+                <div className="text-xs text-text">
                   <strong>Research:</strong> {researchDatabase.length} entries &bull;{' '}
                   <strong>Humidors:</strong> {cigars.length} vitolas ({cigars.reduce((a, b) => a + (b.quantity || 1), 0)} total sticks) &bull;{' '}
                   <strong>Wishlist:</strong> {wishlist.length} target sticks
                 </div>
-                <div className="text-[11px] text-[#A89F94]">
+                <div className="text-[11px] text-text-muted">
                   Multi-shop scanning across <strong>Cgars Ltd, Cuban Cigar Club, Havana House, Smoke King, and Davidoff of London</strong>. Auto-calculates accurate smoke duration badges (⏱️ 50–65 min) across every item.
                 </div>
                 {missingSpecsStats.totalMissing > 0 && (
-                  <div className="flex items-center gap-2 pt-1 text-[10px] text-[#C5A059]">
+                  <div className="flex items-center gap-2 pt-1 text-[10px] text-gold">
                     <Clock className="w-3 h-3" />
                     <span>
                       {missingSpecsStats.totalMissing} items can be enhanced ({missingSpecsStats.researchMissing} Research, {missingSpecsStats.humidorMissing} Vault, {missingSpecsStats.wishlistMissing} Wishlist)
@@ -2958,7 +2961,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 <button
                   onClick={handleBatchScanAllRetailers}
                   disabled={isBatchScanningPrices}
-                  className="px-3 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#C5A059]/50 hover:border-[#C5A059] text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-3 py-2 bg-surface hover:bg-card-hover text-gold border border-gold/50 hover:border-gold text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   title="Scan live British retailer prices across top 5 UK vendors"
                 >
                   {isBatchScanningPrices ? (
@@ -2968,7 +2971,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     </>
                   ) : (
                     <>
-                      <Store className="w-3.5 h-3.5 text-[#C5A059]" />
+                      <Store className="w-3.5 h-3.5 text-gold" />
                       <span>🇬🇧 Scan UK Retailers</span>
                     </>
                   )}
@@ -2977,7 +2980,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 <button
                   onClick={handleBatchScanAllReviewScores}
                   disabled={isBatchScanningReviews}
-                  className="px-3 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#C5A059]/50 hover:border-[#C5A059] text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-3 py-2 bg-surface hover:bg-card-hover text-gold border border-gold/50 hover:border-gold text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   title="Scan critic review scores from Cigar Aficionado, Smoke King, Halfwheel, etc."
                 >
                   {isBatchScanningReviews ? (
@@ -2987,7 +2990,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     </>
                   ) : (
                     <>
-                      <Star className="w-3.5 h-3.5 text-[#C5A059] fill-[#C5A059]" />
+                      <Star className="w-3.5 h-3.5 text-gold fill-gold" />
                       <span>⭐ Scan Review Scores</span>
                     </>
                   )}
@@ -2996,17 +2999,17 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 <button
                   onClick={handleSyncAllMissingFields}
                   disabled={isSyncingMissingFields}
-                  className="px-3.5 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold text-[11px] uppercase tracking-wider rounded-md shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-3.5 py-2 bg-gold hover:brightness-110 text-ink font-bold text-[11px] uppercase tracking-wider rounded-md shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   title="Estimate accurate smoke durations, vitola specs and sync blend data globally"
                 >
                   {isSyncingMissingFields ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0F0D0C]" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-ink" />
                       <span>Syncing Specs...</span>
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="w-3.5 h-3.5 text-[#0F0D0C]" />
+                      <RefreshCw className="w-3.5 h-3.5 text-ink" />
                       <span>Auto-Sync Smoke Times & Blend Specs</span>
                     </>
                   )}
@@ -3022,13 +3025,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
             )}
           </div>
 
-          <div className="p-5 bg-[#161311] border border-[#2C2621] rounded-lg space-y-3 shadow-sm">
-            <label className="block text-[10px] font-semibold uppercase tracking-widest text-[#C5A059]">
+          <div className="p-5 bg-header border border-line rounded-lg space-y-3 shadow-sm">
+            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gold">
               Deep Live Connoisseur Dossier Engine (Gemini 3.7 AI)
             </label>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-[#A89F94] absolute left-3 top-3" />
+                <Search className="w-4 h-4 text-text-muted absolute left-3 top-3" />
                 <input
                   type="text"
                   placeholder="e.g. Padrón 1926 No. 9, Arturo Fuente Opus X, Davidoff Late Hour, Liga Privada..."
@@ -3040,22 +3043,22 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       handleLookupDossier();
                     }
                   }}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md pl-9 pr-3 py-2.5 text-xs sm:text-sm text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059] placeholder-[#A89F94]/50"
+                  className="w-full bg-surface border border-line rounded-md pl-9 pr-3 py-2.5 text-xs sm:text-sm text-text focus:outline-hidden focus:border-gold placeholder-text-muted/50"
                 />
               </div>
               <button
                 onClick={() => handleLookupDossier()}
                 disabled={loadingDossier}
-                className="px-5 py-2.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold uppercase tracking-wider rounded-md text-xs shadow-sm transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2.5 bg-gold hover:brightness-110 text-ink font-bold uppercase tracking-wider rounded-md text-xs shadow-sm transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {loadingDossier ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-[#0F0D0C]" />
+                    <Loader2 className="w-4 h-4 animate-spin text-ink" />
                     <span>Researching...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-[#0F0D0C]" />
+                    <Sparkles className="w-4 h-4 text-ink" />
                     <span>Generate Dossier</span>
                   </>
                 )}
@@ -3064,34 +3067,34 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           </div>
 
           {dossierError && (
-            <div className="p-4 bg-[#2C1515] border border-red-800/80 rounded-lg text-xs text-red-200">
+            <div className="p-4 bg-danger-bg border border-red-800/80 rounded-lg text-xs text-red-200">
               {dossierError}
             </div>
           )}
 
           {dossierResult && (
-            <div className="bg-[#161311] border border-[#2C2621] rounded-lg p-6 sm:p-8 space-y-6 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#2C2621] pb-5">
+            <div className="bg-header border border-line rounded-lg p-6 sm:p-8 space-y-6 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#C5A059]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gold">
                       {dossierResult.brand}
                     </span>
-                    <span className="text-[#3D352E]">•</span>
-                    <span className="text-xs text-[#E5E1DA]">{dossierResult.countryOrigin}</span>
+                    <span className="text-line-hover">•</span>
+                    <span className="text-xs text-text">{dossierResult.countryOrigin}</span>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-serif text-white font-normal mt-1">
                     {dossierResult.cigarName}
                   </h2>
-                  <div className="text-xs text-[#A89F94] mt-1.5 flex flex-wrap items-center gap-2">
+                  <div className="text-xs text-text-muted mt-1.5 flex flex-wrap items-center gap-2">
                     <span>
-                      Vitola: <strong className="text-[#E5E1DA]">{dossierResult.vitolaCommon || 'Robusto'}</strong>{' '}
+                      Vitola: <strong className="text-text">{dossierResult.vitolaCommon || 'Robusto'}</strong>{' '}
                       {dossierResult.lengthInches ? `• ${dossierResult.lengthInches}"` : ''}{' '}
                       {dossierResult.ringGauge ? `• ${dossierResult.ringGauge} RG` : ''}
                     </span>
-                    <span className="text-[#3D352E]">•</span>
-                    <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#13110F] border border-[#2C2621] rounded text-[10px] text-[#C5A059] font-medium">
-                      <Clock className="w-3 h-3 text-[#C5A059]" />
+                    <span className="text-line-hover">•</span>
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface border border-line rounded text-[10px] text-gold font-medium">
+                      <Clock className="w-3 h-3 text-gold" />
                       <span>
                         Est. Smoke Time:{' '}
                         {estimateAccurateSmokeTime(
@@ -3101,10 +3104,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         ).range}
                       </span>
                     </div>
-                    <span className="text-[#3D352E]">•</span>
+                    <span className="text-line-hover">•</span>
                     <span>
                       Master Blender:{' '}
-                      <strong className="text-[#E5E1DA]">{dossierResult.masterBlender || 'Master Blending Team'}</strong>
+                      <strong className="text-text">{dossierResult.masterBlender || 'Master Blending Team'}</strong>
                     </span>
                   </div>
                 </div>
@@ -3132,7 +3135,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         targetRestMonths: parseInt(dossierResult.agingGuidance?.idealRestMonths || '6', 10) || 6,
                       });
                     }}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded font-bold uppercase tracking-wider text-[10px] shadow-sm transition cursor-pointer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-gold hover:brightness-110 text-ink rounded font-bold uppercase tracking-wider text-[10px] shadow-sm transition cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add to Humidor</span>
@@ -3153,9 +3156,9 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       });
                       showFeedback(`Added "${dossierResult.brand} ${dossierResult.cigarName}" to your Wishlist!`);
                     }}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/40 rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-surface hover:bg-card-hover text-gold border border-line hover:border-gold/40 rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
                   >
-                    <Bookmark className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <Bookmark className="w-3.5 h-3.5 text-gold" />
                     <span>Add to Wishlist</span>
                   </button>
 
@@ -3168,7 +3171,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           dossierResult.ringGauge ? parseInt(dossierResult.ringGauge, 10) : 50
                         );
                         const newResItem: CigarResearchItem = {
-                          id: `res-dos-${Date.now()}`,
+                          id: generateId('res-dos'),
                           brand: dossierResult.brand,
                           line: dossierResult.line || dossierResult.cigarName,
                           vitola: dossierResult.vitolaCommon || 'Robusto',
@@ -3201,9 +3204,9 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         onAddCustomResearchCigar(newResItem);
                         showFeedback(`Saved "${dossierResult.brand} ${dossierResult.cigarName}" to your permanent Research Database!`);
                       }}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] hover:border-[#8B5E3C] rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-surface hover:bg-card-hover text-text border border-line hover:border-cedar rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
                     >
-                      <BookOpen className="w-3.5 h-3.5 text-[#C5A059]" />
+                      <BookOpen className="w-3.5 h-3.5 text-gold" />
                       <span>Save to Research DB</span>
                     </button>
                   )}
@@ -3219,7 +3222,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           dossierResult.countryOrigin
                         )
                       }
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] hover:border-amber-600/40 rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-surface hover:bg-card-hover text-text border border-line hover:border-amber-600/40 rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
                     >
                       <Flame className="w-3.5 h-3.5 text-amber-500" />
                       <span>Log Smoke</span>
@@ -3228,31 +3231,31 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 bg-[#13110F] border border-[#2C2621] rounded-md">
-                <p className="text-xs sm:text-sm text-[#E5E1DA] leading-relaxed font-serif italic">
+              <div className="p-4 bg-surface border border-line rounded-md">
+                <p className="text-xs sm:text-sm text-text leading-relaxed font-serif italic">
                   "{dossierResult.summary}"
                 </p>
               </div>
 
               {/* Tobacco Blend */}
               <div>
-                <h3 className="text-[10px] uppercase tracking-widest font-semibold text-[#C5A059] mb-3">
+                <h3 className="text-[10px] uppercase tracking-widest font-semibold text-gold mb-3">
                   Tobacco Blend & Terroir
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md">
-                    <span className="text-[#A89F94] text-[10px] uppercase tracking-wider block">Wrapper Leaf</span>
-                    <strong className="text-[#E5E1DA] text-xs sm:text-sm font-serif">{dossierResult.wrapper}</strong>
+                  <div className="p-3 bg-surface border border-line rounded-md">
+                    <span className="text-text-muted text-[10px] uppercase tracking-wider block">Wrapper Leaf</span>
+                    <strong className="text-text text-xs sm:text-sm font-serif">{dossierResult.wrapper}</strong>
                   </div>
-                  <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md">
-                    <span className="text-[#A89F94] text-[10px] uppercase tracking-wider block">Binder</span>
-                    <strong className="text-[#E5E1DA] text-xs sm:text-sm font-serif">
+                  <div className="p-3 bg-surface border border-line rounded-md">
+                    <span className="text-text-muted text-[10px] uppercase tracking-wider block">Binder</span>
+                    <strong className="text-text text-xs sm:text-sm font-serif">
                       {dossierResult.binder || 'Proprietary'}
                     </strong>
                   </div>
-                  <div className="p-3 bg-[#13110F] border border-[#2C2621] rounded-md">
-                    <span className="text-[#A89F94] text-[10px] uppercase tracking-wider block">Filler</span>
-                    <strong className="text-[#E5E1DA] text-xs sm:text-sm font-serif">
+                  <div className="p-3 bg-surface border border-line rounded-md">
+                    <span className="text-text-muted text-[10px] uppercase tracking-wider block">Filler</span>
+                    <strong className="text-text text-xs sm:text-sm font-serif">
                       {dossierResult.filler || 'Proprietary Blend'}
                     </strong>
                   </div>
@@ -3261,20 +3264,20 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* 3-Thirds Flavor Progression */}
               <div>
-                <h3 className="text-[10px] uppercase tracking-widest font-semibold text-[#C5A059] mb-3">
+                <h3 className="text-[10px] uppercase tracking-widest font-semibold text-gold mb-3">
                   💨 3-Thirds Flavor Progression Curve
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 bg-[#13110F] border border-[#2C2621] rounded-md space-y-2">
-                    <strong className="text-[#C5A059] text-xs font-serif font-semibold">1st Third (Initial Light)</strong>
-                    <p className="text-xs text-[#E5E1DA] leading-relaxed">
+                  <div className="p-4 bg-surface border border-line rounded-md space-y-2">
+                    <strong className="text-gold text-xs font-serif font-semibold">1st Third (Initial Light)</strong>
+                    <p className="text-xs text-text leading-relaxed">
                       {dossierResult.flavorTransitions.firstThird.overview}
                     </p>
                     <div className="flex flex-wrap gap-1 pt-1">
                       {dossierResult.flavorTransitions.firstThird.keyNotes.map((note) => (
                         <span
                           key={note}
-                          className="text-[10px] px-2 py-0.5 rounded bg-[#161311] text-[#E5E1DA] border border-[#2C2621]"
+                          className="text-[10px] px-2 py-0.5 rounded bg-header text-text border border-line"
                         >
                           {note}
                         </span>
@@ -3282,16 +3285,16 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-4 bg-[#13110F] border border-[#2C2621] rounded-md space-y-2">
-                    <strong className="text-[#C5A059] text-xs font-serif font-semibold">2nd Third (Sweet Spot)</strong>
-                    <p className="text-xs text-[#E5E1DA] leading-relaxed">
+                  <div className="p-4 bg-surface border border-line rounded-md space-y-2">
+                    <strong className="text-gold text-xs font-serif font-semibold">2nd Third (Sweet Spot)</strong>
+                    <p className="text-xs text-text leading-relaxed">
                       {dossierResult.flavorTransitions.secondThird.overview}
                     </p>
                     <div className="flex flex-wrap gap-1 pt-1">
                       {dossierResult.flavorTransitions.secondThird.keyNotes.map((note) => (
                         <span
                           key={note}
-                          className="text-[10px] px-2 py-0.5 rounded bg-[#161311] text-[#E5E1DA] border border-[#2C2621]"
+                          className="text-[10px] px-2 py-0.5 rounded bg-header text-text border border-line"
                         >
                           {note}
                         </span>
@@ -3299,16 +3302,16 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-4 bg-[#13110F] border border-[#2C2621] rounded-md space-y-2">
-                    <strong className="text-[#C5A059] text-xs font-serif font-semibold">Final Third (Nub & Finish)</strong>
-                    <p className="text-xs text-[#E5E1DA] leading-relaxed">
+                  <div className="p-4 bg-surface border border-line rounded-md space-y-2">
+                    <strong className="text-gold text-xs font-serif font-semibold">Final Third (Nub & Finish)</strong>
+                    <p className="text-xs text-text leading-relaxed">
                       {dossierResult.flavorTransitions.finalThird.overview}
                     </p>
                     <div className="flex flex-wrap gap-1 pt-1">
                       {dossierResult.flavorTransitions.finalThird.keyNotes.map((note) => (
                         <span
                           key={note}
-                          className="text-[10px] px-2 py-0.5 rounded bg-[#161311] text-[#E5E1DA] border border-[#2C2621]"
+                          className="text-[10px] px-2 py-0.5 rounded bg-header text-text border border-line"
                         >
                           {note}
                         </span>
@@ -3320,29 +3323,29 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* Pairings */}
               <div>
-                <h3 className="text-[10px] uppercase tracking-widest font-semibold text-[#C5A059] mb-3 flex items-center gap-1.5">
-                  <Coffee className="w-3.5 h-3.5 text-[#C5A059]" />
+                <h3 className="text-[10px] uppercase tracking-widest font-semibold text-gold mb-3 flex items-center gap-1.5">
+                  <Coffee className="w-3.5 h-3.5 text-gold" />
                   <span>Sommelier Beverage Pairings</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {dossierResult.idealPairings.map((pairing, idx) => (
-                    <div key={idx} className="p-3.5 bg-[#13110F] border border-[#2C2621] rounded-md text-xs space-y-1">
+                    <div key={idx} className="p-3.5 bg-surface border border-line rounded-md text-xs space-y-1">
                       <div className="flex items-center justify-between">
-                        <strong className="text-[#C5A059] font-semibold">{pairing.beverageName}</strong>
-                        <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded bg-[#161311] text-[#A89F94] border border-[#2C2621]">
+                        <strong className="text-gold font-semibold">{pairing.beverageName}</strong>
+                        <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded bg-header text-text-muted border border-line">
                           {pairing.category}
                         </span>
                       </div>
-                      <p className="text-[#E5E1DA] text-xs leading-relaxed">{pairing.whyItWorks}</p>
+                      <p className="text-text text-xs leading-relaxed">{pairing.whyItWorks}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Bottom Multi-Destination Action Footer */}
-              <div className="pt-4 border-t border-[#2C2621] flex flex-wrap items-center justify-between gap-3">
-                <span className="text-xs text-[#A89F94]">
-                  Organize <strong className="text-[#E5E1DA]">{dossierResult.brand} {dossierResult.cigarName}</strong>:
+              <div className="pt-4 border-t border-line flex flex-wrap items-center justify-between gap-3">
+                <span className="text-xs text-text-muted">
+                  Organize <strong className="text-text">{dossierResult.brand} {dossierResult.cigarName}</strong>:
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
@@ -3362,7 +3365,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         targetRestMonths: parseInt(dossierResult.agingGuidance?.idealRestMonths || '6', 10) || 6,
                       })
                     }
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] rounded font-bold uppercase tracking-wider text-[10px] shadow-sm transition cursor-pointer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-gold hover:brightness-110 text-ink rounded font-bold uppercase tracking-wider text-[10px] shadow-sm transition cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add to Humidor</span>
@@ -3378,9 +3381,9 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       });
                       showFeedback(`Added "${dossierResult.brand} ${dossierResult.cigarName}" to your Wishlist!`);
                     }}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/40 rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-surface hover:bg-card-hover text-gold border border-line hover:border-gold/40 rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
                   >
-                    <Bookmark className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <Bookmark className="w-3.5 h-3.5 text-gold" />
                     <span>Add to Wishlist</span>
                   </button>
 
@@ -3388,7 +3391,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     <button
                       onClick={() => {
                         const newResItem: CigarResearchItem = {
-                          id: `res-dos-${Date.now()}`,
+                          id: generateId('res-dos'),
                           brand: dossierResult.brand,
                           line: dossierResult.line || dossierResult.cigarName,
                           vitola: dossierResult.vitolaCommon || 'Robusto',
@@ -3419,9 +3422,9 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         onAddCustomResearchCigar(newResItem);
                         showFeedback(`Saved "${dossierResult.brand} ${dossierResult.cigarName}" to your permanent Research Database!`);
                       }}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] hover:border-[#8B5E3C] rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-surface hover:bg-card-hover text-text border border-line hover:border-cedar rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
                     >
-                      <BookOpen className="w-3.5 h-3.5 text-[#C5A059]" />
+                      <BookOpen className="w-3.5 h-3.5 text-gold" />
                       <span>Save to Research DB</span>
                     </button>
                   )}
@@ -3437,7 +3440,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           dossierResult.countryOrigin
                         )
                       }
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#E5E1DA] border border-[#2C2621] hover:border-amber-600/40 rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-surface hover:bg-card-hover text-text border border-line hover:border-amber-600/40 rounded text-[10px] uppercase tracking-wider font-semibold transition cursor-pointer"
                     >
                       <Flame className="w-3.5 h-3.5 text-amber-500" />
                       <span>Log Smoke</span>
@@ -3453,34 +3456,34 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
       {/* TAB 3: "What to Smoke Tonight?" Sommelier */}
       {activeMainTab === 'sommelier' && (
         <div className="space-y-6">
-          <div className="p-6 bg-[#161311] border border-[#2C2621] rounded-lg space-y-4 shadow-sm">
+          <div className="p-6 bg-header border border-line rounded-lg space-y-4 shadow-sm">
             <h2 className="text-lg font-serif text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#C5A059]" />
+              <Sparkles className="w-4 h-4 text-gold" />
               <span>Personal Cigar Sommelier Recommendation</span>
             </h2>
-            <p className="text-xs text-[#A89F94]">
+            <p className="text-xs text-text-muted">
               Tell the Sommelier your mood, available smoking time, and tonight's beverage. We'll cross-reference
               your current humidor inventory to select the ideal stick.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-[#A89F94] mb-1">Occasion / Setting</label>
+                <label className="block text-xs text-text-muted mb-1">Occasion / Setting</label>
                 <input
                   type="text"
                   value={mood}
                   onChange={(e) => setMood(e.target.value)}
                   placeholder="e.g. Porch after steak dinner, celebration"
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-[#A89F94] mb-1">Available Smoke Time</label>
+                <label className="block text-xs text-text-muted mb-1">Available Smoke Time</label>
                 <select
                   value={availableTime}
                   onChange={(e) => setAvailableTime(e.target.value)}
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                 >
                   <option value="30-45 minutes (Petit Corona / Corona)">30-45 minutes (Quick / Small vitola)</option>
                   <option value="60-75 minutes (Robusto / Toro)">60-75 minutes (Robusto / Toro standard)</option>
@@ -3489,41 +3492,41 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs text-[#A89F94] mb-1">Beverage in Glass</label>
+                <label className="block text-xs text-text-muted mb-1">Beverage in Glass</label>
                 <input
                   type="text"
                   value={drinkPairing}
                   onChange={(e) => setDrinkPairing(e.target.value)}
                   placeholder="e.g. Woodford Reserve Double Oaked, Espresso, Rum"
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                  className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs text-[#A89F94] mb-1">Flavor Notes or Strength Preference</label>
+              <label className="block text-xs text-text-muted mb-1">Flavor Notes or Strength Preference</label>
               <input
                 type="text"
                 value={preferenceNotes}
                 onChange={(e) => setPreferenceNotes(e.target.value)}
                 placeholder="e.g. Want rich dark chocolate and baking spices, medium-full body"
-                className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-3 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+                className="w-full bg-surface border border-line rounded-md px-3 py-2 text-xs text-text focus:outline-hidden focus:border-gold"
               />
             </div>
 
             <button
               onClick={handleRunSommelier}
               disabled={loadingSommelier}
-              className="px-6 py-2.5 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold uppercase tracking-wider rounded-md text-xs shadow-sm transition flex items-center gap-2 cursor-pointer"
+              className="px-6 py-2.5 bg-gold hover:brightness-110 text-ink font-bold uppercase tracking-wider rounded-md text-xs shadow-sm transition flex items-center gap-2 cursor-pointer"
             >
               {loadingSommelier ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#0F0D0C]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-ink" />
                   <span>Consulting Sommelier...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-[#0F0D0C]" />
+                  <Sparkles className="w-4 h-4 text-ink" />
                   <span>Recommend Tonight's Smoke</span>
                 </>
               )}
@@ -3531,25 +3534,25 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           </div>
 
           {sommelierError && (
-            <div className="p-4 bg-[#2C1515] border border-red-800/80 rounded-lg text-xs text-red-200">
+            <div className="p-4 bg-danger-bg border border-red-800/80 rounded-lg text-xs text-red-200">
               {sommelierError}
             </div>
           )}
 
           {sommelierResult && (
-            <div className="bg-[#161311] border border-[#2C2621] rounded-lg p-6 sm:p-8 space-y-6 shadow-sm">
-              <div className="p-4 bg-[#13110F] border border-[#2C2621] rounded-md text-xs sm:text-sm text-[#E5E1DA] font-serif italic leading-relaxed">
+            <div className="bg-header border border-line rounded-lg p-6 sm:p-8 space-y-6 shadow-sm">
+              <div className="p-4 bg-surface border border-line rounded-md text-xs sm:text-sm text-text font-serif italic leading-relaxed">
                 "{sommelierResult.sommelierGreeting}"
               </div>
 
               {sommelierResult.humidorPick && (
-                <div className="p-5 bg-[#13110F] border border-[#C5A059]/50 rounded-lg space-y-3">
+                <div className="p-5 bg-surface border border-gold/50 rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#C5A059] flex items-center gap-1.5">
-                      <Award className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gold flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-gold" />
                       <span>Top Choice from Your Humidor</span>
                     </span>
-                    <span className="text-xs text-[#A89F94]">
+                    <span className="text-xs text-text-muted">
                       ⏱️ {sommelierResult.humidorPick.expectedSmokeDuration}
                     </span>
                   </div>
@@ -3558,12 +3561,12 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     {sommelierResult.humidorPick.cigarName}
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-[#E5E1DA] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-text leading-relaxed">
                     {sommelierResult.humidorPick.reason}
                   </p>
 
-                  <div className="p-3 bg-[#161311] rounded border border-[#2C2621] text-xs text-[#E5E1DA]">
-                    <strong className="text-[#C5A059]">🥃 Pairing Advice:</strong>{' '}
+                  <div className="p-3 bg-header rounded border border-line text-xs text-text">
+                    <strong className="text-gold">🥃 Pairing Advice:</strong>{' '}
                     {sommelierResult.humidorPick.pairingAdvice}
                   </div>
                 </div>
@@ -3571,25 +3574,25 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               {/* Curated Recommendations */}
               <div>
-                <h3 className="text-[10px] uppercase tracking-widest font-semibold text-[#C5A059] mb-3">
+                <h3 className="text-[10px] uppercase tracking-widest font-semibold text-gold mb-3">
                   ★ Curated Recommendations
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {sommelierResult.curatedRecommendations.map((rec, i) => (
                     <div
                       key={i}
-                      className="p-4 bg-[#13110F] border border-[#2C2621] rounded-lg space-y-2 text-xs flex flex-col justify-between"
+                      className="p-4 bg-surface border border-line rounded-lg space-y-2 text-xs flex flex-col justify-between"
                     >
                       <div>
-                        <div className="text-[#C5A059] font-bold uppercase text-[10px] tracking-wider">{rec.brand}</div>
+                        <div className="text-gold font-bold uppercase text-[10px] tracking-wider">{rec.brand}</div>
                         <div className="font-serif font-semibold text-white text-sm">{rec.cigarName}</div>
-                        <div className="text-[#A89F94] text-[11px]">
+                        <div className="text-text-muted text-[11px]">
                           {rec.vitola} • {rec.strength}
                         </div>
-                        <p className="text-[#E5E1DA] text-xs mt-2 leading-relaxed">{rec.whyItFits}</p>
+                        <p className="text-text text-xs mt-2 leading-relaxed">{rec.whyItFits}</p>
                       </div>
 
-                      <div className="pt-3 border-t border-[#2C2621] flex flex-wrap items-center justify-end gap-1.5">
+                      <div className="pt-3 border-t border-line flex flex-wrap items-center justify-end gap-1.5">
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => {
@@ -3601,7 +3604,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                 notes: rec.whyItFits,
                               });
                             }}
-                            className="p-1.5 text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/40 rounded cursor-pointer"
+                            className="p-1.5 text-text-muted hover:text-gold border border-line hover:border-gold/40 rounded cursor-pointer"
                             title="Add to Humidor"
                           >
                             <Plus className="w-3 h-3" />
@@ -3616,7 +3619,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                               });
                               showFeedback(`Added "${rec.brand} ${rec.cigarName}" to Wishlist!`);
                             }}
-                            className="p-1.5 text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/40 rounded cursor-pointer"
+                            className="p-1.5 text-text-muted hover:text-gold border border-line hover:border-gold/40 rounded cursor-pointer"
                             title="Save to Wishlist"
                           >
                             <Bookmark className="w-3 h-3" />
@@ -3625,7 +3628,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                             <button
                               onClick={() => {
                                 const newRes: CigarResearchItem = {
-                                  id: `res-rec-${Date.now()}`,
+                                  id: generateId('res-rec'),
                                   brand: rec.brand,
                                   line: rec.cigarName,
                                   vitola: rec.vitola || 'Robusto',
@@ -3656,7 +3659,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                 onAddCustomResearchCigar(newRes);
                                 showFeedback(`Saved "${rec.brand} ${rec.cigarName}" to Research DB!`);
                               }}
-                              className="p-1.5 text-[#A89F94] hover:text-[#C5A059] border border-[#2C2621] hover:border-[#8B5E3C] rounded cursor-pointer"
+                              className="p-1.5 text-text-muted hover:text-gold border border-line hover:border-cedar rounded cursor-pointer"
                               title="Save to Research DB"
                             >
                               <BookOpen className="w-3 h-3" />
@@ -3687,12 +3690,12 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
       {/* Add Custom Research Cigar Modal */}
       {isAddCustomOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="relative w-full max-w-lg bg-[#1C1816] border border-[#2C2621] rounded-lg shadow-2xl overflow-hidden text-[#E5E1DA]">
-            <div className="px-6 py-4 bg-[#13110F] border-b border-[#2C2621] flex items-center justify-between">
-              <h2 className="text-base font-serif font-semibold text-[#E5E1DA]">Add Custom Cigar to Database</h2>
+          <div className="relative w-full max-w-lg bg-card border border-line rounded-lg shadow-2xl overflow-hidden text-text">
+            <div className="px-6 py-4 bg-surface border-b border-line flex items-center justify-between">
+              <h2 className="text-base font-serif font-semibold text-text">Add Custom Cigar to Database</h2>
               <button
                 onClick={() => setIsAddCustomOpen(false)}
-                className="text-[#A89F94] hover:text-[#E5E1DA] p-1.5 rounded cursor-pointer"
+                className="text-text-muted hover:text-text p-1.5 rounded cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -3701,46 +3704,46 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
             <form onSubmit={handleCreateCustomCigar} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Brand *</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Brand *</label>
                   <input
                     type="text"
                     required
                     value={newBrand}
                     onChange={(e) => setNewBrand(e.target.value)}
                     placeholder="e.g. Illusione, Warped"
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA]"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Line / Blend *</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Line / Blend *</label>
                   <input
                     type="text"
                     required
                     value={newLine}
                     onChange={(e) => setNewLine(e.target.value)}
                     placeholder="e.g. Epernay Le Ferme"
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA]"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Vitola</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Vitola</label>
                   <input
                     type="text"
                     value={newVitola}
                     onChange={(e) => setNewVitola(e.target.value)}
                     placeholder="e.g. Robusto, Toro"
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA]"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Origin Country</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Origin Country</label>
                   <select
                     value={newOrigin}
                     onChange={(e) => setNewOrigin(e.target.value)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA]"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text"
                   >
                     <option value="Nicaragua">Nicaragua</option>
                     <option value="Dominican Republic">Dominican Republic</option>
@@ -3754,14 +3757,14 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Wrapper Type</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Wrapper Type</label>
                   <select
                     value={newWrapperType}
                     onChange={(e) => {
                       setNewWrapperType(e.target.value as any);
                       setNewWrapper(e.target.value);
                     }}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA]"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text"
                   >
                     {wrapperTypes.map((w) => (
                       <option key={w} value={w}>
@@ -3771,11 +3774,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Strength</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Strength</label>
                   <select
                     value={newStrength}
                     onChange={(e) => setNewStrength(e.target.value as any)}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA]"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text"
                   >
                     {strengthTypes.map((s) => (
                       <option key={s} value={s}>
@@ -3788,7 +3791,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Average Price (£)</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Average Price (£)</label>
                   <input
                     type="number"
                     step="0.5"
@@ -3798,44 +3801,44 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       setNewAvgPrice(val);
                       setNewPriceRange(`£${(val * 0.9).toFixed(2)} – £${(val * 1.15).toFixed(2)}`);
                     }}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA]"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Critic Rating (1-100)</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Critic Rating (1-100)</label>
                   <input
                     type="number"
                     min="50"
                     max="100"
                     value={newCriticRating}
                     onChange={(e) => setNewCriticRating(parseInt(e.target.value, 10))}
-                    className="w-full bg-[#13110F] border border-[#2C2621] rounded px-3 py-2 text-xs text-[#E5E1DA]"
+                    className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] text-[#A89F94] uppercase tracking-wider mb-1">Tasting Notes Overview</label>
+                <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1">Tasting Notes Overview</label>
                 <textarea
                   rows={2}
                   value={newReviewOverview}
                   onChange={(e) => setNewReviewOverview(e.target.value)}
                   placeholder="e.g. Silky draw with cedar, toasted almonds, and sweet vanilla cream..."
-                  className="w-full bg-[#13110F] border border-[#2C2621] rounded p-2.5 text-xs text-[#E5E1DA]"
+                  className="w-full bg-surface border border-line rounded p-2.5 text-xs text-text"
                 />
               </div>
 
-              <div className="pt-3 border-t border-[#2C2621] flex justify-end gap-2">
+              <div className="pt-3 border-t border-line flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsAddCustomOpen(false)}
-                  className="px-4 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] rounded text-xs cursor-pointer"
+                  className="px-4 py-2 bg-surface hover:bg-card-hover text-text-muted rounded text-xs cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#C5A059] text-[#0F0D0C] font-bold rounded text-xs uppercase tracking-wider cursor-pointer"
+                  className="px-5 py-2 bg-gold text-ink font-bold rounded text-xs uppercase tracking-wider cursor-pointer"
                 >
                   Save to Research DB
                 </button>
@@ -3848,16 +3851,16 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
       {/* Reset / Clear Confirmation Dialog */}
       {confirmModalType && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md bg-[#1C1816] border border-[#2C2621] rounded-lg shadow-2xl p-6 text-[#E5E1DA]">
+          <div className="relative w-full max-w-md bg-card border border-line rounded-lg shadow-2xl p-6 text-text">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[#2C2621] flex items-center justify-center flex-shrink-0 text-[#C5A059]">
+              <div className="w-10 h-10 rounded-full bg-line flex items-center justify-center flex-shrink-0 text-gold">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="font-serif text-lg font-semibold text-white">
                   {confirmModalType === 'reset' ? 'Reset Research Database?' : 'Clear Research Database?'}
                 </h3>
-                <p className="text-xs text-[#A89F94]">
+                <p className="text-xs text-text-muted">
                   {confirmModalType === 'reset'
                     ? 'This will restore all default 25+ benchmark cigars in the connoisseur research catalog.'
                     : 'This will remove all research catalog entries. You can always reset to defaults later.'}
@@ -3865,10 +3868,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-[#2C2621]">
+            <div className="flex justify-end gap-2 pt-4 border-t border-line">
               <button
                 onClick={() => setConfirmModalType(null)}
-                className="px-4 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] rounded text-xs cursor-pointer"
+                className="px-4 py-2 bg-surface hover:bg-card-hover text-text-muted rounded text-xs cursor-pointer"
               >
                 Cancel
               </button>
@@ -3878,7 +3881,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     if (onResetResearchDatabase) onResetResearchDatabase();
                     setConfirmModalType(null);
                   }}
-                  className="px-4 py-2 bg-[#C5A059] hover:brightness-110 text-[#0F0D0C] font-bold rounded text-xs uppercase tracking-wider cursor-pointer"
+                  className="px-4 py-2 bg-gold hover:brightness-110 text-ink font-bold rounded text-xs uppercase tracking-wider cursor-pointer"
                 >
                   Confirm Reset
                 </button>
@@ -3901,7 +3904,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
       {/* Individual Cigar Delete Confirmation Dialog */}
       {cigarToDelete && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md bg-[#1C1816] border border-[#2C2621] rounded-lg shadow-2xl p-6 text-[#E5E1DA]">
+          <div className="relative w-full max-w-md bg-card border border-line rounded-lg shadow-2xl p-6 text-text">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-950/40 border border-red-800/60 flex items-center justify-center flex-shrink-0 text-red-400">
                 <Trash2 className="w-5 h-5" />
@@ -3910,16 +3913,16 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 <h3 className="font-serif text-lg font-semibold text-white">
                   Delete Cigar from Research?
                 </h3>
-                <p className="text-xs text-[#A89F94] mt-0.5">
-                  Are you sure you want to remove <strong className="text-[#C5A059]">{cigarToDelete.brand} {cigarToDelete.line}</strong> ({cigarToDelete.vitola}) from your research database?
+                <p className="text-xs text-text-muted mt-0.5">
+                  Are you sure you want to remove <strong className="text-gold">{cigarToDelete.brand} {cigarToDelete.line}</strong> ({cigarToDelete.vitola}) from your research database?
                 </p>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-[#2C2621]">
+            <div className="flex justify-end gap-2 pt-4 border-t border-line">
               <button
                 onClick={() => setCigarToDelete(null)}
-                className="px-4 py-2 bg-[#13110F] hover:bg-[#241E1B] text-[#A89F94] rounded text-xs cursor-pointer"
+                className="px-4 py-2 bg-surface hover:bg-card-hover text-text-muted rounded text-xs cursor-pointer"
               >
                 Cancel
               </button>

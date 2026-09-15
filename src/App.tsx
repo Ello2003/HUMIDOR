@@ -1,16 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { DashboardOverview } from './components/DashboardOverview';
 import { HumidorInventory } from './components/HumidorInventory';
 import { SmokeJournal } from './components/SmokeJournal';
-import { CigarResearchHub } from './components/CigarResearchHub';
-import { WishlistHunting } from './components/WishlistHunting';
-import { ExportSuite } from './components/ExportSuite';
+// Code-split the heaviest, not-always-visited panels so the initial
+// bundle for Dashboard/Inventory/Journal -- what most sessions actually
+// open first -- is meaningfully smaller. (Vite/Rollup flagged the single
+// 870KB+ bundle; CigarResearchHub and WishlistHunting alone are ~3,900 and
+// ~2,800 lines respectively.)
+const CigarResearchHub = lazy(() =>
+  import('./components/CigarResearchHub').then((m) => ({ default: m.CigarResearchHub }))
+);
+const WishlistHunting = lazy(() =>
+  import('./components/WishlistHunting').then((m) => ({ default: m.WishlistHunting }))
+);
+const ExportSuite = lazy(() => import('./components/ExportSuite').then((m) => ({ default: m.ExportSuite })));
+const ShoppingBasketImporterModal = lazy(() =>
+  import('./components/ShoppingBasketImporterModal').then((m) => ({ default: m.ShoppingBasketImporterModal }))
+);
+
+const PanelLoading = () => (
+  <div className="flex items-center justify-center py-24 text-text-muted text-sm">Loading…</div>
+);
 import { AddCigarModal } from './components/AddCigarModal';
 import { LogSmokeModal } from './components/LogSmokeModal';
 import { HumidorManagerModal } from './components/HumidorManagerModal';
 import { HumidorManagerDrawer } from './components/HumidorManagerDrawer';
-import { ShoppingBasketImporterModal } from './components/ShoppingBasketImporterModal';
+
 import { AppSettingsModal } from './components/AppSettingsModal';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { GlobalPriceEditorModal } from './components/GlobalPriceEditorModal';
@@ -30,6 +46,7 @@ import {
   estimateAccurateSmokeTime,
 } from './utils/researchUtils';
 import { deduplicateHumidorCigars, syncGlobalCigarPrice } from './utils/humidorUtils';
+import { generateId } from './utils/idUtils';
 import { DEFAULT_APP_SETTINGS, APP_VERSION } from './data/versionHistory';
 
 export function App() {
@@ -257,7 +274,7 @@ export function App() {
     } else {
       const newCigar: Cigar = {
         ...enrichedCigarData,
-        id: `cigar-${Date.now()}`,
+        id: generateId('cigar'),
         createdAt: now,
         updatedAt: now,
       };
@@ -271,7 +288,7 @@ export function App() {
     // If vendor and price provided, sync quote site-wide across Research and Wishlist
     if (cigarData.vendor && cigarData.purchasePrice) {
       const quote: VendorPriceEntry = {
-        id: `vp-${Date.now()}`,
+        id: generateId('vp'),
         vendor: cigarData.vendor,
         price: cigarData.purchasePrice,
         currency: cigarData.currency || '£',
@@ -466,7 +483,7 @@ export function App() {
     } else {
       const newLog: SmokeLog = {
         ...logData,
-        id: `smoke-${Date.now()}`,
+        id: generateId('smoke'),
         createdAt: new Date().toISOString(),
       };
       setSmokeLogs((prev) => [newLog, ...prev]);
@@ -493,7 +510,7 @@ export function App() {
     } else {
       const newHum: Humidor = {
         ...hData,
-        id: `hum-${Date.now()}`,
+        id: generateId('hum'),
         createdAt: new Date().toISOString(),
       };
       setHumidors((prev) => [...prev, newHum]);
@@ -527,7 +544,7 @@ export function App() {
       ...item,
       smokeTimeMinutes: estSmoke.minutes,
       smokeTimeRange: estSmoke.range,
-      id: `wish-${Date.now()}`,
+      id: generateId('wish'),
       createdAt: new Date().toISOString(),
     };
     setWishlist((prev) => [newItem, ...prev]);
@@ -745,7 +762,7 @@ export function App() {
       const quotes = c.vendorPrices && c.vendorPrices.length > 0
         ? c.vendorPrices
         : (c.vendor && c.purchasePrice ? [{
-            id: `vp-${Date.now()}`,
+            id: generateId('vp'),
             vendor: c.vendor,
             price: c.purchasePrice,
             currency: c.currency || '£',
@@ -901,7 +918,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F0D0C] text-[#E5E1DA] flex flex-col font-sans selection:bg-[#2C2621] selection:text-[#C5A059]">
+    <div className="min-h-screen bg-ink text-text flex flex-col font-sans selection:bg-line selection:text-gold">
       {/* Top Navigation */}
       <Navbar
         activeTab={activeTab}
@@ -1011,6 +1028,7 @@ export function App() {
         )}
 
         {activeTab === 'research' && (
+          <Suspense fallback={<PanelLoading />}>
           <CigarResearchHub
             cigars={cigars}
             researchDatabase={researchDatabase}
@@ -1047,9 +1065,11 @@ export function App() {
             onLogSmokeFromResearch={handleLogSmokeFromResearch}
             onOpenPriceEditor={handleOpenPriceEditorForCigar}
           />
+          </Suspense>
         )}
 
         {activeTab === 'wishlist' && (
+          <Suspense fallback={<PanelLoading />}>
           <WishlistHunting
             wishlist={wishlist}
             settings={settings}
@@ -1063,9 +1083,11 @@ export function App() {
             onOpenPriceEditor={handleOpenPriceEditorForCigar}
             onInlineRenameWishlistItem={(item, newB, newN) => handleInlineRenameCigar(item, newB, newN)}
           />
+          </Suspense>
         )}
 
         {activeTab === 'export' && (
+          <Suspense fallback={<PanelLoading />}>
           <ExportSuite
             cigars={cigars}
             humidors={humidors}
@@ -1077,6 +1099,7 @@ export function App() {
             onOpenBasketImporter={() => setIsBasketImporterOpen(true)}
             onImportVault={handleImportVault}
           />
+          </Suspense>
         )}
       </main>
 
@@ -1111,7 +1134,9 @@ export function App() {
         }}
       />
 
-      <ShoppingBasketImporterModal
+      {isBasketImporterOpen && (
+        <Suspense fallback={null}>
+        <ShoppingBasketImporterModal
         isOpen={isBasketImporterOpen}
         onClose={() => setIsBasketImporterOpen(false)}
         humidors={humidors}
@@ -1137,6 +1162,8 @@ export function App() {
           }
         }}
       />
+      </Suspense>
+      )}
 
       <LogSmokeModal
         isOpen={isLogSmokeOpen}
@@ -1210,23 +1237,23 @@ export function App() {
       )}
 
       {/* Footer */}
-      <footer className="mt-auto py-5 border-t border-[#2C2621] bg-[#13110F] text-xs text-[#A89F94]">
+      <footer className="mt-auto py-5 border-t border-line bg-surface text-xs text-text-muted">
         <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-serif tracking-wider text-[#C5A059] font-medium">The Humidor</span>
+            <span className="font-serif tracking-wider text-gold font-medium">The Humidor</span>
           </div>
 
           <div className="flex items-center gap-3 text-[11px]">
             <button
               onClick={() => setIsSettingsOpen(true)}
               id="footer-quick-settings-btn"
-              className="flex items-center gap-1.5 text-[#C5A059] hover:text-white px-2.5 py-1 rounded bg-[#1C1816] border border-[#2C2621] hover:border-[#C5A059]/60 transition cursor-pointer font-medium"
+              className="flex items-center gap-1.5 text-gold hover:text-white px-2.5 py-1 rounded bg-card border border-line hover:border-gold/60 transition cursor-pointer font-medium"
             >
               <span>⚙️ Quick Settings</span>
             </button>
             <button
               onClick={() => setIsVersionHistoryOpen(true)}
-              className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1C1816] text-[#C5A059] border border-[#2C2621] hover:border-[#C5A059]/50 transition cursor-pointer"
+              className="text-[10px] font-mono px-2 py-0.5 rounded bg-card text-gold border border-line hover:border-gold/50 transition cursor-pointer"
               title="View Release Changelog"
             >
               v{APP_VERSION}

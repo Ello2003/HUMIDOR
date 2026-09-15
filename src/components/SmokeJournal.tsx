@@ -25,6 +25,7 @@ import {
   Search,
 } from 'lucide-react';
 import { SmokeLog, Cigar, AppSettings } from '../types';
+import { formatDate } from '../utils/dateUtils';
 
 interface SmokeJournalProps {
   logs: SmokeLog[];
@@ -439,36 +440,36 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-6 bg-gradient-to-br from-[#1C1816] via-[#161311] to-[#13110F] border border-[#2C2621] rounded-lg shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-6 bg-gradient-to-br from-card via-header to-surface border border-line rounded-lg shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <Flame className="w-4 h-4 text-[#C5A059]" />
+            <Flame className="w-4 h-4 text-gold" />
             <h1 className="text-xl sm:text-2xl font-serif text-white font-normal">
               Cigars Smoked
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-[#A89F94] mt-1">
+          <p className="text-xs sm:text-sm text-text-muted mt-1">
             Tasting Journey.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="px-3.5 py-2 bg-[#13110F] border border-[#2C2621] rounded-md text-xs">
-            <span className="text-[#A89F94]">Total Smokes: </span>
-            <strong className="text-[#C5A059] font-serif">{logs.length}</strong>
-            <span className="text-[#3D352E] mx-2">|</span>
-            <span className="text-[#A89F94]">Avg Score: </span>
-            <strong className="text-[#C5A059] font-serif">★ {avgOverallScore}</strong>
+          <div className="px-3.5 py-2 bg-surface border border-line rounded-md text-xs">
+            <span className="text-text-muted">Total Smokes: </span>
+            <strong className="text-gold font-serif">{logs.length}</strong>
+            <span className="text-line-hover mx-2">|</span>
+            <span className="text-text-muted">Avg Score: </span>
+            <strong className="text-gold font-serif">★ {avgOverallScore}</strong>
           </div>
 
           {/* View Mode Switcher */}
-          <div className="flex items-center bg-[#13110F] border border-[#2C2621] rounded-md p-0.5">
+          <div className="flex items-center bg-surface border border-line rounded-md p-0.5">
             <button
               onClick={() => setViewMode('cards')}
               className={`p-1.5 rounded transition cursor-pointer ${
                 viewMode === 'cards'
-                  ? 'bg-[#C5A059] text-[#0F0D0C]'
-                  : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink'
+                  : 'text-text-muted hover:text-text'
               }`}
               title="Tasting Cards View"
             >
@@ -478,8 +479,8 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded transition cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-[#C5A059] text-[#0F0D0C]'
-                  : 'text-[#A89F94] hover:text-[#E5E1DA]'
+                  ? 'bg-gold text-ink'
+                  : 'text-text-muted hover:text-text'
               }`}
               title="Database Table & Inline Edit View"
             >
@@ -492,8 +493,8 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
             onClick={() => setShowDisplayOptions(!showDisplayOptions)}
             className={`flex items-center gap-1.5 px-3 py-2 border rounded-md text-xs font-semibold uppercase tracking-wider transition cursor-pointer ${
               showDisplayOptions
-                ? 'bg-[#C5A059] text-[#0F0D0C] border-[#C5A059]'
-                : 'bg-[#13110F] text-[#A89F94] border-[#2C2621] hover:text-[#E5E1DA]'
+                ? 'bg-gold text-ink border-gold'
+                : 'bg-surface text-text-muted border-line hover:text-text'
             }`}
             title="Inline Display Settings & Presets"
           >
@@ -505,31 +506,31 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
       {/* Inline Display Settings & Presets Panel */}
       {showDisplayOptions && (
-        <div className="p-4 bg-[#161311] border border-[#2C2621] rounded-lg space-y-3 shadow-sm animate-in fade-in duration-200">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2C2621] pb-3">
+        <div className="p-4 bg-header border border-line rounded-lg space-y-3 shadow-sm animate-in fade-in duration-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
             <div className="flex items-center gap-2">
-              <Eye className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#E5E1DA]">
+              <Eye className="w-3.5 h-3.5 text-gold" />
+              <span className="text-xs font-bold uppercase tracking-wider text-text">
                 Smoked Journal &bull; Field Visibility & Presets
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-[#A89F94] uppercase tracking-wider">Presets:</span>
+              <span className="text-[11px] text-text-muted uppercase tracking-wider">Presets:</span>
               <button
                 onClick={() => applyPreset('all')}
-                className="px-2 py-0.5 rounded bg-[#13110F] border border-[#2C2621] hover:border-[#C5A059] text-[10px] uppercase font-semibold text-[#E5E1DA] transition cursor-pointer"
+                className="px-2 py-0.5 rounded bg-surface border border-line hover:border-gold text-[10px] uppercase font-semibold text-text transition cursor-pointer"
               >
                 All Fields
               </button>
               <button
                 onClick={() => applyPreset('essential')}
-                className="px-2 py-0.5 rounded bg-[#13110F] border border-[#2C2621] hover:border-[#C5A059] text-[10px] uppercase font-semibold text-[#E5E1DA] transition cursor-pointer"
+                className="px-2 py-0.5 rounded bg-surface border border-line hover:border-gold text-[10px] uppercase font-semibold text-text transition cursor-pointer"
               >
                 Essential
               </button>
               <button
                 onClick={() => applyPreset('tastingFocus')}
-                className="px-2 py-0.5 rounded bg-[#13110F] border border-[#2C2621] hover:border-[#C5A059] text-[10px] uppercase font-semibold text-[#E5E1DA] transition cursor-pointer"
+                className="px-2 py-0.5 rounded bg-surface border border-line hover:border-gold text-[10px] uppercase font-semibold text-text transition cursor-pointer"
               >
                 Tasting Focus
               </button>
@@ -549,7 +550,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
             ].map(({ key, label }) => (
               <label
                 key={key}
-                className="flex items-center gap-2 p-2 bg-[#13110F] border border-[#2C2621] rounded text-xs text-[#E5E1DA] cursor-pointer hover:border-[#3D352E] select-none"
+                className="flex items-center gap-2 p-2 bg-surface border border-line rounded text-xs text-text cursor-pointer hover:border-line-hover select-none"
               >
                 <input
                   type="checkbox"
@@ -560,7 +561,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                       [key]: e.target.checked,
                     }))
                   }
-                  className="rounded border-[#2C2621] text-[#C5A059] focus:ring-[#C5A059]"
+                  className="rounded border-line text-gold focus:ring-gold"
                 />
                 <span>{label}</span>
               </label>
@@ -570,23 +571,23 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
       )}
 
       {/* Filter Toolbar */}
-      <div className="p-4 bg-[#1C1816] border border-[#2C2621] rounded-lg space-y-3 shadow-sm">
+      <div className="p-4 bg-card border border-line rounded-lg space-y-3 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
           {/* Search Input */}
           <div className="relative sm:col-span-2 lg:col-span-2">
-            <Search className="w-4 h-4 text-[#A89F94] absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-text-muted absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Search smokes, locations, pairings, flavor notes, wrapper..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md pl-9 pr-8 py-2 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059] placeholder-[#A89F94]/60"
+              className="w-full bg-surface border border-line rounded-md pl-9 pr-8 py-2 text-xs text-text focus:outline-hidden focus:border-gold placeholder-text-muted/60"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-2.5 text-[#A89F94] hover:text-[#E5E1DA] p-0.5 rounded cursor-pointer"
+                className="absolute right-2.5 top-2.5 text-text-muted hover:text-text p-0.5 rounded cursor-pointer"
                 title="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
@@ -596,13 +597,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
           {/* Brand Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Brand ({availableBrands.length})
             </label>
             <select
               value={brandFilter}
               onChange={(e) => setBrandFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Brands</option>
               {availableBrands.map((b) => (
@@ -615,13 +616,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
           {/* Vitola Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Vitola ({availableVitolas.length})
             </label>
             <select
               value={vitolaFilter}
               onChange={(e) => setVitolaFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Vitolas</option>
               {availableVitolas.map((v) => (
@@ -634,13 +635,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
           {/* Wrapper Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Wrapper ({availableWrappers.length})
             </label>
             <select
               value={wrapperFilter}
               onChange={(e) => setWrapperFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Wrappers</option>
               {availableWrappers.map((w) => (
@@ -653,13 +654,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
           {/* Smoke Duration Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               ⏱️ Smoke Duration
             </label>
             <select
               value={durationFilter}
               onChange={(e) => setDurationFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Durations</option>
               <option value="quick">⚡ Quick (≤45m)</option>
@@ -671,13 +672,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
           {/* Score Rating Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Rating Score
             </label>
             <select
               value={ratingFilter}
               onChange={(e) => setRatingFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Score Ratings</option>
               <option value="95+">★ 95+ Points (World-Class Masters)</option>
@@ -689,13 +690,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
           {/* Re-Buy Verdict Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Re-Buy Verdict
             </label>
             <select
               value={rebuyFilter}
               onChange={(e) => setRebuyFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Re-Buy Verdicts</option>
               <option value="Box Worthy">📦 Box Worthy</option>
@@ -707,13 +708,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
           {/* Cut Type Filter */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Cut Type
             </label>
             <select
               value={cutTypeFilter}
               onChange={(e) => setCutTypeFilter(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="all">All Cut Types</option>
               <option value="Straight Cut">Straight Cut ✂️</option>
@@ -725,13 +726,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
           {/* Sort By */}
           <div>
-            <label className="block text-[9px] uppercase tracking-wider text-[#A89F94] font-semibold mb-1">
+            <label className="block text-[9px] uppercase tracking-wider text-text-muted font-semibold mb-1">
               Sort Order
             </label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="w-full bg-[#13110F] border border-[#2C2621] rounded-md px-2.5 py-1.5 text-xs text-[#E5E1DA] focus:outline-hidden focus:border-[#C5A059]"
+              className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-hidden focus:border-gold"
             >
               <option value="date-desc">📅 Date: Newest First</option>
               <option value="date-asc">📅 Date: Oldest First</option>
@@ -745,15 +746,15 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
         </div>
 
         {(searchQuery || ratingFilter !== 'all' || rebuyFilter !== 'all' || brandFilter !== 'all' || vitolaFilter !== 'all' || wrapperFilter !== 'all' || durationFilter !== 'all' || cutTypeFilter !== 'all' || sortBy !== 'date-desc') && (
-          <div className="flex items-center justify-between pt-1 border-t border-[#2C2621]/60 text-xs text-[#A89F94]">
+          <div className="flex items-center justify-between pt-1 border-t border-line/60 text-xs text-text-muted">
             <span>
-              Showing <strong className="text-[#C5A059] font-serif">{filteredLogs.length}</strong> of{' '}
-              <strong className="text-[#E5E1DA]">{logs.length}</strong> logged smokes
+              Showing <strong className="text-gold font-serif">{filteredLogs.length}</strong> of{' '}
+              <strong className="text-text">{logs.length}</strong> logged smokes
             </span>
             <button
               type="button"
               onClick={resetAllFilters}
-              className="text-[11px] px-2.5 py-0.5 rounded bg-[#241E1B] hover:bg-[#2C2621] text-[#C5A059] hover:text-white border border-[#3D352E] flex items-center gap-1 cursor-pointer transition"
+              className="text-[11px] px-2.5 py-0.5 rounded bg-card-hover hover:bg-line text-gold hover:text-white border border-line-hover flex items-center gap-1 cursor-pointer transition"
             >
               <X className="w-3 h-3" />
               <span>Reset All Filters</span>
@@ -764,11 +765,11 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
       {/* Database Table View */}
       {viewMode === 'table' ? (
-        <div className="bg-[#1C1816] border border-[#2C2621] rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-card border border-line rounded-lg overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-[#13110F] border-b border-[#2C2621] text-[#A89F94] uppercase tracking-wider font-semibold text-[11px]">
+                <tr className="bg-surface border-b border-line text-text-muted uppercase tracking-wider font-semibold text-[11px]">
                   <th className="py-3 px-4">Cigar & Vitola</th>
                   {displayFields.scoreAndStars && <th className="py-3 px-4">Score</th>}
                   {displayFields.dateAndLocation && <th className="py-3 px-4">Date & Location</th>}
@@ -779,23 +780,17 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#2C2621]/60">
+              <tbody className="divide-y divide-line/60">
                 {filteredLogs.map((log) => {
                   const isEditing = editingRowId === log.id;
-                  const dateFormatted = log.smokedAt
-                    ? new Date(log.smokedAt).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })
-                    : '';
+                  const dateFormatted = formatDate(log.smokedAt, { day: 'numeric', month: 'short', year: 'numeric' });
 
                   return (
-                    <tr key={log.id} className="hover:bg-[#241E1B]/50 transition">
+                    <tr key={log.id} className="hover:bg-card-hover/50 transition">
                       {/* Cigar & Vitola */}
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-[#E5E1DA]">{log.cigarBrand}</div>
-                        <div className="text-[#A89F94] text-[11px]">
+                        <div className="font-semibold text-text">{log.cigarBrand}</div>
+                        <div className="text-text-muted text-[11px]">
                           {log.cigarName} &bull; <span className="italic">{log.vitola}</span>
                         </div>
                       </td>
@@ -811,16 +806,16 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                                 max={100}
                                 value={inlineScore}
                                 onChange={(e) => setInlineScore(Number(e.target.value))}
-                                className="w-14 bg-[#13110F] border border-[#2C2621] rounded px-1.5 py-1 text-[#C5A059] font-bold text-xs"
+                                className="w-14 bg-surface border border-line rounded px-1.5 py-1 text-gold font-bold text-xs"
                               />
-                              <span className="text-[10px] text-[#A89F94]">pts</span>
+                              <span className="text-[10px] text-text-muted">pts</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1.5">
-                              <span className="px-2 py-0.5 rounded bg-[#13110F] border border-[#2C2621] text-[#C5A059] font-bold font-serif">
+                              <span className="px-2 py-0.5 rounded bg-surface border border-line text-gold font-bold font-serif">
                                 {log.overallScore}
                               </span>
-                              <span className="text-[#C5A059] text-[11px]">★ {log.starRating}</span>
+                              <span className="text-gold text-[11px]">★ {log.starRating}</span>
                             </div>
                           )}
                         </td>
@@ -835,12 +830,12 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                               value={inlineLocation}
                               onChange={(e) => setInlineLocation(e.target.value)}
                               placeholder="Location"
-                              className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA]"
+                              className="w-full bg-surface border border-line rounded px-2 py-1 text-xs text-text"
                             />
                           ) : (
                             <div>
-                              <div className="text-[#E5E1DA]">{dateFormatted}</div>
-                              <div className="text-[#A89F94] text-[10px]">{log.location}</div>
+                              <div className="text-text">{dateFormatted}</div>
+                              <div className="text-text-muted text-[10px]">{log.location}</div>
                             </div>
                           )}
                         </td>
@@ -848,7 +843,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
                       {/* Duration */}
                       {displayFields.duration && (
-                        <td className="py-3 px-4 text-[#A89F94]">
+                        <td className="py-3 px-4 text-text-muted">
                           {log.durationMinutes ? `${log.durationMinutes} min` : '—'}
                         </td>
                       )}
@@ -862,10 +857,10 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                               value={inlinePairing}
                               onChange={(e) => setInlinePairing(e.target.value)}
                               placeholder="Drink pairing"
-                              className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA]"
+                              className="w-full bg-surface border border-line rounded px-2 py-1 text-xs text-text"
                             />
                           ) : (
-                            <span className="text-[#E5E1DA]">🥃 {log.pairingDrink || 'None'}</span>
+                            <span className="text-text">🥃 {log.pairingDrink || 'None'}</span>
                           )}
                         </td>
                       )}
@@ -877,7 +872,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                             <select
                               value={inlineRebuy}
                               onChange={(e) => setInlineRebuy(e.target.value)}
-                              className="bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA]"
+                              className="bg-surface border border-line rounded px-2 py-1 text-xs text-text"
                             >
                               <option value="Box Worthy">📦 Box Worthy</option>
                               <option value="5-Pack Buy">🔥 5-Pack Buy</option>
@@ -888,8 +883,8 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                             <span
                               className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${
                                 log.wouldRebuy === 'Box Worthy'
-                                  ? 'bg-[#13110F] text-[#C5A059] border-[#C5A059]/40'
-                                  : 'bg-[#13110F] text-[#A89F94] border-[#2C2621]'
+                                  ? 'bg-surface text-gold border-gold/40'
+                                  : 'bg-surface text-text-muted border-line'
                               }`}
                             >
                               {log.wouldRebuy}
@@ -907,10 +902,10 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                               value={inlineReview}
                               onChange={(e) => setInlineReview(e.target.value)}
                               placeholder="Tasting notes"
-                              className="w-full bg-[#13110F] border border-[#2C2621] rounded px-2 py-1 text-xs text-[#E5E1DA]"
+                              className="w-full bg-surface border border-line rounded px-2 py-1 text-xs text-text"
                             />
                           ) : (
-                            <span className="text-[#A89F94] italic truncate block">
+                            <span className="text-text-muted italic truncate block">
                               "{log.detailedReview || 'No notes written.'}"
                             </span>
                           )}
@@ -923,14 +918,14 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => saveInlineEdit(log.id)}
-                              className="flex items-center gap-1 px-2.5 py-1 bg-[#C5A059] text-[#0F0D0C] font-bold rounded text-[11px] cursor-pointer hover:brightness-110"
+                              className="flex items-center gap-1 px-2.5 py-1 bg-gold text-ink font-bold rounded text-[11px] cursor-pointer hover:brightness-110"
                             >
                               <Save className="w-3 h-3" />
                               <span>Save</span>
                             </button>
                             <button
                               onClick={() => setEditingRowId(null)}
-                              className="px-2 py-1 bg-[#13110F] text-[#A89F94] rounded text-[11px] border border-[#2C2621] cursor-pointer"
+                              className="px-2 py-1 bg-surface text-text-muted rounded text-[11px] border border-line cursor-pointer"
                             >
                               Cancel
                             </button>
@@ -939,14 +934,14 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => startInlineEdit(log)}
-                              className="p-1 text-[#A89F94] hover:text-[#C5A059] transition cursor-pointer"
+                              className="p-1 text-text-muted hover:text-gold transition cursor-pointer"
                               title="Quick Inline Edit"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => onDeleteLog(log.id)}
-                              className="p-1 text-[#A89F94] hover:text-red-400 transition cursor-pointer"
+                              className="p-1 text-text-muted hover:text-red-400 transition cursor-pointer"
                               title="Delete Log"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -966,51 +961,45 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
         <div className="space-y-4">
           {filteredLogs.map((log) => {
             const isExpanded = expandedLogId === log.id;
-            const dateFormatted = log.smokedAt
-              ? new Date(log.smokedAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })
-              : '';
+            const dateFormatted = formatDate(log.smokedAt, { day: 'numeric', month: 'short', year: 'numeric' });
 
             return (
               <div
                 key={log.id}
-                className="bg-[#1C1816] border border-[#2C2621] rounded-lg overflow-hidden shadow-sm transition hover:border-[#3D352E]"
+                className="bg-card border border-line rounded-lg overflow-hidden shadow-sm transition hover:border-line-hover"
               >
                 {/* Log Header Summary */}
                 <div
                   onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                  className="p-5 cursor-pointer hover:bg-[#241E1B] flex flex-wrap items-center justify-between gap-4 select-none"
+                  className="p-5 cursor-pointer hover:bg-card-hover flex flex-wrap items-center justify-between gap-4 select-none"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded bg-[#13110F] border border-[#2C2621] flex flex-col items-center justify-center text-[#C5A059]">
+                    <div className="w-12 h-12 rounded bg-surface border border-line flex flex-col items-center justify-center text-gold">
                       <span className="text-base font-serif font-bold leading-none">{log.overallScore}</span>
-                      <span className="text-[8px] uppercase tracking-widest text-[#A89F94] mt-0.5">pts</span>
+                      <span className="text-[8px] uppercase tracking-widest text-text-muted mt-0.5">pts</span>
                     </div>
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-semibold tracking-wider text-[#C5A059]">{log.cigarBrand}</span>
-                        <span className="text-xs text-[#3D352E]">•</span>
-                        <span className="text-xs text-[#A89F94]">{log.wrapper} wrapper</span>
+                        <span className="text-[10px] uppercase font-semibold tracking-wider text-gold">{log.cigarBrand}</span>
+                        <span className="text-xs text-line-hover">•</span>
+                        <span className="text-xs text-text-muted">{log.wrapper} wrapper</span>
                       </div>
-                      <h3 className="text-base sm:text-lg font-serif font-semibold text-[#E5E1DA]">
+                      <h3 className="text-ink sm:text-lg font-serif font-semibold text-text">
                         {log.cigarName}{' '}
-                        <span className="text-xs font-normal text-[#A89F94]">({log.vitola})</span>
+                        <span className="text-xs font-normal text-text-muted">({log.vitola})</span>
                       </h3>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-[#A89F94] mt-1">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted mt-1">
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-[#C5A059]" />
+                          <Calendar className="w-3.5 h-3.5 text-gold" />
                           {dateFormatted}
                         </span>
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-[#C5A059]" />
+                          <MapPin className="w-3.5 h-3.5 text-gold" />
                           {log.location}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-[#C5A059]" />
+                          <Clock className="w-3.5 h-3.5 text-gold" />
                           {log.durationMinutes} mins
                         </span>
                       </div>
@@ -1022,16 +1011,16 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                       <span
                         className={`text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded border ${
                           log.wouldRebuy === 'Box Worthy'
-                            ? 'bg-[#13110F] text-[#C5A059] border-[#2C2621]'
-                            : 'bg-[#13110F] text-[#A89F94] border-[#2C2621]'
+                            ? 'bg-surface text-gold border-line'
+                            : 'bg-surface text-text-muted border-line'
                         }`}
                       >
                         {log.wouldRebuy}
                       </span>
-                      <div className="text-xs text-[#A89F94] mt-1">🥃 {log.pairingDrink}</div>
+                      <div className="text-xs text-text-muted mt-1">🥃 {log.pairingDrink}</div>
                     </div>
 
-                    <div className="text-[#A89F94] hover:text-white p-1">
+                    <div className="text-text-muted hover:text-white p-1">
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </div>
                   </div>
@@ -1039,17 +1028,17 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
                 {/* Expanded Detailed Log View */}
                 {isExpanded && (
-                  <div className="px-5 pb-5 pt-3 border-t border-[#2C2621] bg-[#13110F] space-y-4 text-xs">
+                  <div className="px-5 pb-5 pt-3 border-t border-line bg-surface space-y-4 text-xs">
                     {/* Dominant Flavor Tags */}
                     <div>
-                      <span className="text-[#A89F94] font-semibold uppercase tracking-wider text-[10px] block mb-2">
+                      <span className="text-text-muted font-semibold uppercase tracking-wider text-[10px] block mb-2">
                         Dominant Flavor Impressions:
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {(log.dominantFlavors || []).map((flavor) => (
                           <span
                             key={flavor}
-                            className="px-2.5 py-1 rounded bg-[#1C1816] border border-[#2C2621] text-[#E5E1DA] font-medium text-[11px]"
+                            className="px-2.5 py-1 rounded bg-card border border-line text-text font-medium text-[11px]"
                           >
                             {flavor}
                           </span>
@@ -1059,13 +1048,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
                     {/* 3-Thirds Flavor Transitions Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div className="p-3.5 bg-[#1C1816] border border-[#2C2621] rounded-md">
-                        <div className="font-serif text-[#C5A059] text-xs mb-1.5 font-semibold">1st Third (Initial Light)</div>
+                      <div className="p-3.5 bg-card border border-line rounded-md">
+                        <div className="font-serif text-gold text-xs mb-1.5 font-semibold">1st Third (Initial Light)</div>
                         <div className="flex flex-wrap gap-1">
                           {(log.firstThirdNotes || []).map((n) => (
                             <span
                               key={n}
-                              className="px-2 py-0.5 rounded bg-[#13110F] text-[#A89F94] text-[10px] border border-[#2C2621]"
+                              className="px-2 py-0.5 rounded bg-surface text-text-muted text-[10px] border border-line"
                             >
                               {n}
                             </span>
@@ -1073,13 +1062,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                         </div>
                       </div>
 
-                      <div className="p-3.5 bg-[#1C1816] border border-[#2C2621] rounded-md">
-                        <div className="font-serif text-[#C5A059] text-xs mb-1.5 font-semibold">2nd Third (Sweet Spot)</div>
+                      <div className="p-3.5 bg-card border border-line rounded-md">
+                        <div className="font-serif text-gold text-xs mb-1.5 font-semibold">2nd Third (Sweet Spot)</div>
                         <div className="flex flex-wrap gap-1">
                           {(log.secondThirdNotes || []).map((n) => (
                             <span
                               key={n}
-                              className="px-2 py-0.5 rounded bg-[#13110F] text-[#A89F94] text-[10px] border border-[#2C2621]"
+                              className="px-2 py-0.5 rounded bg-surface text-text-muted text-[10px] border border-line"
                             >
                               {n}
                             </span>
@@ -1087,13 +1076,13 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                         </div>
                       </div>
 
-                      <div className="p-3.5 bg-[#1C1816] border border-[#2C2621] rounded-md">
-                        <div className="font-serif text-[#C5A059] text-xs mb-1.5 font-semibold">Final Third (Nub / Finish)</div>
+                      <div className="p-3.5 bg-card border border-line rounded-md">
+                        <div className="font-serif text-gold text-xs mb-1.5 font-semibold">Final Third (Nub / Finish)</div>
                         <div className="flex flex-wrap gap-1">
                           {(log.finalThirdNotes || []).map((n) => (
                             <span
                               key={n}
-                              className="px-2 py-0.5 rounded bg-[#13110F] text-[#A89F94] text-[10px] border border-[#2C2621]"
+                              className="px-2 py-0.5 rounded bg-surface text-text-muted text-[10px] border border-line"
                             >
                               {n}
                             </span>
@@ -1103,49 +1092,49 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                     </div>
 
                     {/* Construction & Mechanics */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-[#1C1816] border border-[#2C2621] rounded-md text-[11px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-card border border-line rounded-md text-[11px]">
                       <div>
-                        <span className="text-[#A89F94] block">Draw Quality</span>
-                        <strong className="text-[#E5E1DA]">{log.drawQuality}</strong>
+                        <span className="text-text-muted block">Draw Quality</span>
+                        <strong className="text-text">{log.drawQuality}</strong>
                       </div>
                       <div>
-                        <span className="text-[#A89F94] block">Burn Consistency</span>
-                        <strong className="text-[#E5E1DA]">{log.burnQuality}</strong>
+                        <span className="text-text-muted block">Burn Consistency</span>
+                        <strong className="text-text">{log.burnQuality}</strong>
                       </div>
                       <div>
-                        <span className="text-[#A89F94] block">Ash Characteristics</span>
-                        <strong className="text-[#E5E1DA]">{log.ashQuality}</strong>
+                        <span className="text-text-muted block">Ash Characteristics</span>
+                        <strong className="text-text">{log.ashQuality}</strong>
                       </div>
                       <div>
-                        <span className="text-[#A89F94] block">Cut & Light</span>
-                        <strong className="text-[#E5E1DA]">
+                        <span className="text-text-muted block">Cut & Light</span>
+                        <strong className="text-text">
                           {log.cutType || 'Straight'} / {log.lightType || 'Torch'}
                         </strong>
                       </div>
                     </div>
 
                     {/* Pairing & Review */}
-                    <div className="p-4 bg-[#1C1816] border border-[#2C2621] rounded-md space-y-2.5">
+                    <div className="p-4 bg-card border border-line rounded-md space-y-2.5">
                       <div>
-                        <strong className="text-[#C5A059] uppercase tracking-wider text-[10px]">🥃 Beverage Accompaniment:</strong>{' '}
-                        <span className="text-[#E5E1DA] ml-1">{log.pairingDrink}</span>
+                        <strong className="text-gold uppercase tracking-wider text-[10px]">🥃 Beverage Accompaniment:</strong>{' '}
+                        <span className="text-text ml-1">{log.pairingDrink}</span>
                         {log.pairingNotes && (
-                          <p className="text-[#A89F94] italic mt-0.5 ml-4">"{log.pairingNotes}"</p>
+                          <p className="text-text-muted italic mt-0.5 ml-4">"{log.pairingNotes}"</p>
                         )}
                       </div>
                       <div>
-                        <strong className="text-[#C5A059] uppercase tracking-wider text-[10px]">📝 Connoisseur Tasting Notes:</strong>
-                        <p className="text-[#E5E1DA] leading-relaxed mt-1 font-serif text-sm italic">
+                        <strong className="text-gold uppercase tracking-wider text-[10px]">📝 Connoisseur Tasting Notes:</strong>
+                        <p className="text-text leading-relaxed mt-1 font-serif text-sm italic">
                           "{log.detailedReview}"
                         </p>
                       </div>
                     </div>
 
                     {/* Actions (Edit / Delete) */}
-                    <div className="flex justify-end gap-4 pt-2 text-xs text-[#A89F94]">
+                    <div className="flex justify-end gap-4 pt-2 text-xs text-text-muted">
                       <button
                         onClick={() => onEditLog(log)}
-                        className="flex items-center gap-1.5 hover:text-[#E5E1DA] transition cursor-pointer"
+                        className="flex items-center gap-1.5 hover:text-text transition cursor-pointer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                         <span>Edit Tasting Note</span>
@@ -1164,7 +1153,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
                           </button>
                           <button
                             onClick={() => setConfirmDeleteId(null)}
-                            className="px-2 py-0.5 bg-[#2C2621] hover:bg-[#3D352E] text-[#A89F94] rounded text-[11px] cursor-pointer transition"
+                            className="px-2 py-0.5 bg-line hover:bg-line-hover text-text-muted rounded text-[11px] cursor-pointer transition"
                           >
                             Cancel
                           </button>
@@ -1186,10 +1175,10 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
           })}
 
           {filteredLogs.length === 0 && (
-            <div className="text-center py-12 bg-[#1C1816] border border-[#2C2621] rounded-lg">
-              <Flame className="w-8 h-8 text-[#C5A059]/50 mx-auto mb-3" />
-              <h3 className="text-base font-serif font-semibold text-[#E5E1DA]">No Tasting Logs Found</h3>
-              <p className="text-xs text-[#A89F94] max-w-sm mx-auto mt-1">
+            <div className="text-center py-12 bg-card border border-line rounded-lg">
+              <Flame className="w-8 h-8 text-gold/50 mx-auto mb-3" />
+              <h3 className="text-base font-serif font-semibold text-text">No Tasting Logs Found</h3>
+              <p className="text-xs text-text-muted max-w-sm mx-auto mt-1">
                 Your past smoking sessions and tasting notes will appear here once logged from your humidor sticks.
               </p>
             </div>
