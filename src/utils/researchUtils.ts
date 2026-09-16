@@ -280,6 +280,55 @@ function calculateVolumetricSmokePhysics(
 }
 
 /**
+ * Standard vitola name -> typical dimensions, for when a cigar's shape name
+ * is known but its exact length/ring gauge isn't (e.g. a Sommelier
+ * recommendation, or a custom research entry someone's typing in by hand).
+ * Previously several "add to research" flows hardcoded a generic 5.0"x50
+ * or 5.5"x52 regardless of the actual vitola named -- a Petit Corona and a
+ * Churchill would get identical, wrong dimensions. This grounds the guess
+ * in real industry-standard sizing instead.
+ */
+const STANDARD_VITOLA_DIMENSIONS: Array<{ keyword: string; lengthInches: number; ringGauge: number }> = [
+  { keyword: 'half corona', lengthInches: 3.5, ringGauge: 44 },
+  { keyword: 'petit corona', lengthInches: 4.5, ringGauge: 42 },
+  { keyword: 'petit robusto', lengthInches: 4.0, ringGauge: 50 },
+  { keyword: 'rothschild', lengthInches: 4.5, ringGauge: 50 },
+  { keyword: 'robusto', lengthInches: 5.0, ringGauge: 50 },
+  { keyword: 'corona gorda', lengthInches: 5.6, ringGauge: 46 },
+  { keyword: 'corona extra', lengthInches: 5.6, ringGauge: 46 },
+  { keyword: 'corona', lengthInches: 5.6, ringGauge: 42 },
+  { keyword: 'panetela', lengthInches: 6.5, ringGauge: 36 },
+  { keyword: 'panatela', lengthInches: 6.5, ringGauge: 36 },
+  { keyword: 'lancero', lengthInches: 7.25, ringGauge: 38 },
+  { keyword: 'lonsdale', lengthInches: 6.5, ringGauge: 43 },
+  { keyword: 'toro', lengthInches: 6.0, ringGauge: 52 },
+  { keyword: 'churchill', lengthInches: 7.0, ringGauge: 48 },
+  { keyword: 'double corona', lengthInches: 7.6, ringGauge: 49 },
+  { keyword: 'gordo', lengthInches: 6.0, ringGauge: 60 },
+  { keyword: 'gigante', lengthInches: 6.0, ringGauge: 60 },
+  { keyword: 'presidente', lengthInches: 6.0, ringGauge: 60 },
+  { keyword: 'torpedo', lengthInches: 6.0, ringGauge: 52 },
+  { keyword: 'piramide', lengthInches: 6.1, ringGauge: 52 },
+  { keyword: 'pyramid', lengthInches: 6.1, ringGauge: 52 },
+  { keyword: 'belicoso', lengthInches: 5.1, ringGauge: 52 },
+  { keyword: 'perfecto', lengthInches: 4.8, ringGauge: 48 },
+  { keyword: 'salomon', lengthInches: 7.2, ringGauge: 57 },
+  { keyword: 'diadema', lengthInches: 8.5, ringGauge: 52 },
+  { keyword: 'culebra', lengthInches: 5.5, ringGauge: 39 },
+];
+
+export function suggestVitolaDimensions(
+  vitolaName: string
+): { lengthInches: number; ringGauge: number } | null {
+  const norm = normalizeString(vitolaName);
+  if (!norm) return null;
+  // Longest keyword match first so "corona gorda" beats plain "corona".
+  const sorted = [...STANDARD_VITOLA_DIMENSIONS].sort((a, b) => b.keyword.length - a.keyword.length);
+  const match = sorted.find((v) => norm.includes(v.keyword));
+  return match ? { lengthInches: match.lengthInches, ringGauge: match.ringGauge } : null;
+}
+
+/**
  * Official Habanos S.A. Galera Vitolario Standard Duration Lookup
  */
 function getHabanosVitolaStandard(

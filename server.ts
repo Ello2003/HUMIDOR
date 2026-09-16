@@ -113,6 +113,78 @@ async function generateContentWithRetryAndFallback(params: {
   throw lastError || new Error("The AI service is experiencing high traffic. Please try again shortly.");
 }
 
+/**
+ * Real, verifiable web-grounded research -- as opposed to asking Gemini to
+ * "recall" facts from training data with no source at all (the previous
+ * implementation of the critic-score lookup below did exactly that, and
+ * fabricated a Google-search link when the model didn't supply a URL).
+ *
+ * Uses Gemini's native Google Search grounding tool so the model actually
+ * performs a live search and must ground its answer in real retrieved
+ * pages. Returns the grounded free-text answer plus the real source URLs
+ * Google Search actually used, extracted from `groundingMetadata`.
+ *
+ * Deliberately does NOT combine this with `responseSchema` (structured
+ * JSON mode) in the same call -- tool use and forced structured output are
+ * not reliably combinable across Gemini API versions, and forcing schema
+ * output has been observed to make models skip actually calling a tool.
+ * Callers that need structured data should follow this with a second,
+ * ungrounded, schema-constrained call that reshapes this grounded text.
+ */
+async function groundedWebResearch(query: string, systemInstruction?: string): Promise<{
+  text: string;
+  sources: Array<{ title: string; uri: string }>;
+  searchQueries: string[];
+}> {
+  const response = await generateContentWithRetryAndFallback({
+    contents: query,
+    config: {
+      systemInstruction,
+      tools: [{ googleSearch: {} }],
+    },
+  });
+
+  const candidate = (response as any).candidates?.[0];
+  const grounding = candidate?.groundingMetadata;
+  const chunks: Array<{ web?: { uri?: string; title?: string } }> = grounding?.groundingChunks || [];
+
+  const seen = new Set<string>();
+  const sources: Array<{ title: string; uri: string }> = [];
+  for (const chunk of chunks) {
+    const uri = chunk.web?.uri;
+    if (uri && !seen.has(uri)) {
+      seen.add(uri);
+      sources.push({ title: chunk.web?.title || uri, uri });
+    }
+  }
+
+  return {
+    text: response.text || "",
+    sources,
+    searchQueries: grounding?.webSearchQueries || [],
+  };
+}
+
+/**
+ * Takes free-text (typically the output of `groundedWebResearch`) and
+ * reshapes it into a specific JSON schema via a second, ungrounded call.
+ * Kept separate from the grounded call itself -- see the note above.
+ */
+async function structureTextToSchema(params: {
+  text: string;
+  instruction: string;
+  responseSchema: any;
+}): Promise<any> {
+  const response = await generateContentWithRetryAndFallback({
+    contents: `${params.instruction}\n\n---\nSOURCE TEXT TO STRUCTURE:\n${params.text}`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: params.responseSchema,
+    },
+  });
+  return JSON.parse(response.text || "{}");
+}
+
 // Health check endpoint
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
@@ -1967,61 +2039,80 @@ app.post("/api/research/review-scores", async (req, res) => {
       isCuban,
     });
 
-    const prompt = `Provide published critic review scores and tasting ratings for the cigar "${brand} ${name || line || ""}" (Vitola: ${vitola || "Standard"}, Origin: ${countryOrigin || "Cuba/New World"}, Wrapper: ${wrapper || "Natural"}).
-Gather verified or authentic review scores from top international & UK publications:
-1. Cigar Aficionado (Score 85-98, rating notes, awards if Top 25)
-2. Smoke King UK (Score / 100, UK connoisseur perspective)
-3. Halfwheel (Score / 100, technical breakdown)
-4. Cigar Journal (Score / 100, panel rating, Cigar Trophy awards)
-5. Cigar Coop / Cigar Snob / Katman (Score / 100)
-
-Return structured JSON with individual scores, summary quotes, awards, and an overall consensus score.`;
+    const cigarLabel = `${brand} ${name || line || ""}`.trim();
 
     try {
-      const response = await generateContentWithRetryAndFallback({
-        contents: prompt,
-        config: {
-          systemInstruction: `You are an expert Cigar Sommelier and Critic Review Intelligence Engine with deep knowledge of published ratings from Cigar Aficionado, Smoke King UK, Halfwheel, Cigar Journal, and Cigar Coop. Provide realistic, publication-accurate scores.`,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              consensusScore: { type: Type.NUMBER, description: "Composite score 1-100" },
-              consensusQuote: { type: Type.STRING, description: "Consensus summary quote" },
-              awards: { type: Type.ARRAY, items: { type: Type.STRING } },
-              scores: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    source: { type: Type.STRING },
-                    score: { type: Type.NUMBER },
-                    maxScore: { type: Type.NUMBER },
-                    scale: { type: Type.STRING },
-                    ratingDate: { type: Type.STRING },
-                    summary: { type: Type.STRING },
-                    award: { type: Type.STRING },
-                    url: { type: Type.STRING },
-                  },
-                  required: ["source", "score", "summary"],
+      // Step 1: a REAL live web search, grounded -- not the model recalling
+      // scores from training data. Ask plainly, no JSON constraint (see
+      // groundedWebResearch's doc comment for why schema+tools don't mix).
+      const grounded = await groundedWebResearch(
+        `Search for published critic review scores for the cigar "${cigarLabel}" ` +
+          `(Vitola: ${vitola || "Standard"}, Origin: ${countryOrigin || "Cuba/New World"}, Wrapper: ${wrapper || "Natural"}). ` +
+          `Look specifically for scores from Cigar Aficionado, Halfwheel, Cigar Journal, Cigar Coop, Smoke King UK, or Cigar Snob. ` +
+          `Report each publication's actual numeric score, the scale it's on, any award mentioned, and a short quote, ` +
+          `citing exactly what you found -- do not estimate or guess a score for a publication you didn't actually find results for.`,
+        "You are a research assistant. Only report scores you can find via search. If you find nothing for a given publication, don't mention it."
+      );
+
+      if (!grounded.text || grounded.sources.length === 0) {
+        throw new Error("No grounded search results found for this cigar.");
+      }
+
+      // Step 2: reshape the grounded (real, cited) findings into the app's
+      // structured format. This call is NOT grounded -- it's just parsing
+      // the text from step 1 -- so it's safe to combine with responseSchema.
+      const parsed = await structureTextToSchema({
+        text: grounded.text,
+        instruction:
+          `Extract the critic review scores mentioned in the following search-grounded research into structured JSON. ` +
+          `Only include scores that are explicitly present in the source text -- do not invent or fill in publications that ` +
+          `aren't mentioned. If no scores are present at all, return an empty scores array.`,
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            consensusScore: { type: Type.NUMBER, description: "Composite score 1-100, only if scores were found" },
+            consensusQuote: { type: Type.STRING },
+            awards: { type: Type.ARRAY, items: { type: Type.STRING } },
+            scores: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  source: { type: Type.STRING },
+                  score: { type: Type.NUMBER },
+                  maxScore: { type: Type.NUMBER },
+                  scale: { type: Type.STRING },
+                  ratingDate: { type: Type.STRING },
+                  summary: { type: Type.STRING },
+                  award: { type: Type.STRING },
                 },
+                required: ["source", "score", "summary"],
               },
             },
-            required: ["consensusScore", "consensusQuote", "scores"],
           },
+          required: ["scores"],
         },
       });
 
-      const text = response.text || "{}";
-      const parsed = JSON.parse(text);
       if (parsed.scores && Array.isArray(parsed.scores) && parsed.scores.length > 0) {
-        const enrichedScores = parsed.scores.map((s: any) => ({
-          ...s,
-          id: `rev-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          maxScore: s.maxScore || 100,
-          scale: s.scale || "100-Point",
-          url: s.url || `https://www.google.com/search?q=${encodeURIComponent(s.source + " " + brand + " " + (name || line || ""))}`,
-        }));
+        // Attach REAL source URLs (from the grounded search, not fabricated)
+        // by best-effort matching publication name to a grounded source's
+        // title/domain; falls back to listing all consulted sources
+        // separately rather than inventing a per-score link.
+        const enrichedScores = parsed.scores.map((s: any) => {
+          const matchedSource = grounded.sources.find(
+            (src) =>
+              src.title.toLowerCase().includes(String(s.source).toLowerCase().split(" ")[0]) ||
+              src.uri.toLowerCase().includes(String(s.source).toLowerCase().replace(/\s+/g, ""))
+          );
+          return {
+            ...s,
+            id: `rev-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            maxScore: s.maxScore || 100,
+            scale: s.scale || "100-Point",
+            url: matchedSource?.uri, // real URL if matched, otherwise omitted -- never fabricated
+          };
+        });
 
         return res.json({
           success: true,
@@ -2030,11 +2121,13 @@ Return structured JSON with individual scores, summary quotes, awards, and an ov
             consensusQuote: parsed.consensusQuote || fallbackData.consensusQuote,
             awards: parsed.awards || [],
             scores: enrichedScores,
+            groundedSources: grounded.sources, // every source actually consulted, for transparency
+            grounded: true,
           },
         });
       }
     } catch (aiErr: any) {
-      console.warn("[Review Score Intelligence] AI lookup unavailable, using curated publication dataset:", aiErr.message);
+      console.warn("[Review Score Intelligence] Grounded lookup unavailable, using curated publication dataset:", aiErr.message);
     }
 
     return res.json({
@@ -2046,6 +2139,7 @@ Return structured JSON with individual scores, summary quotes, awards, and an ov
           ...s,
           id: `rev-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         })),
+        grounded: false, // curated fallback data, not a live search result -- UI should label it as such
       },
     });
   } catch (error: any) {
@@ -2064,8 +2158,15 @@ app.post("/api/research/batch-review-scores", async (req, res) => {
       return res.status(400).json({ error: "Please provide an array of cigars to score." });
     }
 
-    const results = cigars.slice(0, 50).map((c: any) => {
-      const data = getCuratedReviewScores({
+    const batch = cigars.slice(0, 25); // grounded search per-item is expensive; cap the batch
+
+    // Small concurrency pool so a batch of cigars doesn't fire 25+
+    // simultaneous grounded-search calls at once.
+    const CONCURRENCY = 3;
+    const results: any[] = new Array(batch.length);
+
+    async function scoreOne(c: any): Promise<any> {
+      const fallback = getCuratedReviewScores({
         brand: c.brand,
         name: c.name || c.line,
         vitola: c.vitola,
@@ -2073,20 +2174,95 @@ app.post("/api/research/batch-review-scores", async (req, res) => {
         isCuban: c.isCuban,
       });
 
+      try {
+        const cigarLabel = `${c.brand} ${c.name || c.line || ""}`.trim();
+        const grounded = await groundedWebResearch(
+          `Search for published critic review scores for the cigar "${cigarLabel}". ` +
+            `Look specifically for scores from Cigar Aficionado, Halfwheel, Cigar Journal, Cigar Coop, Smoke King UK, or Cigar Snob. ` +
+            `Only report scores you actually find -- do not estimate.`,
+          "You are a research assistant. Only report scores you can find via search."
+        );
+
+        if (!grounded.text || grounded.sources.length === 0) {
+          throw new Error("no grounded results");
+        }
+
+        const parsed = await structureTextToSchema({
+          text: grounded.text,
+          instruction:
+            "Extract the critic review scores mentioned in this search-grounded research into structured JSON. Only include scores explicitly present in the text.",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              consensusScore: { type: Type.NUMBER },
+              consensusQuote: { type: Type.STRING },
+              scores: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    source: { type: Type.STRING },
+                    score: { type: Type.NUMBER },
+                    maxScore: { type: Type.NUMBER },
+                    scale: { type: Type.STRING },
+                    summary: { type: Type.STRING },
+                  },
+                  required: ["source", "score", "summary"],
+                },
+              },
+            },
+            required: ["scores"],
+          },
+        });
+
+        if (parsed.scores && Array.isArray(parsed.scores) && parsed.scores.length > 0) {
+          const enrichedScores = parsed.scores.map((s: any) => {
+            const matchedSource = grounded.sources.find(
+              (src) =>
+                src.title.toLowerCase().includes(String(s.source).toLowerCase().split(" ")[0]) ||
+                src.uri.toLowerCase().includes(String(s.source).toLowerCase().replace(/\s+/g, ""))
+            );
+            return { ...s, maxScore: s.maxScore || 100, scale: s.scale || "100-Point", url: matchedSource?.uri };
+          });
+          return {
+            id: c.id,
+            brand: c.brand,
+            name: c.name || c.line,
+            consensusScore: parsed.consensusScore || fallback.consensusScore,
+            consensusQuote: parsed.consensusQuote || fallback.consensusQuote,
+            scores: enrichedScores,
+            grounded: true,
+          };
+        }
+      } catch {
+        // fall through to curated data below
+      }
+
       return {
         id: c.id,
         brand: c.brand,
         name: c.name || c.line,
-        consensusScore: data.consensusScore,
-        consensusQuote: data.consensusQuote,
-        scores: data.scores,
+        consensusScore: fallback.consensusScore,
+        consensusQuote: fallback.consensusQuote,
+        scores: fallback.scores,
+        grounded: false,
       };
-    });
+    }
+
+    let nextIndex = 0;
+    async function worker() {
+      while (nextIndex < batch.length) {
+        const i = nextIndex++;
+        results[i] = await scoreOne(batch[i]);
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, batch.length) }, worker));
 
     return res.json({
       success: true,
       data: {
         scannedCount: results.length,
+        groundedCount: results.filter((r) => r.grounded).length,
         results,
       },
     });

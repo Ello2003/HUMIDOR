@@ -65,6 +65,7 @@ import {
   removeVendorPriceFromCigar,
   estimateAccurateSmokeTime,
   areCigarsMatching,
+  suggestVitolaDimensions,
 } from '../utils/researchUtils';
 import { PersonalReviewModal } from './PersonalReviewModal';
 
@@ -469,6 +470,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         const scores: ReviewScoreEntry[] = data.data.scores;
         const consensus = data.data.consensusScore || cigar.criticRating;
         const consensusQuote = data.data.consensusQuote || cigar.criticConsensus;
+        const isGrounded = data.data.grounded === true;
 
         onUpdateResearchCigar(cigar.id, {
           reviewScores: scores,
@@ -481,7 +483,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           onSyncReviewScores(cigar.brand, cigar.line, cigar.vitola, scores, consensus);
         }
 
-        showFeedback(`AI Review Scores: Found ${scores.length} ratings for "${cigar.brand} ${cigar.line}" (Consensus ${consensus}/100)!`);
+        showFeedback(
+          isGrounded
+            ? `Live search found ${scores.length} verified rating${scores.length === 1 ? '' : 's'} for "${cigar.brand} ${cigar.line}" (Consensus ${consensus}/100)`
+            : `No live sources found for "${cigar.brand} ${cigar.line}" — showing unverified reference estimate (Consensus ${consensus}/100)`
+        );
       } else {
         showFeedback(`Review score scan complete for "${cigar.brand} ${cigar.line}".`);
       }
@@ -499,7 +505,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cigars: researchDatabase.slice(0, 50).map((c) => ({
+          cigars: researchDatabase.slice(0, 25).map((c) => ({
             id: c.id,
             brand: c.brand,
             name: c.line,
@@ -529,7 +535,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
             updatedCount++;
           }
         });
-        showFeedback(`Successfully updated multi-source review scores (Cigar Aficionado, Smoke King, Halfwheel) for ${updatedCount} cigars!`);
+        showFeedback(
+          `Updated review scores for ${updatedCount} cigars — ${data.data.groundedCount || 0} verified via live search, ` +
+            `${updatedCount - (data.data.groundedCount || 0)} from unverified reference data.`
+        );
       }
     } catch (err: any) {
       showFeedback('Review score batch scan complete.');
@@ -1187,13 +1196,15 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     e.preventDefault();
     if (!newBrand.trim() || !newLine.trim()) return;
 
+    const suggestedDims = suggestVitolaDimensions(newVitola.trim());
+
     const newCigar: CigarResearchItem = {
       id: generateId('custom-res'),
       brand: newBrand.trim(),
       line: newLine.trim(),
       vitola: newVitola.trim(),
-      lengthInches: 5.5,
-      ringGauge: 52,
+      lengthInches: suggestedDims?.lengthInches ?? 5.5,
+      ringGauge: suggestedDims?.ringGauge ?? 52,
       countryOrigin: newOrigin,
       wrapper: newWrapper,
       wrapperType: newWrapperType,
@@ -2407,23 +2418,48 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          {cigar.reviewScores.map((score, sIdx) => (
-                            <div
-                              key={`${score.source}-${sIdx}`}
-                              className="px-2.5 py-1 bg-card border border-line rounded flex items-center gap-1.5 text-xs"
-                            >
-                              <span className="text-text-muted font-medium">{score.source}:</span>
-                              <span className="text-gold font-bold font-mono">★ {score.score}</span>
-                              {(score.scale || score.maxScore) && (
-                                <span className="text-[10px] text-text-muted/70">/{score.scale || score.maxScore}</span>
-                              )}
-                              {score.award && (
-                                <span className="text-[9px] px-1 py-0.2 bg-gold/20 text-gold rounded font-semibold">
-                                  {score.award}
-                                </span>
-                              )}
-                            </div>
-                          ))}
+                          {cigar.reviewScores.map((score, sIdx) => {
+                            const content = (
+                              <>
+                                <span className="text-text-muted font-medium">{score.source}:</span>
+                                <span className="text-gold font-bold font-mono">★ {score.score}</span>
+                                {(score.scale || score.maxScore) && (
+                                  <span className="text-[10px] text-text-muted/70">/{score.scale || score.maxScore}</span>
+                                )}
+                                {score.award && (
+                                  <span className="text-[9px] px-1 py-0.2 bg-gold/20 text-gold rounded font-semibold">
+                                    {score.award}
+                                  </span>
+                                )}
+                                {!score.url && (
+                                  <span
+                                    className="text-[9px] text-text-subtle"
+                                    title="No live source could be verified for this score -- treat as unconfirmed"
+                                  >
+                                    (unverified)
+                                  </span>
+                                )}
+                              </>
+                            );
+                            const className =
+                              'px-2.5 py-1 bg-card border border-line rounded flex items-center gap-1.5 text-xs';
+                            return score.url ? (
+                              <a
+                                key={`${score.source}-${sIdx}`}
+                                href={score.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`${className} hover:border-gold transition cursor-pointer`}
+                                title={`Open the source for this score: ${score.url}`}
+                              >
+                                {content}
+                              </a>
+                            ) : (
+                              <div key={`${score.source}-${sIdx}`} className={className}>
+                                {content}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -3627,13 +3663,14 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           {onAddCustomResearchCigar && (
                             <button
                               onClick={() => {
+                                const recDims = suggestVitolaDimensions(rec.vitola || 'Robusto');
                                 const newRes: CigarResearchItem = {
                                   id: generateId('res-rec'),
                                   brand: rec.brand,
                                   line: rec.cigarName,
                                   vitola: rec.vitola || 'Robusto',
-                                  lengthInches: 5.0,
-                                  ringGauge: 50,
+                                  lengthInches: recDims?.lengthInches ?? 5.0,
+                                  ringGauge: recDims?.ringGauge ?? 50,
                                   countryOrigin: 'Nicaragua',
                                   wrapper: 'Habano',
                                   wrapperType: 'Habano',
