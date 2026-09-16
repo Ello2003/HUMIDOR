@@ -421,6 +421,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   const [scanningReviewCigarId, setScanningReviewCigarId] = useState<string | null>(null);
   const [isBatchScanningReviews, setIsBatchScanningReviews] = useState<boolean>(false);
 
+  // Combined "Sitewide Update" state -- runs local vitola/smoke-time
+  // refresh plus both grounded batch scans (reviews + prices) as one action.
+  const [isSitewideUpdating, setIsSitewideUpdating] = useState<boolean>(false);
+  const [sitewideUpdateStep, setSitewideUpdateStep] = useState<string>('');
+
   // Inline rename state for real-time site-wide sync
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [inlineBrand, setInlineBrand] = useState<string>('');
@@ -623,6 +628,22 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         updates.smokeTimeMinutes = smokeTime.minutes;
         updates.smokeTimeRange = smokeTime.range;
       }
+      // Correct vitola dimensions that look like an unfixed generic default
+      // (5.0x50 / 5.5x52) rather than something matching the named shape --
+      // the same "hardcoded regardless of vitola" bug found in a couple of
+      // creation flows elsewhere in this file.
+      const suggestedDims = suggestVitolaDimensions(item.vitola);
+      if (suggestedDims) {
+        const looksGeneric =
+          !item.lengthInches ||
+          !item.ringGauge ||
+          (item.lengthInches === 5.0 && item.ringGauge === 50) ||
+          (item.lengthInches === 5.5 && item.ringGauge === 52);
+        if (looksGeneric) {
+          updates.lengthInches = suggestedDims.lengthInches;
+          updates.ringGauge = suggestedDims.ringGauge;
+        }
+      }
       if (Object.keys(updates).length > 0) {
         onUpdateResearchCigar(item.id, updates);
         researchUpdated++;
@@ -650,6 +671,18 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         if (!c.smokeTimeMinutes || !c.smokeTimeRange || c.smokeTimeRange !== smokeTime.range) {
           updates.smokeTimeMinutes = smokeTime.minutes;
           updates.smokeTimeRange = smokeTime.range;
+        }
+        const suggestedDims = suggestVitolaDimensions(c.vitola);
+        if (suggestedDims) {
+          const looksGeneric =
+            !c.lengthInches ||
+            !c.ringGauge ||
+            (c.lengthInches === 5.0 && c.ringGauge === 50) ||
+            (c.lengthInches === 5.5 && c.ringGauge === 52);
+          if (looksGeneric) {
+            updates.lengthInches = suggestedDims.lengthInches;
+            updates.ringGauge = suggestedDims.ringGauge;
+          }
         }
         if (match) {
           if (!c.countryOrigin || c.countryOrigin === 'Unknown') updates.countryOrigin = match.countryOrigin;
@@ -686,6 +719,18 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           updates.smokeTimeMinutes = smokeTime.minutes;
           updates.smokeTimeRange = smokeTime.range;
         }
+        const suggestedDims = w.vitola ? suggestVitolaDimensions(w.vitola) : null;
+        if (suggestedDims) {
+          const looksGeneric =
+            !w.lengthInches ||
+            !w.ringGauge ||
+            (w.lengthInches === 5.0 && w.ringGauge === 50) ||
+            (w.lengthInches === 5.5 && w.ringGauge === 52);
+          if (looksGeneric) {
+            updates.lengthInches = suggestedDims.lengthInches;
+            updates.ringGauge = suggestedDims.ringGauge;
+          }
+        }
         if (match && !w.targetPrice && match.averagePrice) {
           updates.targetPrice = match.averagePrice;
         }
@@ -698,10 +743,39 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
     setTimeout(() => {
       setIsSyncingMissingFields(false);
-      const msg = `Multi-source consensus applied: Updated smoke times & blend specs for ${researchUpdated} Research cigars, ${humidorUpdated} Humidor sticks, and ${wishlistUpdated} Wishlist items!`;
+      const msg = `Multi-source consensus applied: Updated vitola specs & smoke times for ${researchUpdated} Research cigars, ${humidorUpdated} Humidor sticks, and ${wishlistUpdated} Wishlist items!`;
       setSyncSummary(msg);
       showFeedback(msg);
     }, 500);
+  };
+
+  /**
+   * Sitewide Update -- the single-click version of the three separate
+   * actions below (local vitola/smoke-time backfill, live review-score
+   * search, live UK retailer price search), run in sequence with one
+   * combined status indicator. Previously these required three separate
+   * clicks with no unified progress or summary.
+   */
+  const handleSitewideUpdateAll = async () => {
+    setIsSitewideUpdating(true);
+    try {
+      setSitewideUpdateStep('Refreshing vitola sizes & smoke times...');
+      handleSyncAllMissingFields();
+      await new Promise((r) => setTimeout(r, 700)); // let the local sync's own summary render first
+
+      setSitewideUpdateStep('Searching for live critic review scores...');
+      await handleBatchScanAllReviewScores();
+
+      setSitewideUpdateStep('Searching for live UK retailer prices...');
+      await handleBatchScanAllRetailers();
+
+      showFeedback(
+        'Sitewide update complete — vitola sizes, smoke times, review scores, and retailer prices refreshed across your Research DB, Humidor, and Wishlist.'
+      );
+    } finally {
+      setSitewideUpdateStep('');
+      setIsSitewideUpdating(false);
+    }
   };
 
   // UK Retailer Live Price Scanner (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff of London)
@@ -781,7 +855,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cigars: researchDatabase.slice(0, 50).map((c) => ({
+          cigars: researchDatabase.slice(0, 25).map((c) => ({
             id: c.id,
             brand: c.brand,
             name: c.line,
@@ -841,7 +915,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
             updatedCount++;
           }
         });
-        showFeedback(`Successfully updated UK multi-retailer quotes for ${updatedCount} cigars across top British shops!`);
+        const groundedCount = data.data.groundedCount ?? 0;
+        showFeedback(
+          `Updated UK retailer prices for ${updatedCount} cigars — ${groundedCount} verified via live search, ` +
+            `${updatedCount - groundedCount} from unverified reference data.`
+        );
       }
     } catch (err: any) {
       showFeedback('UK multi-shop batch scan complete.');
@@ -2994,6 +3072,24 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  onClick={handleSitewideUpdateAll}
+                  disabled={isSitewideUpdating || isBatchScanningPrices || isBatchScanningReviews || isSyncingMissingFields}
+                  className="px-4 py-2.5 bg-gradient-to-r from-gold to-gold-hover hover:brightness-110 text-ink font-bold text-[11px] uppercase tracking-widest rounded-md shadow-sm transition flex items-center gap-2 cursor-pointer disabled:opacity-50 border border-gold-hover/50"
+                  title="Runs everything below in one go: vitola sizes, smoke times, live review scores, and live UK retailer prices"
+                >
+                  {isSitewideUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-ink" />
+                      <span>{sitewideUpdateStep || 'Updating...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-ink" />
+                      <span>🔄 Sitewide Update</span>
+                    </>
+                  )}
+                </button>
                 <button
                   onClick={handleBatchScanAllRetailers}
                   disabled={isBatchScanningPrices}

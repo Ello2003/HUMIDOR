@@ -1682,59 +1682,68 @@ app.post("/api/research/retailer-prices", async (req, res) => {
       retailers: requestedRetailers,
     });
 
-    const retailerListStr = requestedRetailers.map((r, i) => `${i + 1}. ${r}`).join("\n");
-
-    const prompt = `Provide accurate UK market price quotes in British Pounds (£ GBP) for the cigar "${brand} ${name || ""}" (Vitola: ${vitola || "Standard"}, Origin: ${countryOrigin || (isCuban ? "Cuba" : "New World")}).
-Specifically estimate/search current quotes for these UK merchants:
-${retailerListStr}
-
-Return single stick price in £, full box price if applicable, and in-stock indicator.`;
+    const cigarLabel = `${brand} ${name || ""}`.trim();
 
     try {
-      const response = await generateContentWithRetryAndFallback({
-        contents: prompt,
-        config: {
-          systemInstruction: `You are an expert UK tobacconist and market pricing specialist with up-to-date knowledge of British cigar retailers (${requestedRetailers.join(", ")}) and UK duty rates. Return realistic single stick and box pricing in £ GBP.`,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              quotes: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    vendor: { type: Type.STRING },
-                    price: { type: Type.NUMBER },
-                    currency: { type: Type.STRING },
-                    inStock: { type: Type.BOOLEAN },
-                    boxPrice: { type: Type.NUMBER },
-                    boxCount: { type: Type.INTEGER },
-                    url: { type: Type.STRING },
-                  },
-                  required: ["vendor", "price", "currency", "inStock"],
+      // Real live search first -- not the model recalling "realistic" prices
+      // from training data (which by definition can't reflect current
+      // stock or pricing).
+      const grounded = await groundedWebResearch(
+        `Search for current UK retail prices in GBP for the cigar "${cigarLabel}" ` +
+          `(Vitola: ${vitola || "Standard"}, Origin: ${countryOrigin || (isCuban ? "Cuba" : "New World")}). ` +
+          `Check these UK tobacconists specifically: ${requestedRetailers.join(", ")}. ` +
+          `Report the actual single-stick and box price and stock status you find for each retailer that has this cigar listed -- ` +
+          `do not estimate a price for a retailer whose page you didn't actually find.`,
+        "You are a research assistant checking real UK cigar retailer websites. Only report prices you actually find via search."
+      );
+
+      if (!grounded.text || grounded.sources.length === 0) {
+        throw new Error("No grounded pricing results found.");
+      }
+
+      const parsedData = await structureTextToSchema({
+        text: grounded.text,
+        instruction:
+          "Extract the retailer price quotes mentioned in this search-grounded research into structured JSON, in GBP. " +
+          "Only include retailers explicitly mentioned with a price -- do not invent quotes for retailers not found.",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            quotes: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  vendor: { type: Type.STRING },
+                  price: { type: Type.NUMBER },
+                  inStock: { type: Type.BOOLEAN },
+                  boxPrice: { type: Type.NUMBER },
+                  boxCount: { type: Type.INTEGER },
                 },
+                required: ["vendor", "price", "inStock"],
               },
-              marketLow: { type: Type.NUMBER },
-              marketHigh: { type: Type.NUMBER },
-              marketAverage: { type: Type.NUMBER },
-              pricingNotes: { type: Type.STRING },
             },
-            required: ["quotes"],
+            pricingNotes: { type: Type.STRING },
           },
+          required: ["quotes"],
         },
       });
 
-      const text = response.text || "{}";
-      const parsedData = JSON.parse(text);
       if (parsedData.quotes && parsedData.quotes.length > 0) {
         const today = new Date().toISOString().split("T")[0];
-        const mergedQuotes = parsedData.quotes.map((q: any) => ({
-          ...q,
-          currency: q.currency || "£",
-          lastUpdated: today,
-          url: q.url || `https://www.google.com/search?q=${encodeURIComponent(q.vendor + " " + brand + " " + (name || ""))}`,
-        }));
+        const mergedQuotes = parsedData.quotes.map((q: any) => {
+          const matchedSource = grounded.sources.find(
+            (src) =>
+              src.title.toLowerCase().includes(String(q.vendor).toLowerCase().split(" ")[0]) ||
+              src.uri.toLowerCase().includes(String(q.vendor).toLowerCase().replace(/\s+/g, ""))
+          );
+          return {
+            ...q,
+            currency: "£",
+            lastUpdated: today,
+            url: matchedSource?.uri, // real URL only -- never fabricated
+          };
+        });
 
         const bestPrice = Math.min(...mergedQuotes.map((q: any) => q.price));
         const bestQuote = mergedQuotes.find((q: any) => q.price === bestPrice);
@@ -1746,15 +1755,18 @@ Return single stick price in £, full box price if applicable, and in-stock indi
             retailerQuotes: mergedQuotes,
             bestPrice: bestPrice,
             bestVendor: bestQuote?.vendor || mergedQuotes[0].vendor,
-            marketLow: parsedData.marketLow || bestPrice,
-            marketHigh: parsedData.marketHigh,
-            marketAverage: parsedData.marketAverage,
-            pricingNotes: parsedData.pricingNotes || "Live AI market price scan completed across selected UK retailers.",
+            marketLow: bestPrice,
+            marketHigh: Math.max(...mergedQuotes.map((q: any) => q.price)),
+            marketAverage:
+              Math.round((mergedQuotes.reduce((a: number, b: any) => a + b.price, 0) / mergedQuotes.length) * 100) / 100,
+            pricingNotes: parsedData.pricingNotes || "Live search across UK retailers.",
+            groundedSources: grounded.sources,
+            grounded: true,
           },
         });
       }
     } catch (aiErr: any) {
-      console.warn("[Price Scanner] AI lookup failed or busy, falling back to deterministic UK merchant dataset:", aiErr.message);
+      console.warn("[Price Scanner] Grounded lookup failed or found nothing, falling back to reference dataset:", aiErr.message);
     }
 
     const bestPrice = Math.min(...fallbackQuotes.map((q) => q.price));
@@ -1770,7 +1782,8 @@ Return single stick price in £, full box price if applicable, and in-stock indi
         marketLow: bestPrice,
         marketHigh: Math.max(...fallbackQuotes.map((q) => q.price)),
         marketAverage: Math.round((fallbackQuotes.reduce((a, b) => a + b.price, 0) / fallbackQuotes.length) * 100) / 100,
-        pricingNotes: `Verified UK market intelligence baseline from ${requestedRetailers.length} British retailers.`,
+        pricingNotes: `Unverified reference estimate -- no live retailer page could be confirmed for this cigar.`,
+        grounded: false,
       },
     });
   } catch (error: any) {
@@ -1789,30 +1802,102 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
       return res.status(400).json({ error: "Please provide an array of cigars to scan." });
     }
 
-    const results = cigars.slice(0, 50).map((c: any) => {
-      const quotes = getEstimatedUkRetailerQuotes({
+    const batch = cigars.slice(0, 25); // grounded search per-item is real work; cap the batch
+    const requestedRetailers: string[] = Array.isArray(retailers) && retailers.length > 0 ? retailers : [];
+    const CONCURRENCY = 3;
+    const results: any[] = new Array(batch.length);
+
+    async function scanOne(c: any): Promise<any> {
+      const fallbackQuotes = getEstimatedUkRetailerQuotes({
         brand: c.brand,
         name: c.name || c.line,
         vitola: c.vitola,
         countryOrigin: c.countryOrigin,
         isCuban: c.isCuban,
-        retailers: retailers,
+        retailers: requestedRetailers,
       });
+
+      try {
+        const cigarLabel = `${c.brand} ${c.name || c.line || ""}`.trim();
+        const grounded = await groundedWebResearch(
+          `Search for current UK retail prices in GBP for the cigar "${cigarLabel}". ` +
+            `Only report prices you actually find via search, for retailers that genuinely stock it.`,
+          "You are a research assistant checking real UK cigar retailer websites. Only report prices you actually find."
+        );
+        if (!grounded.text || grounded.sources.length === 0) throw new Error("no grounded results");
+
+        const parsed = await structureTextToSchema({
+          text: grounded.text,
+          instruction: "Extract retailer price quotes from this search-grounded research into structured JSON, in GBP.",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              quotes: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    vendor: { type: Type.STRING },
+                    price: { type: Type.NUMBER },
+                    inStock: { type: Type.BOOLEAN },
+                  },
+                  required: ["vendor", "price", "inStock"],
+                },
+              },
+            },
+            required: ["quotes"],
+          },
+        });
+
+        if (parsed.quotes && parsed.quotes.length > 0) {
+          const today = new Date().toISOString().split("T")[0];
+          const quotes = parsed.quotes.map((q: any) => {
+            const matchedSource = grounded.sources.find(
+              (src) =>
+                src.title.toLowerCase().includes(String(q.vendor).toLowerCase().split(" ")[0]) ||
+                src.uri.toLowerCase().includes(String(q.vendor).toLowerCase().replace(/\s+/g, ""))
+            );
+            return { ...q, currency: "£", lastUpdated: today, url: matchedSource?.uri };
+          });
+          return {
+            id: c.id,
+            brand: c.brand,
+            name: c.name || c.line,
+            quotes,
+            bestPrice: Math.min(...quotes.map((q: any) => q.price)),
+            bestVendor: quotes.reduce((prev: any, curr: any) => (curr.price < prev.price ? curr : prev)).vendor,
+            grounded: true,
+          };
+        }
+      } catch {
+        // fall through to reference data below
+      }
 
       return {
         id: c.id,
         brand: c.brand,
         name: c.name || c.line,
-        quotes,
-        bestPrice: Math.min(...quotes.map((q) => q.price)),
-        bestVendor: quotes.reduce((prev, curr) => (curr.price < prev.price ? curr : prev)).vendor,
+        quotes: fallbackQuotes,
+        bestPrice: Math.min(...fallbackQuotes.map((q) => q.price)),
+        bestVendor: fallbackQuotes.reduce((prev, curr) => (curr.price < prev.price ? curr : prev)).vendor,
+        grounded: false,
       };
-    });
+    }
+
+    let nextIndex = 0;
+    async function worker() {
+      while (nextIndex < batch.length) {
+        const i = nextIndex++;
+        results[i] = await scanOne(batch[i]);
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, batch.length) }, worker));
 
     return res.json({
       success: true,
       data: {
         scannedCount: results.length,
+        groundedCount: results.filter((r) => r.grounded).length,
         results,
       },
     });
