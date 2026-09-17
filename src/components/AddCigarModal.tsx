@@ -15,6 +15,7 @@ import {
 import { Cigar, Humidor, StrengthRating, CigarStatus, WishlistItem, CigarResearchItem, WrapperType, STRENGTH_LEVELS } from '../types';
 import { FLAVOR_CATEGORIES } from '../data/initialData';
 import { DEFAULT_CURRENCY } from '../utils/currencyUtils';
+import { suggestVitolaDimensions, areCigarsMatching } from '../utils/researchUtils';
 
 interface AddCigarModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ interface AddCigarModalProps {
   onAddToWishlist?: (item: Omit<WishlistItem, 'id' | 'createdAt'>) => void;
   onAddToResearch?: (cigar: CigarResearchItem) => void;
   onOpenBasketImporter?: () => void;
+  researchDatabase?: CigarResearchItem[];
 }
 
 export const AddCigarModal: React.FC<AddCigarModalProps> = ({
@@ -38,6 +40,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
   onAddToWishlist,
   onAddToResearch,
   onOpenBasketImporter,
+  researchDatabase,
 }) => {
   // Note: the early `isOpen` bail-out must come after every Hook call
   // (React's Rules of Hooks) -- moved to just before the JSX return below.
@@ -85,6 +88,90 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
   const [personalRating, setPersonalRating] = useState<string>(
     cigarToEdit?.personalRating ? String(cigarToEdit.personalRating) : ''
   );
+
+  // Auto-populate vitola/size/wrapper/origin/strength for a specific named
+  // cigar (e.g. "Davidoff No. 2") -- checks the local Research DB first
+  // (instant, free), then falls back to a real grounded web search via
+  // /api/research/quick-lookup. Only fires for genuinely new entries, and
+  // only fills fields still at their untouched defaults so it never
+  // clobbers something already typed in.
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [lookupStatus, setLookupStatus] = useState<string>('');
+  const [lookupSourceUrl, setLookupSourceUrl] = useState<string | undefined>(undefined);
+  const isUntouchedDefaults =
+    vitola === 'Robusto' &&
+    lengthInches === '5.0' &&
+    ringGauge === '50' &&
+    wrapper === 'Habano';
+
+  const performGroundedLookup = async (): Promise<void> => {
+    const searchName = name.trim() || line.trim();
+    setIsLookingUp(true);
+    try {
+      const res = await fetch('/api/research/quick-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brand, name: searchName }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.data?.grounded) {
+        const d = data.data;
+        if (d.vitola) setVitola(d.vitola);
+        if (d.lengthInches) setLengthInches(String(d.lengthInches));
+        if (d.ringGauge) setRingGauge(String(d.ringGauge));
+        if (d.wrapper) setWrapper(d.wrapper);
+        if (d.binder) setBinder(d.binder);
+        if (d.filler) setFiller(d.filler);
+        if (d.countryOrigin) setCountryOrigin(d.countryOrigin);
+        if (d.strength) setStrength(d.strength as StrengthRating);
+        setLookupStatus(`Auto-filled from a live search${d.sourceName ? ` (${d.sourceName})` : ''}.`);
+        setLookupSourceUrl(d.sourceUrl);
+      } else {
+        const suggested = suggestVitolaDimensions(vitola);
+        if (suggested) {
+          setLengthInches(String(suggested.lengthInches));
+          setRingGauge(String(suggested.ringGauge));
+        }
+        setLookupStatus('No live source found for this exact cigar -- please check the specs manually.');
+        setLookupSourceUrl(undefined);
+      }
+    } catch {
+      setLookupStatus('Lookup failed -- please check the specs manually.');
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const handleQuickLookup = async () => {
+    if (cigarToEdit || !brand.trim() || !(name.trim() || line.trim())) return;
+    if (!isUntouchedDefaults) return; // user's already customized these fields -- don't overwrite
+
+    const searchName = name.trim() || line.trim();
+
+    // 1. Check the local Research DB first -- free, instant, and likely
+    // more curated than a fresh AI guess if this exact cigar's been
+    // researched before.
+    if (researchDatabase && researchDatabase.length > 0) {
+      const localMatch = researchDatabase.find((r) => areCigarsMatching({ brand, line: searchName }, r));
+      if (localMatch) {
+        setVitola(localMatch.vitola);
+        setLengthInches(String(localMatch.lengthInches));
+        setRingGauge(String(localMatch.ringGauge));
+        setWrapper(localMatch.wrapper);
+        setBinder(localMatch.binder);
+        setFiller(localMatch.filler);
+        setCountryOrigin(localMatch.countryOrigin);
+        setStrength(localMatch.strength);
+        setLookupStatus(`Auto-filled from your Research DB (already researched this cigar).`);
+        setLookupSourceUrl(undefined);
+        return;
+      }
+    }
+
+    // 2. Fall back to a real, grounded live search for this specific cigar.
+    setLookupStatus('');
+    await performGroundedLookup();
+  };
   const [status, setStatus] = useState<CigarStatus>(cigarToEdit?.status || 'ready');
   const [isFavorite, setIsFavorite] = useState<boolean>(cigarToEdit?.isFavorite || false);
   const [notes, setNotes] = useState<string>(cigarToEdit?.notes || prefillData?.notes || '');
@@ -426,6 +513,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                     placeholder="e.g. Montecristo, Partagás, Padrón"
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
+                    onBlur={handleQuickLookup}
                     className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
@@ -443,9 +531,48 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
                       setName(e.target.value);
                       if (!line) setLine(e.target.value);
                     }}
+                    onBlur={handleQuickLookup}
                     className="w-full bg-surface border border-line rounded px-3 py-2 text-xs text-text focus:border-gold focus:outline-hidden"
                   />
                 </div>
+
+                {(isLookingUp || lookupStatus) && !cigarToEdit && (
+                  <div className="sm:col-span-2 -mt-1">
+                    <div className="flex items-center gap-2 text-[10px] text-text-muted bg-surface border border-line rounded px-2.5 py-1.5">
+                      {isLookingUp ? (
+                        <>
+                          <Sparkles className="w-3 h-3 text-gold animate-pulse" />
+                          <span>Searching for "{brand} {name || line}" specs...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3 text-gold" />
+                          <span>{lookupStatus}</span>
+                          {lookupSourceUrl && (
+                            <a
+                              href={lookupSourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gold hover:underline ml-auto"
+                            >
+                              View source
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLookupStatus('');
+                              performGroundedLookup();
+                            }}
+                            className={lookupSourceUrl ? '' : 'ml-auto text-gold hover:underline cursor-pointer'}
+                          >
+                            {!lookupSourceUrl && 'Retry lookup'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

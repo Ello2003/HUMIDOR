@@ -1115,6 +1115,7 @@ export function App() {
         humidors={humidors}
         cigarToEdit={cigarToEdit}
         prefillData={prefilledCigarData}
+        researchDatabase={researchDatabase}
         onAddToWishlist={(item) => {
           handleAddWishlistItem({
             brand: item.brand,

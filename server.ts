@@ -413,6 +413,87 @@ function extractCigarFromHtmlLocally({
 }
 
 // Endpoint: Deep Cigar Research & Dossier Lookup
+/**
+ * Quick, grounded lookup of a specific named cigar's core identifying
+ * facts -- vitola, dimensions, wrapper, origin, strength. Distinct from
+ * the full "/api/research/cigar" dossier below (flavor transitions,
+ * pairings, trivia): this is meant to fire while someone is filling in the
+ * Add Cigar form, so it needs to be fast and focused, not a full essay.
+ *
+ * Uses real Google Search grounding (like the price/review endpoints)
+ * rather than pure model recall, since the whole point is autofilling
+ * *correct* specs for a real, named, commercially available cigar --
+ * e.g. "Davidoff No. 2" has one real, specific vitola and ring gauge, and
+ * guessing wrong defeats the purpose.
+ */
+app.post("/api/research/quick-lookup", async (req, res) => {
+  try {
+    const { brand, name } = req.body;
+    if (!brand || !name) {
+      return res.status(400).json({ error: "Please provide both a brand and a cigar name/line." });
+    }
+
+    const cigarLabel = `${brand} ${name}`.trim();
+
+    try {
+      const grounded = await groundedWebResearch(
+        `Search for the exact factory specifications of the specific cigar "${cigarLabel}". ` +
+          `Find its official vitola/shape name, length in inches, ring gauge, wrapper leaf type, binder, filler, ` +
+          `country of origin, and typical strength rating. This is a specific named product, not a general vitola shape -- ` +
+          `look for the manufacturer's own published spec sheet or a reputable retailer's product page.`,
+        "You are a research assistant. Report only the specifications you actually find via search for this exact cigar."
+      );
+
+      if (!grounded.text || grounded.sources.length === 0) {
+        throw new Error("No grounded specs found for this cigar.");
+      }
+
+      const parsed = await structureTextToSchema({
+        text: grounded.text,
+        instruction:
+          `Extract this specific cigar's factory specifications from the search-grounded research into structured JSON. ` +
+          `Only fill in fields that are explicitly stated in the source text -- leave a field out entirely if it wasn't found, ` +
+          `do not guess or estimate.`,
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            vitola: { type: Type.STRING },
+            lengthInches: { type: Type.NUMBER },
+            ringGauge: { type: Type.NUMBER },
+            wrapper: { type: Type.STRING },
+            wrapperType: { type: Type.STRING },
+            binder: { type: Type.STRING },
+            filler: { type: Type.STRING },
+            countryOrigin: { type: Type.STRING },
+            strength: { type: Type.STRING, description: "Mild, Mild-Medium, Medium, Medium-Full, Full, or Full-Bodied" },
+          },
+        },
+      });
+
+      const matchedSource = grounded.sources[0];
+      return res.json({
+        success: true,
+        data: {
+          ...parsed,
+          sourceUrl: matchedSource?.uri,
+          sourceName: matchedSource?.title,
+          groundedSources: grounded.sources,
+          grounded: true,
+        },
+      });
+    } catch (aiErr: any) {
+      console.warn(`[Quick Lookup] No grounded result for "${cigarLabel}":`, aiErr.message);
+      return res.json({
+        success: true,
+        data: { grounded: false },
+      });
+    }
+  } catch (error: any) {
+    console.error("Error in /api/research/quick-lookup:", error);
+    return res.status(500).json({ error: error.message || "Lookup failed." });
+  }
+});
+
 app.post("/api/research/cigar", async (req, res) => {
   try {
     const { cigarName, brand, vitola } = req.body;
