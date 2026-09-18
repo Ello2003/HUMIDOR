@@ -176,10 +176,6 @@ export function App() {
     safeSetItem('cedar_ash_settings', JSON.stringify(settings));
   }, [settings]);
 
-  useEffect(() => {
-    safeSetItem('the_humidor_wishlist_basket', JSON.stringify(wishlistBasket));
-  }, [wishlistBasket]);
-
   // Initial auto-migration & enrichment: ensure accurate multi-source consensus smoke times across all cigars
   useEffect(() => {
     try {
@@ -240,6 +236,10 @@ export function App() {
     } catch { return []; }
   });
   const [isGitHubSyncOpen, setIsGitHubSyncOpen] = useState(false);
+
+  useEffect(() => {
+    safeSetItem('the_humidor_wishlist_basket', JSON.stringify(wishlistBasket));
+  }, [wishlistBasket]);
 
   // Global Price Editor modal state
   const [priceEditorTarget, setPriceEditorTarget] = useState<{
