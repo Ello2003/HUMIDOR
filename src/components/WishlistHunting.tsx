@@ -33,6 +33,7 @@ import {
   CheckCheck,
   TrendingDown,
   Share2,
+  Printer,
 } from 'lucide-react';
 import { WishlistItem, Cigar, AppSettings, VendorPriceEntry, CigarResearchItem, ReviewScoreEntry, WishlistBasketItem } from '../types';
 import { formatCurrency, DEFAULT_CURRENCY } from '../utils/currencyUtils';
@@ -69,6 +70,8 @@ interface WishlistHuntingProps {
   onAddCustomResearchCigar?: (cigar: CigarResearchItem) => void;
   onInlineRenameWishlistItem?: (item: WishlistItem, newBrand: string, newName: string) => void;
   settings?: AppSettings;
+  wishlistBasket?: WishlistBasketItem[];
+  onBasketChange?: (basket: WishlistBasketItem[]) => void;
 }
 
 export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
@@ -84,6 +87,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
   onAddCustomResearchCigar,
   onInlineRenameWishlistItem,
   settings,
+  wishlistBasket: externalBasket,
+  onBasketChange,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
@@ -173,6 +178,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
   // Shopping Basket State with persistence
   const [basket, setBasket] = useState<WishlistBasketItem[]>(() => {
+    if (externalBasket) return externalBasket;
     try {
       const saved = localStorage.getItem('the_humidor_wishlist_basket');
       if (saved) return JSON.parse(saved);
@@ -459,6 +465,14 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       localStorage.setItem('the_humidor_wishlist_basket', JSON.stringify(basket));
     } catch {}
   }, [basket]);
+
+  React.useEffect(() => {
+    if (externalBasket) setBasket(externalBasket);
+  }, [externalBasket]);
+
+  React.useEffect(() => {
+    onBasketChange?.(basket);
+  }, [basket, onBasketChange]);
 
   React.useEffect(() => {
     try {
@@ -1130,6 +1144,81 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
     sortBy,
     researchDatabase,
   ]);
+
+  const printShoppingBasket = () => {
+    if (basket.length === 0) {
+      setFeedbackNotice('Shopping basket is empty.');
+      return;
+    }
+
+    const escapeHtml = (value: unknown) =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    const rows = basket
+      .map((item) => {
+        const lineTotal = (item.unitPrice || 0) * item.quantity;
+        return `<tr>
+          <td>${escapeHtml(item.brand)}</td>
+          <td>${escapeHtml(item.name)}${item.vitola ? `<br><small>${escapeHtml(item.vitola)}</small>` : ''}</td>
+          <td>${escapeHtml(item.vendor)}</td>
+          <td class="num">${escapeHtml(formatCurrency(item.unitPrice || 0, item.currency || '£'))}</td>
+          <td class="num">${item.quantity}</td>
+          <td class="num">${escapeHtml(formatCurrency(lineTotal, item.currency || '£'))}</td>
+        </tr>`;
+      })
+      .join('');
+
+    const shops = Object.keys(basketByVendor).length;
+    const win = window.open('', '_blank', 'noopener,noreferrer');
+    if (!win) {
+      setFeedbackNotice('Allow pop-ups for The Humidor to create the printable basket.');
+      return;
+    }
+
+    win.document.write(`<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>The Humidor — Shopping Basket</title>
+<style>
+@page { size: A4; margin: 16mm; }
+body { font-family: Georgia, serif; color:#222; margin:0; }
+h1 { margin:0 0 4px; font-size:24px; }
+.subtitle { color:#666; font:13px Arial,sans-serif; margin-bottom:20px; }
+.summary { display:flex; gap:28px; padding:12px 0; border-top:2px solid #8f7442; border-bottom:1px solid #ccc; margin-bottom:18px; font-family:Arial,sans-serif; font-size:12px; }
+.summary strong { display:block; font-size:16px; color:#6f572f; margin-top:3px; }
+table { width:100%; border-collapse:collapse; font-family:Arial,sans-serif; font-size:11px; }
+th { text-align:left; background:#f3efe7; border-bottom:2px solid #b59a65; padding:8px 6px; }
+td { border-bottom:1px solid #ddd; padding:8px 6px; vertical-align:top; }
+.num { text-align:right; white-space:nowrap; }
+small { color:#777; }
+.total { margin-top:18px; text-align:right; font:bold 16px Arial,sans-serif; }
+.footer { margin-top:30px; color:#777; font:10px Arial,sans-serif; }
+@media print { .no-print { display:none; } }
+</style>
+</head>
+<body>
+<h1>The Humidor</h1>
+<div class="subtitle">Wishlist Shopping Basket · ${escapeHtml(new Date().toLocaleString('en-GB'))}</div>
+<div class="summary">
+<div>STICKS<strong>${totalBasketCount}</strong></div>
+<div>RETAILERS<strong>${shops}</strong></div>
+<div>ESTIMATED TOTAL<strong>${escapeHtml(formatCurrency(totalBasketPrice, '£'))}</strong></div>
+</div>
+<table>
+<thead><tr><th>Brand</th><th>Cigar / Vitola</th><th>Retailer</th><th class="num">Unit</th><th class="num">Qty</th><th class="num">Total</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+<div class="total">Grand Total: ${escapeHtml(formatCurrency(totalBasketPrice, '£'))}</div>
+<div class="footer">Prices are the currently quoted basket prices in The Humidor and may change at checkout.</div>
+<script>window.onload=()=>setTimeout(()=>window.print(),250);</script>
+</body></html>`);
+    win.document.close();
+  };
 
   // Basket summary calculations
   const totalBasketCount = basket.reduce((acc, item) => acc + item.quantity, 0);
@@ -2784,6 +2873,15 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2.5">
+                  <button
+                    onClick={printShoppingBasket}
+                    className="py-2.5 px-4 bg-gold hover:brightness-110 text-ink border border-gold font-bold text-xs uppercase tracking-wider rounded-md flex items-center justify-center gap-2 cursor-pointer transition"
+                    title="Print the current shopping basket or save it as a PDF"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Print / Save PDF</span>
+                  </button>
+
                   <button
                     onClick={handleAcquireEntireBasket}
                     className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-md flex items-center justify-center gap-2 shadow-sm cursor-pointer transition"
