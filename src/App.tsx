@@ -26,13 +26,15 @@ import { AddCigarModal } from './components/AddCigarModal';
 import { LogSmokeModal } from './components/LogSmokeModal';
 import { HumidorManagerModal } from './components/HumidorManagerModal';
 import { HumidorManagerDrawer } from './components/HumidorManagerDrawer';
+import { GitHubSyncModal } from './components/GitHubSyncModal';
 
 import { AppSettingsModal } from './components/AppSettingsModal';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { GlobalPriceEditorModal } from './components/GlobalPriceEditorModal';
 import { initialCigars, initialHumidors, initialSmokeLogs, initialWishlist } from './data/initialData';
 import { INITIAL_RESEARCH_DATABASE } from './data/cigarDatabase';
-import { Cigar, Humidor, SmokeLog, WishlistItem, CigarResearchItem, AppSettings, VendorPriceEntry } from './types';
+import { Cigar, Humidor, SmokeLog, WishlistItem, CigarResearchItem, AppSettings, VendorPriceEntry, WishlistBasketItem } from './types';
+import { HumidorSyncPayload } from './utils/githubSync';
 import {
   mergeResearchBatch,
   deduplicateResearchDatabase,
@@ -174,6 +176,10 @@ export function App() {
     safeSetItem('cedar_ash_settings', JSON.stringify(settings));
   }, [settings]);
 
+  useEffect(() => {
+    safeSetItem('the_humidor_wishlist_basket', JSON.stringify(wishlistBasket));
+  }, [wishlistBasket]);
+
   // Initial auto-migration & enrichment: ensure accurate multi-source consensus smoke times across all cigars
   useEffect(() => {
     try {
@@ -225,6 +231,15 @@ export function App() {
 
   // Multi-Cigar Shopping Basket Importer modal
   const [isBasketImporterOpen, setIsBasketImporterOpen] = useState(false);
+  // Wishlist shopping basket is lifted here so it can be included in encrypted GitHub sync.
+  const [wishlistBasket, setWishlistBasket] = useState<WishlistBasketItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('the_humidor_wishlist_basket');
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  });
+  const [isGitHubSyncOpen, setIsGitHubSyncOpen] = useState(false);
 
   // Global Price Editor modal state
   const [priceEditorTarget, setPriceEditorTarget] = useState<{
@@ -917,6 +932,24 @@ export function App() {
     if (data.researchDatabase) setResearchDatabase(data.researchDatabase);
   };
 
+  const handleGitHubSyncImport = (data: HumidorSyncPayload) => {
+    setCigars(data.cigars);
+    setHumidors(data.humidors);
+    setSmokeLogs(data.smokeLogs);
+    setWishlist(data.wishlist);
+    setResearchDatabase(data.researchDatabase);
+    setWishlistBasket(data.wishlistBasket || []);
+  };
+
+  const githubSyncPayload: HumidorSyncPayload = {
+    cigars,
+    humidors,
+    smokeLogs,
+    wishlist,
+    researchDatabase,
+    wishlistBasket,
+  };
+
   return (
     <div className="min-h-screen bg-ink text-text flex flex-col font-sans selection:bg-line selection:text-gold">
       {/* Top Navigation */}
@@ -1082,6 +1115,8 @@ export function App() {
             onResearchCigar={handleResearchFromExternal}
             onOpenPriceEditor={handleOpenPriceEditorForCigar}
             onInlineRenameWishlistItem={(item, newB, newN) => handleInlineRenameCigar(item, newB, newN)}
+            wishlistBasket={wishlistBasket}
+            onBasketChange={setWishlistBasket}
           />
           </Suspense>
         )}
@@ -1097,6 +1132,7 @@ export function App() {
             settings={settings}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenBasketImporter={() => setIsBasketImporterOpen(true)}
+            onOpenGitHubSync={() => setIsGitHubSyncOpen(true)}
             onImportVault={handleImportVault}
           />
           </Suspense>
@@ -1205,6 +1241,13 @@ export function App() {
         }}
         onSave={handleSaveHumidor}
         humidorToEdit={humidorToEdit}
+      />
+
+      <GitHubSyncModal
+        isOpen={isGitHubSyncOpen}
+        onClose={() => setIsGitHubSyncOpen(false)}
+        payload={githubSyncPayload}
+        onImport={handleGitHubSyncImport}
       />
 
       {/* App Settings Modal */}
