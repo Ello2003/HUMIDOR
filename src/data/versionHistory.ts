@@ -1,6 +1,6 @@
 import { VersionHistoryEntry, AppSettings } from '../types';
 
-export const APP_VERSION = 'v2.13.3';
+export const APP_VERSION = 'v2.14.0';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   visibleTabs: {
@@ -97,6 +97,21 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 };
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
+  {
+    version: 'v2.14.0',
+    releaseDate: 'September 2026',
+    title: 'Encrypted GitHub Vault Sync & Printable Shopping Basket',
+    summary:
+      'Added encrypted bidirectional GitHub backup/restore for the complete Humidor vault and a polished A4 shopping-basket print flow that can be saved directly as PDF.',
+    type: 'minor',
+    highlights: [
+      'Encrypted GitHub Push / Pull: Push and restore inventory, humidors, Smoke Journal, Wishlist, research data, and Shopping Basket through the GitHub Contents API.',
+      'Public-Repository Safety: Sync snapshots are encrypted client-side with AES-256-GCM and PBKDF2-SHA256 before being committed, while the GitHub token remains session-only.',
+      'Shopping Basket PDF: Added a print-ready A4 basket invoice with retailer grouping, quantities, unit prices, line totals, and grand total for printing or Save as PDF.',
+      'Basket Persistence: Lifted Wishlist basket state into the app so basket contents can participate in encrypted sync and remain consistent across sessions.',
+    ],
+  },
+
   {
     version: 'v2.13.3',
     releaseDate: 'August 2026',
