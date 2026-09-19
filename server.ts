@@ -57,17 +57,32 @@ async function generateContentWithRetryAndFallback(params: {
   const modelChain = Array.from(new Set(fallbackModels));
   let lastError: any = null;
 
+  // Per-attempt hard timeout. Previously there was NO timeout anywhere
+  // around the actual Gemini call -- if a single call ever stalled (search-
+  // grounded calls in particular can take much longer and less predictably
+  // than a plain completion, since the model may issue several real web
+  // searches before responding), the whole request hung indefinitely with
+  // nothing to catch it, and the retry/fallback logic below never even got
+  // a chance to move to the next model. This makes a stuck call fail fast
+  // instead, so retry and fallback can actually do their job.
+  const PER_ATTEMPT_TIMEOUT_MS = 25000;
+
   for (let mIdx = 0; mIdx < modelChain.length; mIdx++) {
     const model = modelChain[mIdx];
     const maxAttempts = mIdx === 0 ? 2 : 1; // 2 attempts on primary model, 1 on fallbacks
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: params.contents,
-          config: params.config,
-        });
+        const response = await Promise.race([
+          ai.models.generateContent({
+            model,
+            contents: params.contents,
+            config: params.config,
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`Request to ${model} timed out after ${PER_ATTEMPT_TIMEOUT_MS / 1000}s`)), PER_ATTEMPT_TIMEOUT_MS)
+          ),
+        ]);
 
         if (response && response.text) {
           return response;
@@ -87,6 +102,7 @@ async function generateContentWithRetryAndFallback(params: {
           errMsg.includes("quota") ||
           errMsg.includes("overloaded") ||
           errMsg.includes("internal") ||
+          errMsg.includes("timed out") ||
           errStatus.includes("unavailable") ||
           errStatus.includes("resource_exhausted");
 

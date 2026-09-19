@@ -16,6 +16,7 @@ import { Cigar, Humidor, StrengthRating, CigarStatus, WishlistItem, CigarResearc
 import { FLAVOR_CATEGORIES } from '../data/initialData';
 import { DEFAULT_CURRENCY } from '../utils/currencyUtils';
 import { suggestVitolaDimensions, areCigarsMatching } from '../utils/researchUtils';
+import { fetchWithTimeout } from '../utils/fetchUtils';
 
 interface AddCigarModalProps {
   isOpen: boolean;
@@ -108,11 +109,20 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
     const searchName = name.trim() || line.trim();
     setIsLookingUp(true);
     try {
-      const res = await fetch('/api/research/quick-lookup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brand, name: searchName }),
-      });
+      // 60s client timeout, deliberately shorter than the basket importer's:
+      // this is a supplementary auto-fill that fires automatically on
+      // blur, not an explicit action the user is watching a progress bar
+      // for -- if it's taking too long, better to fail fast and let them
+      // fill the fields in manually than block for a long time.
+      const res = await fetchWithTimeout(
+        '/api/research/quick-lookup',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brand, name: searchName }),
+        },
+        60000
+      );
       const data = await res.json();
       if (res.ok && data.success && data.data?.grounded) {
         const d = data.data;
