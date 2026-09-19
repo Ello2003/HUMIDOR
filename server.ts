@@ -1600,6 +1600,53 @@ app.post("/api/import/basket-from-url", async (req, res) => {
   }
 });
 
+/**
+ * Robust Cuban-brand detection, reused wherever a default UK retailer list
+ * needs to be brand-appropriate: relying only on a client-supplied
+ * `isCuban` boolean is fragile (the frontend doesn't always know/send it),
+ * so this cross-checks the brand name and country of origin too.
+ */
+function detectIsCuban(brand: string, countryOrigin?: string, isCubanFlag?: boolean): boolean {
+  const origin = (countryOrigin || "").toLowerCase();
+  return (
+    !!isCubanFlag ||
+    origin.includes("cuba") ||
+    /cohiba|montecristo|partagas|partagás|trinidad|hoyo|upmann|bolivar|ramon|ramón|romeo|punch/i.test(brand || "")
+  );
+}
+
+/**
+ * Default UK retailer hint list, brand-aware. "Cuban Cigar Club" and
+ * "Havana House" are Habanos-only specialists -- defaulting to them (or to
+ * this function not existing at all, as was previously the case) for a
+ * New World brand like Oliva or Padron biases both the reference-fallback
+ * data AND the live search prompt's hint list toward shops that likely
+ * don't stock it, at the expense of ones that do.
+ */
+function pickDefaultUkRetailers(isCuban: boolean): string[] {
+  return isCuban
+    ? [
+        "C.Gars Ltd",
+        "Cuban Cigar Club",
+        "Havana House",
+        "Smoke King",
+        "Davidoff of London",
+        "James J. Fox (London)",
+        "Sautter Cigars (London)",
+        "Turmeaus Tobacconist",
+      ]
+    : [
+        "C.Gars Ltd",
+        "Smoke King",
+        "Davidoff of London",
+        "James J. Fox (London)",
+        "Sautter Cigars (London)",
+        "Turmeaus Tobacconist",
+        "Robert Graham 1874",
+        "GQ Tobaccos",
+      ];
+}
+
 // Deterministic UK Retailer Price Estimator & Market Intelligence for top UK merchants
 function getEstimatedUkRetailerQuotes(cigar: {
   brand: string;
@@ -1625,7 +1672,7 @@ function getEstimatedUkRetailerQuotes(cigar: {
   const name = cigar.name || cigar.line || "Cigar";
   const vitola = (cigar.vitola || "").toLowerCase();
   const origin = (cigar.countryOrigin || "").toLowerCase();
-  const isCuban = cigar.isCuban || origin.includes("cuba") || /cohiba|montecristo|partagas|partagás|trinidad|hoyo|upmann|bolivar|ramon|ramón|romeo|punch/i.test(brand);
+  const isCuban = detectIsCuban(brand, cigar.countryOrigin, cigar.isCuban);
 
   // Baseline price calculation according to vitola & brand tier in UK market (GBP £)
   let basePrice = 24.0;
@@ -1703,27 +1750,7 @@ function getEstimatedUkRetailerQuotes(cigar: {
   // match. Swap in the broader-range shops for non-Cuban brands instead.
   const selectedRetailerNames = cigar.retailers && cigar.retailers.length > 0
     ? cigar.retailers
-    : isCuban
-    ? [
-        "C.Gars Ltd",
-        "Cuban Cigar Club",
-        "Havana House",
-        "Smoke King",
-        "Davidoff of London",
-        "James J. Fox (London)",
-        "Sautter Cigars (London)",
-        "Turmeaus Tobacconist",
-      ]
-    : [
-        "C.Gars Ltd",
-        "Smoke King",
-        "Davidoff of London",
-        "James J. Fox (London)",
-        "Sautter Cigars (London)",
-        "Turmeaus Tobacconist",
-        "Robert Graham 1874",
-        "GQ Tobaccos",
-      ];
+    : pickDefaultUkRetailers(isCuban);
 
   return selectedRetailerNames.map((vendorName) => {
     const meta = defaultMerchantCatalog[vendorName] || {
@@ -1751,23 +1778,16 @@ function getEstimatedUkRetailerQuotes(cigar: {
 // Endpoint: AI & Live Retailer Price Scanner for a single cigar
 app.post("/api/research/retailer-prices", async (req, res) => {
   try {
-    const { brand, name, vitola, countryOrigin, isCuban, retailers } = req.body;
+    const { brand, name, vitola, countryOrigin, isCuban: isCubanFlag, retailers } = req.body;
     if (!brand) {
       return res.status(400).json({ error: "Please provide cigar brand and name." });
     }
 
+    const isCuban = detectIsCuban(brand, countryOrigin, isCubanFlag);
+
     const requestedRetailers: string[] = Array.isArray(retailers) && retailers.length > 0
       ? retailers
-      : [
-          "C.Gars Ltd",
-          "Cuban Cigar Club",
-          "Havana House",
-          "Smoke King",
-          "Davidoff of London",
-          "James J. Fox (London)",
-          "Sautter Cigars (London)",
-          "Turmeaus Tobacconist",
-        ];
+      : pickDefaultUkRetailers(isCuban);
 
     const fallbackQuotes = getEstimatedUkRetailerQuotes({
       brand,
@@ -1785,24 +1805,26 @@ app.post("/api/research/retailer-prices", async (req, res) => {
       // from training data (which by definition can't reflect current
       // stock or pricing).
       //
-      // Deliberately NOT restricting the search to `requestedRetailers`:
-      // that list skews toward Cuban specialists (C.Gars, Havana House,
-      // Cuban Cigar Club...), so a New World brand like Oliva or Padron
-      // would get a search that never even looks anywhere else. The list
-      // is now just a hint of known UK shops, not a ceiling on where to
-      // look.
+      // A single vague "search broadly" instruction tends to settle on
+      // whichever retailer has the strongest overall SEO/domain authority
+      // (in practice, usually the biggest generalist, e.g. C.Gars) and
+      // stop there -- even when other named retailers genuinely stock the
+      // cigar too. Framing this as an explicit per-retailer checklist plus
+      // a separate broader search nudges the model to actually issue
+      // multiple distinct search queries instead of one.
       const grounded = await groundedWebResearch(
-        `Search the web broadly for current UK retail prices in GBP for the cigar "${cigarLabel}" ` +
+        `Find current UK retail prices in GBP for the cigar "${cigarLabel}" ` +
           `(Vitola: ${vitola || "Standard"}, Origin: ${countryOrigin || (isCuban ? "Cuba" : "New World")}). ` +
-          `Do not limit your search to any preset list of retailers -- find whichever real UK cigar shops and ` +
-          `tobacconists actually stock this specific cigar right now. Some commonly known UK shops include ` +
-          `${requestedRetailers.join(", ")}, but this brand may well be carried by other specialist retailers instead ` +
-          `or in addition -- for example, New World brands (Nicaragua, Honduras, Dominican Republic) are often ` +
-          `stocked by different shops than Cuban-only specialists, so search accordingly rather than assuming. ` +
-          `Report the actual single-stick and box price and stock status you find for each real retailer that has ` +
-          `this cigar listed -- do not estimate a price for a retailer whose page you didn't actually find, and ` +
-          `do not limit yourself to only the shops named above.`,
-        "You are a research assistant checking real UK cigar retailer websites. Search broadly, not just a fixed list. Only report prices you actually find via search."
+          `Do this in two passes:\n` +
+          `1. Check EACH of these UK retailers individually -- search for this specific cigar on each one's own site, ` +
+          `one at a time, rather than a single combined search: ${requestedRetailers.join(", ")}.\n` +
+          `2. Then do one more, broader search for any OTHER genuine UK cigar retailer or tobacconist that stocks this ` +
+          `specific cigar -- New World brands (Nicaragua, Honduras, Dominican Republic) are often carried by different ` +
+          `specialist shops than Cuban-only retailers, so don't assume the list above is exhaustive.\n\n` +
+          `Report every retailer from either pass that actually has this cigar listed, with its real price and stock ` +
+          `status -- do not stop after finding just one, and do not estimate a price for any retailer whose page you ` +
+          `didn't actually find.`,
+        "You are a research assistant checking real UK cigar retailer websites one at a time. Report every retailer you actually find with a listing, not just the first one."
       );
 
       if (!grounded.text || grounded.sources.length === 0) {
@@ -1812,8 +1834,9 @@ app.post("/api/research/retailer-prices", async (req, res) => {
       const parsedData = await structureTextToSchema({
         text: grounded.text,
         instruction:
-          "Extract the retailer price quotes mentioned in this search-grounded research into structured JSON, in GBP. " +
-          "Only include retailers explicitly mentioned with a price -- do not invent quotes for retailers not found.",
+          "Extract EVERY distinct retailer price quote mentioned in this search-grounded research into structured JSON, in GBP -- " +
+          "if three retailers are mentioned, return three entries, not one. Only include retailers explicitly mentioned " +
+          "with a price -- do not invent quotes for retailers not found, and do not consolidate multiple retailers into a single entry.",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
@@ -1916,30 +1939,32 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
     const results: any[] = new Array(batch.length);
 
     async function scanOne(c: any): Promise<any> {
+      const isCuban = detectIsCuban(c.brand, c.countryOrigin, c.isCuban);
+      const hintRetailers = requestedRetailers.length > 0 ? requestedRetailers : pickDefaultUkRetailers(isCuban);
       const fallbackQuotes = getEstimatedUkRetailerQuotes({
         brand: c.brand,
         name: c.name || c.line,
         vitola: c.vitola,
         countryOrigin: c.countryOrigin,
-        isCuban: c.isCuban,
+        isCuban,
         retailers: requestedRetailers,
       });
 
       try {
         const cigarLabel = `${c.brand} ${c.name || c.line || ""}`.trim();
         const grounded = await groundedWebResearch(
-          `Search the web broadly for current UK retail prices in GBP for the cigar "${cigarLabel}". ` +
-            `Do not limit your search to any preset list of retailers -- New World brands (Nicaragua, Honduras, ` +
-            `Dominican Republic) are often carried by different UK specialist shops than Cuban-only retailers, so ` +
-            `search accordingly rather than assuming. Only report prices you actually find via search, for retailers ` +
-            `that genuinely stock it.`,
-          "You are a research assistant checking real UK cigar retailer websites. Search broadly, not just a fixed list. Only report prices you actually find."
+          `Find current UK retail prices in GBP for the cigar "${cigarLabel}". Do this in two passes:\n` +
+            `1. Check EACH of these UK retailers individually, one at a time: ${hintRetailers.join(", ")}.\n` +
+            `2. Then do one broader search for any other genuine UK cigar retailer that stocks this specific cigar -- ` +
+            `New World brands are often carried by different specialist shops than Cuban-only retailers.\n\n` +
+            `Report every retailer from either pass that actually has this cigar listed -- do not stop after finding just one.`,
+          "You are a research assistant checking real UK cigar retailer websites one at a time. Report every retailer you actually find, not just the first one."
         );
         if (!grounded.text || grounded.sources.length === 0) throw new Error("no grounded results");
 
         const parsed = await structureTextToSchema({
           text: grounded.text,
-          instruction: "Extract retailer price quotes from this search-grounded research into structured JSON, in GBP.",
+          instruction: "Extract EVERY distinct retailer price quote from this search-grounded research into structured JSON, in GBP -- if three retailers are mentioned, return three entries.",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
