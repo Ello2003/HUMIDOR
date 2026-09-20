@@ -329,6 +329,7 @@ export interface CigarResearchItem {
 }
 
 export interface CigarAppData {
+  kind?: 'full-vault' | 'research-library';
   cigars: Cigar[];
   humidors: Humidor[];
   smokeLogs: SmokeLog[];
@@ -495,4 +496,3 @@ export interface SmokeTimeConsensus {
   isPersonalizedFromJournal?: boolean;
   userEmpiricalAverageMinutes?: number;
 }
-

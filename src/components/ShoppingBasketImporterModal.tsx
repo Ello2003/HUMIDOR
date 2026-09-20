@@ -40,6 +40,7 @@ import {
   mergeResearchBatch,
   extractMerchantFromUrlOrText,
   estimateAccurateSmokeTime,
+  resolveVitolaDetails,
 } from '../utils/researchUtils';
 
 interface ShoppingBasketImporterModalProps {
@@ -82,15 +83,24 @@ export function convertBasketItemToResearch(item: ExtractedBasketItem): CigarRes
     : ['Spanish Cedar', 'Rich Earth', 'Dark Chocolate', 'Leather'];
 
   const resolvedVendor = extractMerchantFromUrlOrText(item.vendor || 'Online Retailer');
-  const smokeTime = estimateAccurateSmokeTime(item.vitola, item.lengthInches, item.ringGauge);
+  const dimensions = resolveVitolaDetails({ vitola: item.vitola, lengthInches: item.lengthInches, ringGauge: item.ringGauge });
+  const smokeTime = estimateAccurateSmokeTime({
+    vitola: dimensions.vitola,
+    lengthInches: dimensions.lengthInches,
+    ringGauge: dimensions.ringGauge,
+    brand: item.brand,
+    name: item.name,
+    customMinutes: item.smokeTimeMinutes,
+    customRange: item.smokeTimeRange,
+  });
 
   return {
     id: `research-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     brand: item.brand,
     line: item.line || item.name,
-    vitola: item.vitola || 'Robusto',
-    lengthInches: item.lengthInches || 5.0,
-    ringGauge: item.ringGauge || 50,
+    vitola: dimensions.vitola,
+    lengthInches: dimensions.lengthInches,
+    ringGauge: dimensions.ringGauge,
     smokeTimeMinutes: smokeTime.minutes,
     smokeTimeRange: smokeTime.range,
     countryOrigin: item.countryOrigin || (isCuban ? 'Cuba' : 'Nicaragua'),
@@ -143,13 +153,25 @@ export function convertBasketItemToHumidor(
 ): Omit<Cigar, 'id' | 'createdAt' | 'updatedAt'> {
   const isCuban = item.isCuban ?? /cuba|havana|habano/i.test(item.brand + ' ' + item.countryOrigin);
   const resolvedVendor = extractMerchantFromUrlOrText(item.vendor || 'Online Retailer');
+  const dimensions = resolveVitolaDetails({ vitola: item.vitola, lengthInches: item.lengthInches, ringGauge: item.ringGauge });
+  const smokeTime = estimateAccurateSmokeTime({
+    vitola: dimensions.vitola,
+    lengthInches: dimensions.lengthInches,
+    ringGauge: dimensions.ringGauge,
+    brand: item.brand,
+    name: item.name,
+    customMinutes: item.smokeTimeMinutes,
+    customRange: item.smokeTimeRange,
+  });
   return {
     brand: item.brand,
     name: item.name,
     line: item.line || item.name,
-    vitola: item.vitola || 'Robusto',
-    lengthInches: item.lengthInches || 5.0,
-    ringGauge: item.ringGauge || 50,
+    vitola: dimensions.vitola,
+    lengthInches: dimensions.lengthInches,
+    ringGauge: dimensions.ringGauge,
+    smokeTimeMinutes: smokeTime.minutes,
+    smokeTimeRange: smokeTime.range,
     countryOrigin: item.countryOrigin || (isCuban ? 'Cuba' : 'Nicaragua'),
     wrapper: item.wrapper || (isCuban ? 'Cuban Habano' : 'Ecuadorian Habano'),
     binder: item.binder || (isCuban ? 'Cuba' : 'Proprietary'),
@@ -515,10 +537,25 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
       setError('Please select at least one cigar item to add.');
       return;
     }
-    const wishlistItems = selected.map((item) => ({
+    const wishlistItems = selected.map((item) => {
+      const dimensions = resolveVitolaDetails({ vitola: item.vitola, lengthInches: item.lengthInches, ringGauge: item.ringGauge });
+      const smokeTime = estimateAccurateSmokeTime({
+        vitola: dimensions.vitola,
+        lengthInches: dimensions.lengthInches,
+        ringGauge: dimensions.ringGauge,
+        brand: item.brand,
+        name: item.name,
+        customMinutes: item.smokeTimeMinutes,
+        customRange: item.smokeTimeRange,
+      });
+      return {
       brand: item.brand,
       name: item.name,
-      vitola: item.vitola || 'Robusto',
+      vitola: dimensions.vitola,
+      lengthInches: dimensions.lengthInches,
+      ringGauge: dimensions.ringGauge,
+      smokeTimeMinutes: smokeTime.minutes,
+      smokeTimeRange: smokeTime.range,
       wrapper: item.wrapper,
       targetPrice: item.purchasePrice,
       estimatedPrice: item.purchasePrice,
@@ -536,7 +573,8 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
           inStock: true,
         },
       ],
-    }));
+      };
+    });
     onAddMultipleToWishlist(wishlistItems);
     showToast(`Added ${wishlistItems.length} cigars to Wishlist!`);
   };

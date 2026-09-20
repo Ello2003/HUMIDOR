@@ -1301,13 +1301,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
               </button>
             )}
             <button
-              onClick={() => {
-                setSearchQuery('');
-                setStatusFilter('all');
-                setStrengthFilter('all');
-                setOriginFilter('all');
-                setSelectedHumidorId('all');
-              }}
+              onClick={resetAllFilters}
               className="px-4 py-2 bg-gold hover:brightness-110 text-ink rounded text-xs font-bold uppercase tracking-wider cursor-pointer"
             >
               Reset All Filters
@@ -2039,4 +2033,3 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
     </div>
   );
 };
-

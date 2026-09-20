@@ -40,6 +40,7 @@ interface ExportSuiteProps {
   onOpenSettings?: () => void;
   onOpenBasketImporter?: () => void;
   onImportVault: (data: {
+    kind?: 'full-vault' | 'research-library';
     cigars?: Cigar[];
     humidors?: Humidor[];
     smokeLogs?: SmokeLog[];
@@ -80,7 +81,16 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
     reader.onload = (evt) => {
       try {
         const json = JSON.parse(evt.target?.result as string);
-        if (json.cigars || json.humidors || json.smokeLogs || json.researchDatabase) {
+        if (json.kind === 'research-library' && Array.isArray(json.cigars)) {
+          onImportVault(json);
+          setImportStatus(`Imported ${json.cigars.length} research entries into the Research Library. Inventory was not changed.`);
+        } else if (
+          (json.kind === 'full-vault' || !json.kind) &&
+          Array.isArray(json.cigars) &&
+          Array.isArray(json.humidors) &&
+          Array.isArray(json.smokeLogs) &&
+          Array.isArray(json.wishlist)
+        ) {
           onImportVault(json);
           setImportStatus(
             `Successfully restored ${json.cigars?.length || 0} cigars, ${json.smokeLogs?.length || 0} tasting logs, and ${json.researchDatabase?.length || 0} research entries!`

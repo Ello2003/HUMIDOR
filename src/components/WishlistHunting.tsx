@@ -42,6 +42,7 @@ import {
   findMatchingResearchCigar,
   areCigarsMatching,
 } from '../utils/researchUtils';
+import { bestComparableQuote, comparableQuotes, normalizeCurrency, unitPrice } from '../utils/priceUtils';
 
 const DEFAULT_QUICK_RETAILERS = [
   'C.Gars Ltd',
@@ -250,12 +251,15 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
   const getBestVendorQuote = (item: WishlistItem) => {
     const quotes = item.vendorPrices || [];
     if (quotes.length > 0) {
-      const sorted = [...quotes].sort((a, b) => a.price - b.price);
+      const sorted = comparableQuotes(quotes, settings?.globalCurrency).sort((a, b) => unitPrice(a) - unitPrice(b));
+      const best = bestComparableQuote(sorted, settings?.globalCurrency) || sorted[0];
       return {
-        price: sorted[0].price,
-        vendor: canonicalizeVendorName(sorted[0].vendor),
-        currency: sorted[0].currency || '£',
-        url: sorted[0].url || item.sourceUrl,
+        price: best.price,
+        unitPrice: unitPrice(best),
+        vendor: canonicalizeVendorName(best.vendor),
+        currency: normalizeCurrency(best.currency),
+        packageType: best.packageType || 'Single',
+        url: best.url || item.sourceUrl,
         hasQuotes: true,
         allQuotes: sorted,
       };
@@ -281,10 +285,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       }
       return false;
     }
-    const minPrice = Math.min(...quotes.map((q) => q.price));
-    const shopQuotes = quotes.filter((q) => canonicalizeVendorName(q.vendor).toLowerCase() === targetCanonical);
+    const comparable = comparableQuotes(quotes, settings?.globalCurrency);
+    const best = bestComparableQuote(comparable, settings?.globalCurrency);
+    const shopQuotes = comparable.filter((q) => canonicalizeVendorName(q.vendor).toLowerCase() === targetCanonical);
     if (shopQuotes.length === 0) return false;
-    return shopQuotes.some((sq) => sq.price <= minPrice + 0.001);
+    return Boolean(best && shopQuotes.some((sq) => unitPrice(sq) <= unitPrice(best) + 0.001));
   };
 
   // Helper: Check if item has any quote from specific shop
@@ -326,12 +331,13 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
     wishlist.forEach((w) => {
       const quotes = w.vendorPrices || [];
       if (quotes.length > 0) {
-        const minPrice = Math.min(...quotes.map((q) => q.price));
+        const comparable = comparableQuotes(quotes, settings?.globalCurrency);
+        const best = bestComparableQuote(comparable, settings?.globalCurrency);
         quotes.forEach((q) => {
           const c = canonicalizeVendorName(q.vendor);
           const current = shopMap.get(c) || { totalQuotes: 0, bestPriceCount: 0 };
           current.totalQuotes += 1;
-          if (q.price <= minPrice + 0.001) {
+          if (best && comparable.includes(q) && unitPrice(q) <= unitPrice(best) + 0.001) {
             current.bestPriceCount += 1;
           }
           shopMap.set(c, current);
@@ -404,9 +410,9 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
               merged.push(rp);
             }
           });
-          merged.sort((a, b) => a.price - b.price);
-          const minPrice = merged[0]?.price;
-          const bestVendor = merged[0]?.vendor;
+          const bestQuote = bestComparableQuote(merged, settings?.globalCurrency);
+          const minPrice = bestQuote?.price;
+          const bestVendor = bestQuote?.vendor;
           onUpdateWishlistItem(w.id, {
             vendorPrices: merged,
             estimatedPrice: minPrice,
@@ -623,29 +629,16 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
 
   const handleAcquireEntireBasket = () => {
     if (basket.length === 0) return;
-    basket.forEach((bItem) => {
-      const match = wishlist.find(
-        (w) => w.id === bItem.wishlistItemId || (w.brand === bItem.brand && w.name === bItem.name)
-      );
-      if (match) {
-        onAcquireItem(match);
-      } else {
-        onAcquireItem({
-          id: `acquired-basket-${bItem.id}`,
-          brand: bItem.brand,
-          name: bItem.name,
-          vitola: bItem.vitola,
-          targetPrice: bItem.unitPrice,
-          priority: 'High',
-          sourceRetailer: bItem.vendor,
-          sourceUrl: bItem.sourceUrl,
-          createdAt: new Date().toISOString(),
-        });
-      }
-    });
-    setBasket([]);
-    setIsBasketOpen(false);
-    setFeedbackNotice(`✨ Acquired all ${basket.reduce((a, b) => a + b.quantity, 0)} cigars into your Humidor Vault!`);
+    const first = basket[0];
+    const match = wishlist.find(
+      (w) => w.id === first.wishlistItemId || (w.brand === first.brand && w.name === first.name)
+    );
+    if (match) {
+      onAcquireItem(match);
+      setFeedbackNotice('The first basket item is ready to save. The basket remains intact until each acquisition succeeds.');
+    } else {
+      setFeedbackNotice('Please acquire basket items individually so each quantity and save can be confirmed safely.');
+    }
   };
 
   // Preset Handlers
@@ -759,7 +752,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
     const remainingQuotes = (item.vendorPrices || []).filter((vp) => vp.id !== vendorPriceId);
     onUpdateWishlistItem(item.id, {
       vendorPrices: remainingQuotes,
-      estimatedPrice: remainingQuotes.length > 0 ? Math.min(...remainingQuotes.map((q) => q.price)) : undefined,
+      estimatedPrice: bestComparableQuote(remainingQuotes, settings?.globalCurrency)?.price,
     });
   };
 
@@ -780,12 +773,12 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Scanner request failed');
-      }
-
       const data = await response.json();
-      const scannedPrices: VendorPriceEntry[] = data.prices || [];
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || data?.message || `Scanner request failed (${response.status})`);
+      }
+      const scannedPrices: VendorPriceEntry[] = (data?.data?.retailerQuotes || data?.data?.quotes || [])
+        .filter((quote: VendorPriceEntry) => quote && Number.isFinite(Number(quote.price)) && Number(quote.price) > 0);
 
       if (scannedPrices.length > 0) {
         const currentQuotes = item.vendorPrices || [];
@@ -813,9 +806,9 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
           }
         });
 
-        merged.sort((a, b) => a.price - b.price);
-        const minPrice = merged[0]?.price;
-        const bestVendor = merged[0]?.vendor;
+        const bestQuote = bestComparableQuote(merged, settings?.globalCurrency);
+        const minPrice = bestQuote?.price;
+        const bestVendor = bestQuote?.vendor;
 
         onUpdateWishlistItem(item.id, {
           vendorPrices: merged,
@@ -835,15 +828,15 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
           });
         }
 
-        setFeedbackNotice(
-          `🇬🇧 Updated shop quotes for ${item.brand} ${item.name}! Best quote: £${minPrice.toFixed(2)} at ${bestVendor}.`
-        );
+        setFeedbackNotice(bestQuote
+          ? `Updated shop quotes for ${item.brand} ${item.name}. Best quote: ${normalizeCurrency(bestQuote.currency)}${minPrice!.toFixed(2)} at ${bestVendor}.`
+          : `Updated shop quotes for ${item.brand} ${item.name}, but no comparable quote was available.`);
       } else {
         setFeedbackNotice(`Scanned UK retailers — no direct matches found for ${item.brand} ${item.name}.`);
       }
     } catch (err) {
       console.error('Error scanning retailer prices:', err);
-      setFeedbackNotice(`Price scan completed for ${item.brand} ${item.name}.`);
+      setFeedbackNotice(`Price scan failed for ${item.brand} ${item.name}: ${err instanceof Error ? err.message : 'the retailer service was unavailable.'}`);
     } finally {
       setScanningItemId(null);
     }
@@ -870,23 +863,24 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Batch scanner request failed');
-      }
-
       const data = await response.json();
-      const results: Array<{ id: string; brand: string; name: string; prices: VendorPriceEntry[] }> = data.results || [];
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || data?.message || `Batch scanner request failed (${response.status})`);
+      }
+      const results: Array<{ id: string; brand: string; name: string; quotes?: VendorPriceEntry[] }> = data?.data?.results || [];
+      if (!Array.isArray(results)) throw new Error('The batch scanner returned an invalid result format.');
       let updatedCount = 0;
 
       results.forEach((res) => {
         const item = wishlist.find(
           (w) => w.id === res.id || areCigarsMatching(w, { brand: res.brand, name: res.name, line: res.name })
         );
-        if (item && res.prices && res.prices.length > 0) {
+        const scannedQuotes = res.quotes || [];
+        if (item && scannedQuotes.length > 0) {
           const currentQuotes = item.vendorPrices || [];
           const merged = [...currentQuotes];
 
-          res.prices.forEach((sp) => {
+          scannedQuotes.forEach((sp) => {
             const cVendor = canonicalizeVendorName(sp.vendor);
             const idx = merged.findIndex((q) => canonicalizeVendorName(q.vendor) === cVendor);
             const formatted: VendorPriceEntry = {
@@ -906,9 +900,9 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
             }
           });
 
-          merged.sort((a, b) => a.price - b.price);
-          const minPrice = merged[0]?.price;
-          const bestVendor = merged[0]?.vendor;
+          const bestQuote = bestComparableQuote(merged, settings?.globalCurrency);
+          const minPrice = bestQuote?.price;
+          const bestVendor = bestQuote?.vendor;
 
           onUpdateWishlistItem(item.id, {
             vendorPrices: merged,
@@ -937,7 +931,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       );
     } catch (err) {
       console.error('Batch scan error:', err);
-      setFeedbackNotice('Completed batch scan across UK retailers.');
+      setFeedbackNotice(`UK retailer batch scan failed: ${err instanceof Error ? err.message : 'the retailer service was unavailable.'}`);
     } finally {
       setIsBatchScanning(false);
     }
@@ -962,12 +956,12 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
     const existing = item.vendorPrices || [];
     const filtered = existing.filter((p) => p.vendor.toLowerCase() !== vendorName.toLowerCase());
     const updatedPrices = [newEntry, ...filtered];
-    updatedPrices.sort((a, b) => a.price - b.price);
+    const bestQuote = bestComparableQuote(updatedPrices, settings?.globalCurrency);
 
     onUpdateWishlistItem(item.id, {
       vendorPrices: updatedPrices,
-      estimatedPrice: updatedPrices[0]?.price,
-      sourceRetailer: vendorName,
+      estimatedPrice: bestQuote?.price,
+      sourceRetailer: bestQuote?.vendor || vendorName,
     });
 
     // Also sync to research database
@@ -1025,8 +1019,9 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       researchDatabase
     );
     const existingQuotes = matchingResearch?.vendorPrices || [];
-    const minPrice = existingQuotes.length > 0 ? Math.min(...existingQuotes.map((p) => p.price)) : (targetPrice ? parseFloat(targetPrice) : undefined);
-    const bestVendor = existingQuotes.length > 0 ? existingQuotes.find((p) => p.price === minPrice)?.vendor : undefined;
+    const bestExistingQuote = bestComparableQuote(existingQuotes, settings?.globalCurrency);
+    const minPrice = bestExistingQuote?.price ?? (targetPrice ? parseFloat(targetPrice) : undefined);
+    const bestVendor = bestExistingQuote?.vendor;
 
     onAddWishlistItem({
       brand: brand.trim(),
@@ -1853,7 +1848,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
                 {filteredWishlist.map((item) => {
                   const smokeTime = estimateAccurateSmokeTime(item.vitola, item.lengthInches, item.ringGauge);
                   const quotes = item.vendorPrices || [];
-                  const minPrice = quotes.length > 0 ? Math.min(...quotes.map((q) => q.price)) : undefined;
+                  const minPrice = bestComparableQuote(quotes, settings?.globalCurrency)?.price;
                   const { rating: itemRating, scores: itemScores } = getItemRatings(item);
 
                   return (
@@ -2130,7 +2125,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
           {filteredWishlist.map((item) => {
             const smokeTime = estimateAccurateSmokeTime(item.vitola, item.lengthInches, item.ringGauge);
             const quotes = item.vendorPrices || [];
-            const minPrice = quotes.length > 0 ? Math.min(...quotes.map((q) => q.price)) : undefined;
+                  const minPrice = bestComparableQuote(quotes, settings?.globalCurrency)?.price;
 
             return (
               <div

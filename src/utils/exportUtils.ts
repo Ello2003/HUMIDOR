@@ -25,6 +25,7 @@ export function exportResearchDatabaseToJSON(database: CigarResearchItem[], user
     : database;
 
   const exportPayload = {
+    kind: 'research-library' as const,
     title: userOnly ? 'My Personal Cigar Ratings & Research Notes' : 'Cigar Connoisseur Research Database & Library',
     totalCigars: dataToExport.length,
     exportedAt: new Date().toISOString(),
@@ -317,6 +318,7 @@ export function exportCompleteVaultJSON(data: {
   researchDatabase?: CigarResearchItem[];
 }) {
   const exportPayload: CigarAppData = {
+    kind: 'full-vault',
     ...data,
     version: '2.0.0',
     exportedAt: new Date().toISOString(),

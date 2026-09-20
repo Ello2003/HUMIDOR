@@ -10,6 +10,7 @@ import {
   SmokeTimeConsensus,
   SmokeTimeSourceDetail,
 } from '../types';
+import { bestComparableQuote, normalizeCurrency, unitPrice } from './priceUtils';
 
 /**
  * Strips accents, punctuation, and excess spaces for reliable matching
@@ -309,6 +310,7 @@ const STANDARD_VITOLA_DIMENSIONS: Array<{ keyword: string; lengthInches: number;
   { keyword: 'presidente', lengthInches: 6.0, ringGauge: 60 },
   { keyword: 'torpedo', lengthInches: 6.0, ringGauge: 52 },
   { keyword: 'piramide', lengthInches: 6.1, ringGauge: 52 },
+  { keyword: 'pyramide', lengthInches: 6.1, ringGauge: 52 },
   { keyword: 'pyramid', lengthInches: 6.1, ringGauge: 52 },
   { keyword: 'belicoso', lengthInches: 5.1, ringGauge: 52 },
   { keyword: 'perfecto', lengthInches: 4.8, ringGauge: 48 },
@@ -316,6 +318,56 @@ const STANDARD_VITOLA_DIMENSIONS: Array<{ keyword: string; lengthInches: number;
   { keyword: 'diadema', lengthInches: 8.5, ringGauge: 52 },
   { keyword: 'culebra', lengthInches: 5.5, ringGauge: 39 },
 ];
+
+export interface ResolvedVitolaDetails {
+  vitola: string;
+  lengthInches: number;
+  ringGauge: number;
+  source: 'provided' | 'vitola-standard' | 'safe-default';
+}
+
+function isValidCigarLength(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 2.5 && value <= 9.5;
+}
+
+function isValidRingGauge(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 20 && value <= 70;
+}
+
+/**
+ * Resolves imported dimensions without overwriting trustworthy product data.
+ * Retailer exports often omit one dimension or use a generic "Cigar" value;
+ * in those cases the named vitola is a safer source than 5 x 50 defaults.
+ */
+export function resolveVitolaDetails(input: {
+  vitola?: string;
+  lengthInches?: number;
+  ringGauge?: number;
+}): ResolvedVitolaDetails {
+  const vitola = (input.vitola || '').trim() || 'Robusto';
+  const providedLength = isValidCigarLength(input.lengthInches) ? input.lengthInches : undefined;
+  const providedGauge = isValidRingGauge(input.ringGauge) ? Math.round(input.ringGauge) : undefined;
+  if (providedLength !== undefined && providedGauge !== undefined) {
+    return { vitola, lengthInches: providedLength, ringGauge: providedGauge, source: 'provided' };
+  }
+
+  const standard = suggestVitolaDimensions(vitola);
+  if (standard) {
+    return {
+      vitola,
+      lengthInches: providedLength ?? standard.lengthInches,
+      ringGauge: providedGauge ?? standard.ringGauge,
+      source: 'vitola-standard',
+    };
+  }
+
+  return {
+    vitola,
+    lengthInches: providedLength ?? 5.0,
+    ringGauge: providedGauge ?? 50,
+    source: 'safe-default',
+  };
+}
 
 export function suggestVitolaDimensions(
   vitolaName: string
@@ -1098,6 +1150,10 @@ export function areCigarsMatching(
   const vitolaA = canonicalizeCigarName(a.vitola || '');
   const vitolaB = canonicalizeCigarName(b.vitola || '');
 
+  // A matching line is not enough to identify a physical cigar when both
+  // records carry a vitola. Do not merge or synchronize different shapes.
+  if (vitolaA && vitolaB && vitolaA !== vitolaB) return false;
+
   // Full composite strings
   const fullA = `${brandA} ${lineA} ${vitolaA}`.trim();
   const fullB = `${brandB} ${lineB} ${vitolaB}`.trim();
@@ -1190,7 +1246,12 @@ export function recalculatePricesFromVendors(
     };
   }
 
-  const validPrices = vendorPrices.map((v) => v.price).filter((p) => p && !isNaN(p) && p > 0);
+  const comparable = vendorPrices.filter(
+    (quote) => normalizeCurrency(quote.currency) === normalizeCurrency(currencySymbol)
+  );
+  const validPrices = (comparable.length > 0 ? comparable : vendorPrices)
+    .map((v) => v.price)
+    .filter((p) => p && !isNaN(p) && p > 0);
   if (validPrices.length === 0) {
     return {
       averagePrice: currentAvg || 15.0,
@@ -1249,8 +1310,14 @@ export function mergeVendorPriceIntoCigar(
     }
   }
 
-  // Sort vendor prices lowest first
-  existingPrices.sort((a, b) => a.price - b.price);
+  // Sort by comparable per-unit price without putting foreign currencies or
+  // multi-stick packs ahead of single-stick quotes accidentally.
+  existingPrices.sort((a, b) => {
+    const aUnit = unitPrice(a);
+    const bUnit = unitPrice(b);
+    return (Number.isFinite(aUnit) ? aUnit : Number.POSITIVE_INFINITY) -
+      (Number.isFinite(bUnit) ? bUnit : Number.POSITIVE_INFINITY);
+  });
 
   const currency = pricesToAdd[0]?.currency || cigar.vendorPrices?.[0]?.currency || '£';
   const { averagePrice, priceRange } = recalculatePricesFromVendors(
@@ -1587,9 +1654,8 @@ export function syncCigarAcrossAllSections({
         else combinedVendorPrices.push(entry);
       }
 
-      const lowestPrice = combinedVendorPrices.length > 0
-        ? Math.min(...combinedVendorPrices.map((p) => p.price))
-        : update.newPrice || c.purchasePrice;
+      const lowestQuote = bestComparableQuote(combinedVendorPrices, c.currency || '£');
+      const lowestPrice = lowestQuote?.price ?? update.newPrice ?? c.purchasePrice;
 
       const estSmoke = estimateAccurateSmokeTime({
         vitola: finalVitola || c.vitola,
@@ -1699,9 +1765,8 @@ export function syncCigarAcrossAllSections({
         else combinedVendorPrices.push(entry);
       }
 
-      const lowestPrice = combinedVendorPrices.length > 0
-        ? Math.min(...combinedVendorPrices.map((p) => p.price))
-        : update.newPrice || w.targetPrice;
+      const lowestQuote = bestComparableQuote(combinedVendorPrices, '£');
+      const lowestPrice = lowestQuote?.price ?? update.newPrice ?? w.targetPrice;
 
       const estSmokeW = estimateAccurateSmokeTime({
         vitola: finalVitola || w.vitola,
@@ -1825,4 +1890,3 @@ export function syncGlobalReviewScores({
     updatedWishlist,
   };
 }
-

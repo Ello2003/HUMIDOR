@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Sparkles,
   Search,
@@ -38,6 +38,7 @@ import {
   Eye,
   EyeOff,
   Store,
+  Ruler,
   RefreshCw,
   Layers,
   Database,
@@ -66,6 +67,7 @@ import {
   estimateAccurateSmokeTime,
   areCigarsMatching,
   suggestVitolaDimensions,
+  resolveVitolaDetails,
 } from '../utils/researchUtils';
 import { PersonalReviewModal } from './PersonalReviewModal';
 
@@ -99,6 +101,7 @@ interface CigarResearchHubProps {
   researchDatabase: CigarResearchItem[];
   smokeLogs?: SmokeLog[];
   onUpdateResearchCigar: (cigarId: string, updates: Partial<CigarResearchItem>) => void;
+  onBatchUpdateResearchCigars?: (updates: Array<{ id: string; changes: Partial<CigarResearchItem> }>) => void;
   onAddCustomResearchCigar?: (cigar: CigarResearchItem) => void;
   onDeleteResearchCigar?: (cigarId: string) => void;
   onDeduplicateResearchDatabase?: () => { mergedCount: number };
@@ -123,6 +126,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   researchDatabase,
   smokeLogs = [],
   onUpdateResearchCigar,
+  onBatchUpdateResearchCigars,
   onAddCustomResearchCigar,
   onDeleteResearchCigar,
   onDeduplicateResearchDatabase,
@@ -416,6 +420,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   // UK Retailer Live Price Scanning State
   const [scanningPriceCigarId, setScanningPriceCigarId] = useState<string | null>(null);
   const [isBatchScanningPrices, setIsBatchScanningPrices] = useState(false);
+  const [isBatchScanningSpecs, setIsBatchScanningSpecs] = useState(false);
 
   // Review scores AI scanner state
   const [scanningReviewCigarId, setScanningReviewCigarId] = useState<string | null>(null);
@@ -471,7 +476,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         }),
       });
       const data = await res.json();
-      if (res.ok && data.success && data.data?.scores) {
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || data?.message || `Review score scan failed (${res.status})`);
+      }
+      if (Array.isArray(data.data?.scores) && data.data.scores.length > 0) {
         const scores: ReviewScoreEntry[] = data.data.scores;
         const consensus = data.data.consensusScore || cigar.criticRating;
         const consensusQuote = data.data.consensusQuote || cigar.criticConsensus;
@@ -494,10 +502,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
             : `No live sources found for "${cigar.brand} ${cigar.line}" — showing unverified reference estimate (Consensus ${consensus}/100)`
         );
       } else {
-        showFeedback(`Review score scan complete for "${cigar.brand} ${cigar.line}".`);
+        showFeedback(`No review scores were found for "${cigar.brand} ${cigar.line}".`);
       }
     } catch (err: any) {
-      showFeedback(`Review score scan complete.`);
+      showFeedback(cleanErrorMessage(err?.message || err, 'Review score scan failed.'));
     } finally {
       setScanningReviewCigarId(null);
     }
@@ -521,7 +529,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         }),
       });
       const data = await res.json();
-      if (res.ok && data.success && data.data?.results) {
+      if (!res.ok || !data?.success || !Array.isArray(data.data?.results)) {
+        throw new Error(data?.error || data?.message || `Review score batch scan failed (${res.status})`);
+      }
+      if (data.data.results) {
         let updatedCount = 0;
         data.data.results.forEach((r: any) => {
           const cigar = researchDatabase.find((c) => c.id === r.id);
@@ -546,7 +557,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         );
       }
     } catch (err: any) {
-      showFeedback('Review score batch scan complete.');
+      showFeedback(cleanErrorMessage(err?.message || err, 'Review score batch scan failed.'));
     } finally {
       setIsBatchScanningReviews(false);
     }
@@ -573,6 +584,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   // AI Dossier Site-Wide Missing Field Sync State
   const [isSyncingMissingFields, setIsSyncingMissingFields] = useState(false);
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
+  const retailerBatchRequestRef = useRef(0);
 
   // Missing fields statistics across Research Hub, Humidor, and Wishlist
   const missingSpecsStats = useMemo(() => {
@@ -778,7 +790,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     }
   };
 
-  // UK Retailer Live Price Scanner (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff of London)
+  // UK Retailer Live Price Scanner. The server only returns quotes backed by a live source URL.
   const handleScanRetailerPricesForCigar = async (cigar: CigarResearchItem) => {
     setScanningPriceCigarId(cigar.id);
     try {
@@ -794,8 +806,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         }),
       });
       const data = await res.json();
-      if (res.ok && data.success && data.data?.retailerQuotes) {
-        const quotes: VendorPriceEntry[] = data.data.retailerQuotes.map((q: any) => ({
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || data?.message || `Retailer scan failed (${res.status})`);
+      }
+      if (Array.isArray(data.data?.retailerQuotes) && data.data.retailerQuotes.length > 0) {
+        const quotes: VendorPriceEntry[] = data.data.retailerQuotes
+          .filter((q: any) => q && Number.isFinite(Number(q.price)) && Number(q.price) > 0)
+          .map((q: any) => ({
           id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           vendor: canonicalizeVendorName(q.vendor),
           price: q.price,
@@ -803,7 +820,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           packageType: 'Single' as const,
           inStock: q.inStock ?? true,
           recordedAt: new Date().toISOString(),
-        }));
+          url: typeof q.url === 'string' ? q.url : undefined,
+          }));
 
         let updatedCigar = { ...cigar };
         for (const q of quotes) {
@@ -837,18 +855,19 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           });
         }
 
-        showFeedback(`Scanned UK Retailers (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff): Best price £${data.data.bestPrice.toFixed(2)} at ${data.data.bestVendor}!`);
+        showFeedback(`Scanned UK retailers across ${quotes.length} verified shop quote${quotes.length === 1 ? '' : 's'}.`);
       } else {
-        showFeedback(`UK market price scan complete for "${cigar.brand} ${cigar.line}".`);
+        showFeedback(`No confirmed UK retailer quote was found for "${cigar.brand} ${cigar.line}".`);
       }
     } catch (err: any) {
-      showFeedback(`Scan complete using UK market price intelligence.`);
+      showFeedback(cleanErrorMessage(err?.message || err, 'UK retailer price scan failed.'));
     } finally {
       setScanningPriceCigarId(null);
     }
   };
 
   const handleBatchScanAllRetailers = async () => {
+    const requestId = ++retailerBatchRequestRef.current;
     setIsBatchScanningPrices(true);
     try {
       const res = await fetch('/api/research/batch-retailer-prices', {
@@ -866,11 +885,16 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         }),
       });
       const data = await res.json();
-      if (res.ok && data.success && data.data?.results) {
+      if (!res.ok || !data?.success || !Array.isArray(data.data?.results)) {
+        throw new Error(data?.error || data?.message || `Batch retailer scan failed (${res.status})`);
+      }
+      if (requestId !== retailerBatchRequestRef.current) return;
+      if (data.data.results) {
         let updatedCount = 0;
+        const batchUpdates: Array<{ id: string; changes: Partial<CigarResearchItem> }> = [];
         data.data.results.forEach((r: any) => {
           const cigar = researchDatabase.find((c) => c.id === r.id);
-          if (cigar && r.quotes) {
+          if (cigar && Array.isArray(r.quotes) && r.quotes.length > 0) {
             const quotes: VendorPriceEntry[] = r.quotes.map((q: any) => ({
               id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
               vendor: canonicalizeVendorName(q.vendor),
@@ -879,6 +903,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               packageType: 'Single' as const,
               inStock: q.inStock ?? true,
               recordedAt: new Date().toISOString(),
+              url: typeof q.url === 'string' ? q.url : undefined,
             }));
 
             let updatedCigar = { ...cigar };
@@ -886,12 +911,12 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               updatedCigar = mergeVendorPriceIntoCigar(updatedCigar, q);
             }
 
-            onUpdateResearchCigar(cigar.id, {
+            batchUpdates.push({ id: cigar.id, changes: {
               vendorPrices: updatedCigar.vendorPrices,
               averagePrice: updatedCigar.averagePrice,
               priceRange: updatedCigar.priceRange,
               userUpdatedAt: new Date().toISOString(),
-            });
+            } });
 
             // Reflect into matching wishlist items
             if (wishlist && onUpdateWishlistItem && updatedCigar.vendorPrices && updatedCigar.vendorPrices.length > 0) {
@@ -915,16 +940,66 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
             updatedCount++;
           }
         });
+        if (onBatchUpdateResearchCigars) onBatchUpdateResearchCigars(batchUpdates);
+        else batchUpdates.forEach((entry) => onUpdateResearchCigar(entry.id, entry.changes));
         const groundedCount = data.data.groundedCount ?? 0;
+        const scannedCount = data.data.scannedCount ?? data.data.results.length;
         showFeedback(
-          `Updated UK retailer prices for ${updatedCount} cigars — ${groundedCount} verified via live search, ` +
-            `${updatedCount - groundedCount} from unverified reference data.`
+          `Updated verified UK retailer prices for ${updatedCount} cigars — ${groundedCount} had live search results. ` +
+            `${Math.max(0, scannedCount - updatedCount)} had no confirmed retailer page and were left unchanged.`
         );
       }
     } catch (err: any) {
-      showFeedback('UK multi-shop batch scan complete.');
+      showFeedback(cleanErrorMessage(err?.message || err, 'UK retailer batch scan failed.'));
     } finally {
-      setIsBatchScanningPrices(false);
+      if (requestId === retailerBatchRequestRef.current) setIsBatchScanningPrices(false);
+    }
+  };
+
+  const handleBatchScanUkSpecs = async () => {
+    setIsBatchScanningSpecs(true);
+    try {
+      const res = await fetch('/api/research/batch-uk-specs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cigars: researchDatabase.slice(0, 25).map((c) => ({ id: c.id, brand: c.brand, name: c.line, vitola: c.vitola })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.data?.results) throw new Error(data.error || 'UK specification scan failed.');
+      let updatedCount = 0;
+      data.data.results.forEach((result: any) => {
+        const cigar = researchDatabase.find((item) => item.id === result.id);
+        const specs = result.specs || {};
+        if (!cigar || !result.grounded || (!specs.vitola && specs.lengthInches == null && specs.ringGauge == null)) return;
+        const resolved = resolveVitolaDetails({
+          vitola: specs.vitola || cigar.vitola,
+          lengthInches: specs.lengthInches ?? cigar.lengthInches,
+          ringGauge: specs.ringGauge ?? cigar.ringGauge,
+        });
+        const smokeTime = estimateAccurateSmokeTime({
+          brand: cigar.brand,
+          name: cigar.line,
+          vitola: resolved.vitola,
+          lengthInches: resolved.lengthInches,
+          ringGauge: resolved.ringGauge,
+        });
+        onUpdateResearchCigar(cigar.id, {
+          vitola: resolved.vitola,
+          lengthInches: resolved.lengthInches,
+          ringGauge: resolved.ringGauge,
+          smokeTimeMinutes: smokeTime.minutes,
+          smokeTimeRange: smokeTime.range,
+          userUpdatedAt: new Date().toISOString(),
+        });
+        updatedCount++;
+      });
+      showFeedback(`UK size scan updated ${updatedCount} cigar${updatedCount === 1 ? '' : 's'} from confirmed retailer pages; ${(data.data.scannedCount || 0) - updatedCount} had no confirmed specification page.`);
+    } catch (err: any) {
+      showFeedback(cleanErrorMessage(err, 'UK specification scan failed.'));
+    } finally {
+      setIsBatchScanningSpecs(false);
     }
   };
 
@@ -1275,14 +1350,25 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     if (!newBrand.trim() || !newLine.trim()) return;
 
     const suggestedDims = suggestVitolaDimensions(newVitola.trim());
+    const customLength = suggestedDims?.lengthInches ?? 5.5;
+    const customGauge = suggestedDims?.ringGauge ?? 52;
+    const customSmokeTime = estimateAccurateSmokeTime({
+      brand: newBrand.trim(),
+      name: newLine.trim(),
+      vitola: newVitola.trim(),
+      lengthInches: customLength,
+      ringGauge: customGauge,
+    });
 
     const newCigar: CigarResearchItem = {
       id: generateId('custom-res'),
       brand: newBrand.trim(),
       line: newLine.trim(),
       vitola: newVitola.trim(),
-      lengthInches: suggestedDims?.lengthInches ?? 5.5,
-      ringGauge: suggestedDims?.ringGauge ?? 52,
+      lengthInches: customLength,
+      ringGauge: customGauge,
+      smokeTimeMinutes: customSmokeTime.minutes,
+      smokeTimeRange: customSmokeTime.range,
       countryOrigin: newOrigin,
       wrapper: newWrapper,
       wrapperType: newWrapperType,
@@ -1768,7 +1854,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 🇩🇴 Dominican Legends ({researchDatabase.filter((c) => /dominican/i.test(c.countryOrigin)).length})
               </button>
 
-              {(selectedBrand !== 'ALL' || selectedVitola !== 'ALL' || selectedSmokeTime !== 'ALL' || selectedOrigin !== 'ALL' || selectedWrapperType !== 'ALL' || selectedStrength !== 'ALL' || selectedPriceFilter !== 'ALL' || searchTerm || quickFilter !== 'all') && (
+              {(selectedBrand !== 'ALL' || selectedVitola !== 'ALL' || selectedSmokeTime !== 'ALL' || selectedOrigin !== 'ALL' || selectedWrapperType !== 'ALL' || selectedStrength !== 'ALL' || selectedPriceFilter !== 'ALL' || searchTerm || quickFilter !== 'all' || sortBy !== 'criticRating') && (
                 <button
                   onClick={() => {
                     setSelectedBrand('ALL');
@@ -1780,6 +1866,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     setSelectedPriceFilter('ALL');
                     setSearchTerm('');
                     setQuickFilter('all');
+                    setSortBy('criticRating');
                   }}
                   className="text-[10px] px-2 py-0.5 text-red-400 hover:underline ml-auto cursor-pointer"
                 >
@@ -1990,8 +2077,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   setSelectedWrapperType('ALL');
                   setSelectedStrength('ALL');
                   setSelectedPriceFilter('ALL');
+                  setSelectedVitola('ALL');
+                  setSelectedSmokeTime('ALL');
                   setSearchTerm('');
                   setQuickFilter('all');
+                  setSortBy('criticRating');
                 }}
                 className="px-4 py-2 bg-surface hover:bg-card-hover text-gold border border-line rounded text-xs uppercase tracking-wider font-semibold transition cursor-pointer"
               >
@@ -2228,7 +2318,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                                 onClick={() => handleScanRetailerPricesForCigar(cigar)}
                                 disabled={scanningPriceCigarId === cigar.id}
                                 className="p-1.5 text-gold bg-surface hover:bg-card-hover border border-gold/40 hover:border-gold rounded cursor-pointer transition disabled:opacity-50"
-                                title="Scan UK Retailers (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff)"
+                                title="Scan live prices across the UK retailer network"
                               >
                                 {scanningPriceCigarId === cigar.id ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin text-gold" />
@@ -2991,7 +3081,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         onClick={() => handleScanRetailerPricesForCigar(cigar)}
                         disabled={scanningPriceCigarId === cigar.id}
                         className="px-2.5 py-1.5 bg-surface hover:bg-card-hover text-gold border border-gold/40 hover:border-gold text-[10px] font-semibold uppercase tracking-wider rounded transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                        title="Scan UK Retailers (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff)"
+                        title="Scan live prices across the UK retailer network"
                       >
                         {scanningPriceCigarId === cigar.id ? (
                           <>
@@ -3059,7 +3149,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   <strong>Wishlist:</strong> {wishlist.length} target sticks
                 </div>
                 <div className="text-[11px] text-text-muted">
-                  Multi-shop scanning across <strong>Cgars Ltd, Cuban Cigar Club, Havana House, Smoke King, and Davidoff of London</strong>. Auto-calculates accurate smoke duration badges (⏱️ 50–65 min) across every item.
+                  Multi-shop scanning across a broad network of UK tobacconists, with only live product-page prices added to your records. Auto-calculates accurate smoke duration badges (⏱️ 50–65 min) across every item.
                 </div>
                 {missingSpecsStats.totalMissing > 0 && (
                   <div className="flex items-center gap-2 pt-1 text-[10px] text-gold">
@@ -3094,7 +3184,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   onClick={handleBatchScanAllRetailers}
                   disabled={isBatchScanningPrices}
                   className="px-3 py-2 bg-surface hover:bg-card-hover text-gold border border-gold/50 hover:border-gold text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  title="Scan live British retailer prices across top 5 UK vendors"
+                  title="Scan live British retailer prices across the UK retailer network"
                 >
                   {isBatchScanningPrices ? (
                     <>
@@ -3106,6 +3196,18 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                       <Store className="w-3.5 h-3.5 text-gold" />
                       <span>🇬🇧 Scan UK Retailers</span>
                     </>
+                  )}
+                </button>
+                <button
+                  onClick={handleBatchScanUkSpecs}
+                  disabled={isBatchScanningSpecs || isBatchScanningPrices}
+                  className="px-3 py-2 bg-surface hover:bg-card-hover text-gold border border-gold/50 hover:border-gold text-[11px] font-semibold uppercase tracking-wider rounded-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Search C.Gars, JJ Fox and other UK retailer product pages, then overwrite verified vitola sizes and smoke times"
+                >
+                  {isBatchScanningSpecs ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Scanning Sizes...</span></>
+                  ) : (
+                    <><Ruler className="w-3.5 h-3.5 text-gold" /><span>🇬🇧 Scan Sizes & Smoke Times</span></>
                   )}
                 </button>
 
@@ -3481,12 +3583,28 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
-                    onClick={() =>
+                    onClick={() => {
+                      const dossierDims = resolveVitolaDetails({
+                        vitola: dossierResult.vitolaCommon,
+                        lengthInches: dossierResult.lengthInches ? parseFloat(dossierResult.lengthInches) : undefined,
+                        ringGauge: dossierResult.ringGauge ? parseInt(dossierResult.ringGauge, 10) : undefined,
+                      });
+                      const dossierSmoke = estimateAccurateSmokeTime({
+                        brand: dossierResult.brand,
+                        name: dossierResult.cigarName,
+                        vitola: dossierDims.vitola,
+                        lengthInches: dossierDims.lengthInches,
+                        ringGauge: dossierDims.ringGauge,
+                      });
                       onAddCigarFromResearch({
                         brand: dossierResult.brand,
                         name: dossierResult.cigarName,
                         line: dossierResult.line || dossierResult.cigarName,
-                        vitola: dossierResult.vitolaCommon || 'Robusto',
+                        vitola: dossierDims.vitola,
+                        lengthInches: dossierDims.lengthInches,
+                        ringGauge: dossierDims.ringGauge,
+                        smokeTimeMinutes: dossierSmoke.minutes,
+                        smokeTimeRange: dossierSmoke.range,
                         wrapper: dossierResult.wrapper,
                         binder: dossierResult.binder,
                         filler: dossierResult.filler,
@@ -3495,8 +3613,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                         notes: dossierResult.summary,
                         flavorTags: dossierResult.dominantFlavorTags,
                         targetRestMonths: parseInt(dossierResult.agingGuidance?.idealRestMonths || '6', 10) || 6,
-                      })
-                    }
+                      });
+                    }}
                     className="flex items-center gap-1.5 px-3.5 py-2 bg-gold hover:brightness-110 text-ink rounded font-bold uppercase tracking-wider text-[10px] shadow-sm transition cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -3522,13 +3640,29 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   {onAddCustomResearchCigar && (
                     <button
                       onClick={() => {
+                        const dossierDimensions = resolveVitolaDetails({
+                          vitola: dossierResult.vitolaCommon,
+                          lengthInches: dossierResult.lengthInches ? parseFloat(dossierResult.lengthInches) : undefined,
+                          ringGauge: dossierResult.ringGauge ? parseInt(dossierResult.ringGauge, 10) : undefined,
+                        });
+                        const dossierSmokeTime = estimateAccurateSmokeTime({
+                          vitola: dossierResult.vitolaCommon || 'Robusto',
+                          lengthInches: dossierDimensions.lengthInches,
+                          ringGauge: dossierDimensions.ringGauge,
+                          brand: dossierResult.brand,
+                          name: dossierResult.cigarName,
+                          customMinutes: dossierResult.smokeTimeMinutes,
+                          customRange: dossierResult.smokeTimeRange,
+                        });
                         const newResItem: CigarResearchItem = {
                           id: generateId('res-dos'),
                           brand: dossierResult.brand,
                           line: dossierResult.line || dossierResult.cigarName,
                           vitola: dossierResult.vitolaCommon || 'Robusto',
-                          lengthInches: dossierResult.lengthInches ? parseFloat(dossierResult.lengthInches) : 5.0,
-                          ringGauge: dossierResult.ringGauge ? parseInt(dossierResult.ringGauge, 10) : 50,
+                          lengthInches: dossierDimensions.lengthInches,
+                          ringGauge: dossierDimensions.ringGauge,
+                          smokeTimeMinutes: dossierSmokeTime.minutes,
+                          smokeTimeRange: dossierSmokeTime.range,
                           countryOrigin: dossierResult.countryOrigin,
                           wrapper: dossierResult.wrapper,
                           wrapperType: (dossierResult.wrapper?.includes('Maduro') ? 'Maduro' : dossierResult.wrapper?.includes('Connecticut') ? 'Connecticut Shade' : 'Habano') as any,

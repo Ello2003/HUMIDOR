@@ -1,6 +1,6 @@
 import { VersionHistoryEntry, AppSettings } from '../types';
 
-export const APP_VERSION = 'v2.13.3';
+export const APP_VERSION = 'v2.13.18';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   visibleTabs: {
@@ -97,6 +97,216 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 };
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
+  {
+    version: 'v2.13.18',
+    releaseDate: 'September 2026',
+    title: 'Hardened JSON-LD Product Parsing',
+    summary:
+      'Hardened structured product extraction for pretty-printed JSON-LD, array-form Product data, and multiple JSON-LD script blocks without relying on fragile newline splitting.',
+    type: 'patch',
+    highlights: [
+      'Pretty-Printed JSON-LD: Nested object formatting no longer breaks Product parsing.',
+      'Array Products: Product arrays and schema.org @graph entries are supported.',
+      'Multiple Scripts: Separate JSON-LD blocks are parsed independently using an explicit delimiter.',
+    ],
+  },
+  {
+    version: 'v2.13.17',
+    releaseDate: 'September 2026',
+    title: 'Reliable Retailer Product Extraction',
+    summary:
+      'Added a deterministic Product JSON-LD extraction path so UK retailer product pages, including Simply Cigars, import accurate vitola, dimensions, blend details, price, and smoking time without brittle pattern matching.',
+    type: 'patch',
+    highlights: [
+      'Simply Cigars: Product pages now import Oliva Serie O Cigarillo and similar products without the “string did not match the expected pattern” failure.',
+      'Structured Data: Retailer Product JSON-LD is preferred before generic AI or heuristic extraction.',
+      'Product Pages: Single product URLs submitted through the basket importer are returned as one correctly shaped basket item.',
+      'Accuracy: Extracted values retain source-backed price, currency, vitola, dimensions, blend, image, and smoking-time metadata.',
+    ],
+  },
+  {
+    version: 'v2.13.16',
+    releaseDate: 'September 2026',
+    title: 'Source-Backed Retailer Quotes',
+    summary:
+      'Hardened grounded retailer pricing so quotes are retained only when they can be attributed to an approved retailer product domain, with bounded package metadata and preserved source URLs.',
+    type: 'patch',
+    highlights: [
+      'Source Attribution: Quotes without a matching approved retailer domain are discarded instead of being treated as verified.',
+      'URL Safety: Only HTTPS retailer URLs without credentials, localhost, or raw IP hosts can be attached to quotes.',
+      'Retailer Aliases: Common names such as JJ Fox, C.Gars, and Sautter are mapped consistently.',
+      'Package Metadata: Box prices and counts are range-checked before they are returned to the client.',
+      'Traceability: Research Hub quote merges now preserve the verified product-page URL.',
+    ],
+  },
+  {
+    version: 'v2.13.15',
+    releaseDate: 'September 2026',
+    title: 'Bounded Scan Requests',
+    summary:
+      'Added server-side validation and resource limits for retailer, UK specification, and review-score scan endpoints before external search calls are started.',
+    type: 'patch',
+    highlights: [
+      'Input Validation: Scan requests now require bounded brand, name, and batch identifiers.',
+      'Batch Limits: Oversized batches are rejected clearly instead of being silently truncated.',
+      'Retailer Limits: Retailer arrays are validated and capped before being included in grounded search prompts.',
+      'Consistent Shapes: UK specification, retailer price, and review-score routes now share the same request validation rules.',
+    ],
+  },
+  {
+    version: 'v2.13.14',
+    releaseDate: 'September 2026',
+    title: 'Truthful Scan Status',
+    summary:
+      'Hardened retailer and review-score scan response validation and removed misleading success messages when network requests fail or return no usable results.',
+    type: 'patch',
+    highlights: [
+      'Response Validation: Retailer and review endpoints must return a successful, correctly shaped payload before updates are applied.',
+      'Invalid Quote Filtering: Non-numeric or non-positive retailer prices are discarded before merging.',
+      'Truthful Feedback: Failed scans now report failure details instead of claiming that a scan completed.',
+      'Empty Results: Successful searches with no confirmed matches are clearly distinguished from failed requests.',
+      'Stale Batch Safety: Older batch responses cannot mutate Wishlist data or clear a newer scan’s loading state.',
+    ],
+  },
+  {
+    version: 'v2.13.13',
+    releaseDate: 'September 2026',
+    title: 'Trusted Price Comparisons',
+    summary:
+      'Improved retailer price selection by normalizing currency aliases, understanding package quantities, and preventing raw numeric comparisons from mixing incompatible quotes.',
+    type: 'patch',
+    highlights: [
+      'Currency Safety: GBP, USD, and EUR aliases are normalized before comparison.',
+      'Package Awareness: Box and pack quotes expose per-stick pricing context instead of being compared only by headline totals.',
+      'Wishlist Filters: Best-shop counts, scans, imports, and quick quotes now use comparable quote selection.',
+      'Research Aggregation: Average and lowest-price calculations avoid silently combining foreign-currency quotes.',
+    ],
+  },
+  {
+    version: 'v2.13.12',
+    releaseDate: 'September 2026',
+    title: 'Versioned Vault Persistence',
+    summary:
+      'Moved collection storage to versioned envelopes with validation, preserved intentionally empty collections, retained recovery snapshots, and added a visible save-failure warning.',
+    type: 'patch',
+    highlights: [
+      'Versioned Storage: Collection and settings writes now include a schema version and timestamp.',
+      'Empty-State Preservation: An intentionally empty inventory, wishlist, journal, humidor list, or research library is no longer replaced by seed data on reload.',
+      'Recovery Snapshot: The previous raw value is retained as a one-step local recovery snapshot before migration writes.',
+      'Validation: Stored collection entries must contain stable IDs before they are accepted into application state.',
+      'Visible Failure State: The app warns users when browser storage quota or access restrictions prevent saving.',
+    ],
+  },
+  {
+    version: 'v2.13.11',
+    releaseDate: 'September 2026',
+    title: 'Cross-Record Data Integrity',
+    summary:
+      'Prevented automatic cross-vitola mutations, reassigned stock before humidor deletion, and made batch retailer updates atomic and stale-response safe.',
+    type: 'patch',
+    highlights: [
+      'Safer Matching: Records with different explicit vitolas can no longer be treated as the same physical cigar by automatic synchronization.',
+      'Humidor Integrity: Stock is reassigned to a remaining humidor before the original container is deleted.',
+      'Atomic Batch Updates: Retailer price results are collected and committed as one research-database state update.',
+      'Stale Scan Protection: A previous batch response cannot overwrite results after a newer scan begins.',
+    ],
+  },
+  {
+    version: 'v2.13.10',
+    releaseDate: 'September 2026',
+    title: 'Import Security & Form Lifecycle',
+    summary:
+      'Hardened URL imports against DNS-resolved private addresses and redirects, added API request limits, capped fetched payloads, and reset modal drafts between targets.',
+    type: 'patch',
+    highlights: [
+      'SSRF Hardening: URL imports now resolve hostnames, reject private IPv4 and IPv6 destinations, reject credentials and unusual ports, and disable automatic redirects.',
+      'API Protection: JSON request bodies are capped at 10 MB and API traffic is rate-limited per client window.',
+      'Fetch Protection: Direct retailer pages are capped at 2 MB and redirect responses are not followed automatically.',
+      'Fresh Forms: Add Cigar, Log Smoke, and Humidor forms remount for each open and target, preventing stale drafts from carrying across records.',
+    ],
+  },
+  {
+    version: 'v2.13.9',
+    releaseDate: 'September 2026',
+    title: 'Data Safety & Scanner Reliability',
+    summary:
+      'Hardened backup routing, made wishlist acquisition non-destructive until save, repaired Wishlist retailer quote parsing, and connected journal inline edits to persisted state.',
+    type: 'patch',
+    highlights: [
+      'Typed Backups: Research-library and full-vault JSON exports now carry explicit payload kinds, preventing research records from being restored as inventory.',
+      'Safe Acquisition: Wishlist entries remain available when the Add Cigar modal is cancelled or fails; basket acquisition no longer clears the basket prematurely.',
+      'Working Wishlist Scans: Single and batch retailer scanners now consume the server’s nested verified quote response contract.',
+      'Journal Persistence: Inline journal edits now update the App-owned smoke-log collection.',
+    ],
+  },
+  {
+    version: 'v2.13.8',
+    releaseDate: 'September 2026',
+    title: 'Filter Reset & Empty-State UX Cleanup',
+    summary:
+      'Aligned filter reset actions across Inventory and Research so empty states clear every active filter and sort setting instead of leaving hidden criteria in place.',
+    type: 'patch',
+    highlights: [
+      'Inventory Empty States: Reset now clears vault, search, brand, wrapper, vitola, smoke duration, strength, origin, status, and sort settings together.',
+      'Research Empty States: Clear All Filters now also clears vitola, smoke-time, and sort criteria.',
+      'Consistent Reset Visibility: Research reset controls now appear when a non-default sort order is active.',
+    ],
+  },
+  {
+    version: 'v2.13.7',
+    releaseDate: 'September 2026',
+    title: 'Deep Runtime & Import Integrity Audit',
+    summary:
+      'Fixed deployment-sensitive UK batch scanning, stale asynchronous import statistics, and missing size/smoke-time propagation from research actions into the Humidor.',
+    type: 'patch',
+    highlights: [
+      'Deployment-Safe Batch Specs: Removed the hard-coded localhost self-request from the UK specification batch scanner and reused the server-side lookup directly.',
+      'Accurate Import Feedback: Research import and deduplication actions now report their actual merge counts instead of returning zero before React state updates complete.',
+      'Research-to-Humidor Integrity: Dossier and custom research actions now preserve calculated dimensions and smoke-time fields when opening Humidor entry forms.',
+    ],
+  },
+  {
+    version: 'v2.13.6',
+    releaseDate: 'September 2026',
+    title: 'UK Retailer Size & Smoke-Time Scanner',
+    summary:
+      'Added a dedicated Research Hub action that checks C.Gars, JJ Fox, and other UK retailer product pages, then overwrites cigar vitola dimensions and recalculates smoke times from confirmed specifications.',
+    type: 'patch',
+    highlights: [
+      'Dedicated Scan Button: Added “Scan Sizes & Smoke Times” to the Research Hub toolbar for up to 25 research cigars.',
+      'UK Product-Page Search: Searches C.Gars, James J. Fox, Havana House, Smoke King, Sautter, Turmeaus, and Davidoff product pages.',
+      'Verified Overwrite: Only grounded results with explicit product-page specifications update vitola, length, and ring gauge.',
+      'Automatic Recalculation: Every confirmed size update recalculates the cigar’s smoke-time minutes and range.',
+    ],
+  },
+  {
+    version: 'v2.13.5',
+    releaseDate: 'September 2026',
+    title: 'Accurate Cigar Lookup & Import Enrichment',
+    summary:
+      'Improved cigar lookup and basket importing so named vitolas fill reliable dimensions and automatically receive identity-aware smoke-time estimates without overwriting valid manufacturer or retailer specifications.',
+    type: 'patch',
+    highlights: [
+      'Vitola-Aware Dimensions: Missing length and ring gauge values now resolve from standard vitola measurements, including spelling variants such as Pyramide/Piramide.',
+      'Safe Preservation: Valid extracted product dimensions are retained instead of being replaced by generic 5.0 x 50 defaults.',
+      'Automatic Smoke Times: Research, Humidor, Wishlist, and dossier imports now calculate smoke duration from the resolved vitola, dimensions, brand, and cigar name.',
+      'Regression Coverage: Added tests for aliases, standard dimension backfilling, explicit dimension preservation, and long-format smoke estimates.',
+    ],
+  },
+  {
+    version: 'v2.13.4',
+    releaseDate: 'September 2026',
+    title: 'Verified UK Retailer Price Scanning',
+    summary:
+      'Fixed UK price scans returning fabricated fallback prices and expanded live retailer search guidance across a broader UK tobacconist network.',
+    type: 'patch',
+    highlights: [
+      'No False Quotes: Failed or empty live searches now return no-result status instead of random, unverified in-stock prices.',
+      'Broader UK Coverage: Added Aston\'s of Manchester, Arthur Fletcher, James Barber, Gauntleys, Fox Cigar, Robert Graham, GQ Tobaccos, Turmeaus, JJ Fox, and other UK sellers to the scan catalogue.',
+      'Domain-Aware Search: Live prompts now include each retailer\'s domain and require exact product-page evidence, GBP pricing, stock status, and source URLs.',
+      'Honest Batch Updates: Items without confirmed retailer pages remain unchanged and are reported separately from verified updates.',
+    ],
+  },
   {
     version: 'v2.13.3',
     releaseDate: 'August 2026',

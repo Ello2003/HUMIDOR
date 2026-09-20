@@ -48,105 +48,48 @@ import {
 import { deduplicateHumidorCigars, syncGlobalCigarPrice } from './utils/humidorUtils';
 import { generateId } from './utils/idUtils';
 import { DEFAULT_APP_SETTINGS, APP_VERSION } from './data/versionHistory';
+import { isRecord, readStoredArray, readStoredValue, writeStoredValue } from './utils/storageUtils';
 
 export function App() {
   // App-wide Customization Settings State with LocalStorage persistence
+  const [storageWarning, setStorageWarning] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(() => {
-    try {
-      const saved = localStorage.getItem('cedar_ash_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          ...DEFAULT_APP_SETTINGS,
-          ...parsed,
-          visibleTabs: { ...DEFAULT_APP_SETTINGS.visibleTabs, ...(parsed.visibleTabs || {}) },
-          dashboardSections: { ...DEFAULT_APP_SETTINGS.dashboardSections, ...(parsed.dashboardSections || {}) },
-          cigarFieldVisibility: { ...DEFAULT_APP_SETTINGS.cigarFieldVisibility, ...(parsed.cigarFieldVisibility || {}) },
-          wishlistFieldVisibility: { ...DEFAULT_APP_SETTINGS.wishlistFieldVisibility, ...(parsed.wishlistFieldVisibility || {}) },
-          humidorFieldVisibility: { ...DEFAULT_APP_SETTINGS.humidorFieldVisibility, ...(parsed.humidorFieldVisibility || {}) },
-          journalFieldVisibility: { ...DEFAULT_APP_SETTINGS.journalFieldVisibility, ...(parsed.journalFieldVisibility || {}) },
-        };
-      }
-    } catch (e) {
-      console.warn('Failed to parse saved settings, using defaults:', e);
-    }
-    return DEFAULT_APP_SETTINGS;
+    const parsed = readStoredValue('cedar_ash_settings', DEFAULT_APP_SETTINGS);
+    return {
+      ...DEFAULT_APP_SETTINGS,
+      ...parsed,
+      visibleTabs: { ...DEFAULT_APP_SETTINGS.visibleTabs, ...(parsed.visibleTabs || {}) },
+      dashboardSections: { ...DEFAULT_APP_SETTINGS.dashboardSections, ...(parsed.dashboardSections || {}) },
+      cigarFieldVisibility: { ...DEFAULT_APP_SETTINGS.cigarFieldVisibility, ...(parsed.cigarFieldVisibility || {}) },
+      wishlistFieldVisibility: { ...DEFAULT_APP_SETTINGS.wishlistFieldVisibility, ...(parsed.wishlistFieldVisibility || {}) },
+      humidorFieldVisibility: { ...DEFAULT_APP_SETTINGS.humidorFieldVisibility, ...(parsed.humidorFieldVisibility || {}) },
+      journalFieldVisibility: { ...DEFAULT_APP_SETTINGS.journalFieldVisibility, ...(parsed.journalFieldVisibility || {}) },
+    };
   });
 
-  // Primary state with localStorage persistence and resilient error handling
-  const [cigars, setCigars] = useState<Cigar[]>(() => {
-    try {
-      const saved = localStorage.getItem('cedar_ash_cigars');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {
-      console.warn('Failed to parse saved cigars from storage, using defaults:', e);
-    }
-    return initialCigars;
-  });
-
-  const [humidors, setHumidors] = useState<Humidor[]>(() => {
-    try {
-      const saved = localStorage.getItem('cedar_ash_humidors');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.warn('Failed to parse saved humidors from storage, using defaults:', e);
-    }
-    return initialHumidors;
-  });
-
-  const [smokeLogs, setSmokeLogs] = useState<SmokeLog[]>(() => {
-    try {
-      const saved = localStorage.getItem('cedar_ash_smokelogs');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {
-      console.warn('Failed to parse saved smoke logs from storage, using defaults:', e);
-    }
-    return initialSmokeLogs;
-  });
-
-  const [wishlist, setWishlist] = useState<WishlistItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('cedar_ash_wishlist');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {
-      console.warn('Failed to parse saved wishlist from storage, using defaults:', e);
-    }
-    return initialWishlist;
-  });
+  // Primary state with versioned localStorage persistence. Empty arrays are valid saved state.
+  const [cigars, setCigars] = useState<Cigar[]>(() =>
+    readStoredArray('cedar_ash_cigars', initialCigars, (value) => isRecord(value) && typeof value.id === 'string')
+  );
+  const [humidors, setHumidors] = useState<Humidor[]>(() =>
+    readStoredArray('cedar_ash_humidors', initialHumidors, (value) => isRecord(value) && typeof value.id === 'string')
+  );
+  const [smokeLogs, setSmokeLogs] = useState<SmokeLog[]>(() =>
+    readStoredArray('cedar_ash_smokelogs', initialSmokeLogs, (value) => isRecord(value) && typeof value.id === 'string')
+  );
+  const [wishlist, setWishlist] = useState<WishlistItem[]>(() =>
+    readStoredArray('cedar_ash_wishlist', initialWishlist, (value) => isRecord(value) && typeof value.id === 'string')
+  );
 
   // Local Searchable Cigar Research Database
-  const [researchDatabase, setResearchDatabase] = useState<CigarResearchItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('cedar_ash_research_db');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.warn('Failed to parse saved research db, using defaults:', e);
-    }
-    return INITIAL_RESEARCH_DATABASE;
-  });
+  const [researchDatabase, setResearchDatabase] = useState<CigarResearchItem[]>(() =>
+    readStoredArray('cedar_ash_research_db', INITIAL_RESEARCH_DATABASE, (value) => isRecord(value) && typeof value.id === 'string')
+  );
 
-  // Safe localStorage helper to prevent crashing in sandboxed iframes or quota exhaustion
+  // Writes are wrapped in a version envelope and keep one recovery snapshot.
   const safeSetItem = (key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (e) {
-      console.warn(`[The Humidor] Storage quota or access limitation for ${key}:`, e);
-    }
+    const saved = writeStoredValue(key, JSON.parse(value));
+    if (!saved) setStorageWarning(true);
   };
 
   // Sync to localStorage
@@ -214,6 +157,7 @@ export function App() {
   const [isAddCigarOpen, setIsAddCigarOpen] = useState(false);
   const [cigarToEdit, setCigarToEdit] = useState<Cigar | null>(null);
   const [prefilledCigarData, setPrefilledCigarData] = useState<Partial<Cigar> | null>(null);
+  const [pendingAcquisitionWishlistId, setPendingAcquisitionWishlistId] = useState<string | null>(null);
 
   const [isLogSmokeOpen, setIsLogSmokeOpen] = useState(false);
   const [selectedCigarForSmoke, setSelectedCigarForSmoke] = useState<Cigar | null>(null);
@@ -283,6 +227,10 @@ export function App() {
         const dedup = deduplicateHumidorCigars(combined, humidors);
         return dedup.cleanedCigars;
       });
+      if (pendingAcquisitionWishlistId) {
+        setWishlist((prev) => prev.filter((item) => item.id !== pendingAcquisitionWishlistId));
+        setPendingAcquisitionWishlistId(null);
+      }
     }
 
     // If vendor and price provided, sync quote site-wide across Research and Wishlist
@@ -501,6 +449,12 @@ export function App() {
     setSmokeLogs((prev) => prev.filter((l) => l.id !== logId));
   };
 
+  const handleUpdateSmokeLogDirectly = (logId: string, updates: Partial<SmokeLog>) => {
+    setSmokeLogs((prev) =>
+      prev.map((log) => (log.id === logId ? { ...log, ...updates } : log))
+    );
+  };
+
   // Handlers: Humidors
   const handleSaveHumidor = (hData: Omit<Humidor, 'id' | 'createdAt'>, idToEdit?: string) => {
     if (idToEdit) {
@@ -518,6 +472,11 @@ export function App() {
   };
 
   const handleDeleteHumidor = (id: string) => {
+    const fallbackHumidorId = humidors.find((h) => h.id !== id)?.id;
+    if (!fallbackHumidorId) return;
+    setCigars((prev) =>
+      prev.map((cigar) => (cigar.humidorId === id ? { ...cigar, humidorId: fallbackHumidorId, updatedAt: new Date().toISOString() } : cigar))
+    );
     setHumidors((prev) => prev.filter((h) => h.id !== id));
   };
 
@@ -620,9 +579,8 @@ export function App() {
       quantity: 1,
     });
     setCigarToEdit(null);
+    setPendingAcquisitionWishlistId(item.id);
     setIsAddCigarOpen(true);
-    // Remove from wishlist
-    handleDeleteWishlistItem(item.id);
   };
 
   // Global Multi-Tab Cigar Synchronization: In-line rename & attributes propagation
@@ -685,6 +643,19 @@ export function App() {
     );
   };
 
+  const handleBatchUpdateResearchCigars = (
+    updates: Array<{ id: string; changes: Partial<CigarResearchItem> }>
+  ) => {
+    if (updates.length === 0) return;
+    const changesById = new Map(updates.map((entry) => [entry.id, entry.changes]));
+    setResearchDatabase((prev) =>
+      prev.map((item) => {
+        const changes = changesById.get(item.id);
+        return changes ? { ...item, ...changes } : item;
+      })
+    );
+  };
+
   const handleAddCustomResearchCigar = (newCigar: CigarResearchItem) => {
     setResearchDatabase((prev) => {
       const result = mergeResearchBatch([newCigar], prev);
@@ -710,10 +681,10 @@ export function App() {
   };
 
   const handleAddMultipleResearchCigars = (newCigars: CigarResearchItem[]): { addedCount: number; updatedPricesCount: number } => {
-    let stats = { addedCount: 0, updatedPricesCount: 0 };
+    const result = mergeResearchBatch(newCigars, researchDatabase);
+    const stats = { addedCount: result.addedCount, updatedPricesCount: result.updatedPricesCount };
     setResearchDatabase((prev) => {
-      const result = mergeResearchBatch(newCigars, prev);
-      stats = { addedCount: result.addedCount, updatedPricesCount: result.updatedPricesCount };
+      const latestResult = mergeResearchBatch(newCigars, prev);
 
       // Propagate any newly ingested vendor price quotes across matching Wishlist items
       setTimeout(() => {
@@ -725,7 +696,7 @@ export function App() {
                 nameOrLine: item.line,
                 vitola: item.vitola,
                 vendorPriceEntry: item.vendorPrices!,
-                researchDatabase: result.updatedDatabase,
+                researchDatabase: latestResult.updatedDatabase,
                 cigars: cigars,
                 wishlist: curW,
                 updateHumidorMatches: false,
@@ -736,7 +707,7 @@ export function App() {
         }
       }, 0);
 
-      return result.updatedDatabase;
+      return latestResult.updatedDatabase;
     });
     return stats;
   };
@@ -860,13 +831,9 @@ export function App() {
   };
 
   const handleDeduplicateResearchDatabase = (): { mergedCount: number } => {
-    let merged = 0;
-    setResearchDatabase((prev) => {
-      const result = deduplicateResearchDatabase(prev);
-      merged = result.mergedCount;
-      return result.cleanedDatabase;
-    });
-    return { mergedCount: merged };
+    const result = deduplicateResearchDatabase(researchDatabase);
+    setResearchDatabase((prev) => deduplicateResearchDatabase(prev).cleanedDatabase);
+    return { mergedCount: result.mergedCount };
   };
 
   // Handlers: Research jump
@@ -904,16 +871,24 @@ export function App() {
 
   // Vault import
   const handleImportVault = (data: {
+    kind?: 'full-vault' | 'research-library';
     cigars?: Cigar[];
     humidors?: Humidor[];
     smokeLogs?: SmokeLog[];
     wishlist?: WishlistItem[];
     researchDatabase?: CigarResearchItem[];
   }) => {
-    if (data.cigars) setCigars(data.cigars);
-    if (data.humidors) setHumidors(data.humidors);
-    if (data.smokeLogs) setSmokeLogs(data.smokeLogs);
-    if (data.wishlist) setWishlist(data.wishlist);
+    if (data.kind === 'research-library') {
+      if (Array.isArray(data.cigars)) setResearchDatabase(data.cigars as unknown as CigarResearchItem[]);
+      else if (Array.isArray(data.researchDatabase)) setResearchDatabase(data.researchDatabase);
+      return;
+    }
+    if (data.cigars && Array.isArray(data.cigars) && data.cigars.every((c) => c && typeof c.id === 'string' && typeof c.quantity === 'number' && typeof c.humidorId === 'string')) {
+      setCigars(data.cigars);
+    }
+    if (data.humidors && Array.isArray(data.humidors)) setHumidors(data.humidors);
+    if (data.smokeLogs && Array.isArray(data.smokeLogs)) setSmokeLogs(data.smokeLogs);
+    if (data.wishlist && Array.isArray(data.wishlist)) setWishlist(data.wishlist);
     if (data.researchDatabase) setResearchDatabase(data.researchDatabase);
   };
 
@@ -944,6 +919,15 @@ export function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenVersionHistory={() => setIsVersionHistoryOpen(true)}
       />
+
+      {storageWarning && (
+        <div className="mx-auto mt-3 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-red-800/80 bg-red-950/40 px-4 py-3 text-xs text-red-200">
+            <span>Your local vault could not be saved. Export a backup before continuing.</span>
+            <button type="button" onClick={() => setStorageWarning(false)} className="text-red-300 underline hover:text-white">Dismiss</button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -1024,6 +1008,7 @@ export function App() {
               setIsLogSmokeOpen(true);
             }}
             onDeleteLog={handleDeleteSmokeLog}
+            onUpdateLogDirectly={handleUpdateSmokeLogDirectly}
           />
         )}
 
@@ -1036,6 +1021,7 @@ export function App() {
             wishlist={wishlist}
             settings={settings}
             onUpdateResearchCigar={handleUpdateResearchCigar}
+            onBatchUpdateResearchCigars={handleBatchUpdateResearchCigars}
             onAddCustomResearchCigar={handleAddCustomResearchCigar}
             onDeleteResearchCigar={handleDeleteResearchCigar}
             onDeduplicateResearchDatabase={handleDeduplicateResearchDatabase}
@@ -1105,11 +1091,13 @@ export function App() {
 
       {/* Modals & Drawers */}
       <AddCigarModal
+        key={`cigar-${isAddCigarOpen ? 'open' : 'closed'}-${cigarToEdit?.id || 'new'}-${prefilledCigarData?.brand || ''}-${prefilledCigarData?.name || ''}`}
         isOpen={isAddCigarOpen}
         onClose={() => {
           setIsAddCigarOpen(false);
           setCigarToEdit(null);
           setPrefilledCigarData(null);
+          setPendingAcquisitionWishlistId(null);
         }}
         onSave={handleSaveCigar}
         humidors={humidors}
@@ -1167,6 +1155,7 @@ export function App() {
       )}
 
       <LogSmokeModal
+        key={`smoke-${isLogSmokeOpen ? 'open' : 'closed'}-${logToEdit?.id || selectedCigarForSmoke?.id || 'new'}`}
         isOpen={isLogSmokeOpen}
         onClose={() => {
           setIsLogSmokeOpen(false);
@@ -1198,6 +1187,7 @@ export function App() {
       />
 
       <HumidorManagerModal
+        key={`humidor-${isAddHumidorOpen ? 'open' : 'closed'}-${humidorToEdit?.id || 'new'}`}
         isOpen={isAddHumidorOpen}
         onClose={() => {
           setIsAddHumidorOpen(false);

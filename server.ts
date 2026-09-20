@@ -3,15 +3,25 @@ import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+import { validateGroundedQuotes } from "./src/utils/groundedQuoteUtils";
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const apiRequestWindows = new Map<string, { startedAt: number; count: number }>();
+const API_REQUEST_LIMIT = 60;
+const API_WINDOW_MS = 60_000;
 
 // Enable CORS and security headers for iframe compatibility and cross-origin scripts
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const allowedOrigin = process.env.ALLOWED_ORIGIN;
+  if (allowedOrigin && req.headers.origin === allowedOrigin) {
+    res.header("Access-Control-Allow-Origin", allowedOrigin);
+    res.header("Vary", "Origin");
+  }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   if (req.method === "OPTIONS") {
@@ -20,7 +30,65 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: "25mb" }));
+app.use(express.json({ limit: "10mb" }));
+app.use("/api", (req, res, next) => {
+  if (req.path === "/health") return next();
+  const key = req.ip || req.socket.remoteAddress || "unknown";
+  const now = Date.now();
+  const window = apiRequestWindows.get(key);
+  if (!window || now - window.startedAt >= API_WINDOW_MS) {
+    apiRequestWindows.set(key, { startedAt: now, count: 1 });
+    return next();
+  }
+  window.count += 1;
+  if (window.count > API_REQUEST_LIMIT) {
+    return res.status(429).json({ error: "Too many requests. Please try again shortly." });
+  }
+  return next();
+});
+
+const MAX_SCAN_BATCH = 25;
+const MAX_SCAN_TEXT = 160;
+const MAX_RETAILERS = 30;
+
+function boundedText(value: unknown, maxLength = MAX_SCAN_TEXT): string {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function validateScanCigar(value: any, requireId = false): { ok: true; cigar: any } | { ok: false; error: string } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { ok: false, error: "Each cigar must be an object." };
+  }
+  const brand = boundedText(value.brand);
+  const name = boundedText(value.name || value.line);
+  const id = boundedText(value.id, 100);
+  if (!brand || !name) return { ok: false, error: "Each cigar requires a brand and name." };
+  if (requireId && !id) return { ok: false, error: "Each batch cigar requires an id." };
+  return {
+    ok: true,
+    cigar: {
+      ...value,
+      id: id || undefined,
+      brand,
+      name,
+      line: name,
+      vitola: boundedText(value.vitola),
+      countryOrigin: boundedText(value.countryOrigin),
+      wrapper: boundedText(value.wrapper),
+    },
+  };
+}
+
+function validatedRetailers(value: unknown, fallback: string[]): string[] | null {
+  if (value === undefined) return fallback;
+  if (!Array.isArray(value)) return null;
+  const retailers = value
+    .filter((retailer): retailer is string => typeof retailer === "string")
+    .map((retailer) => boundedText(retailer, 100))
+    .filter(Boolean)
+    .slice(0, MAX_RETAILERS);
+  return retailers.length > 0 ? retailers : fallback;
+}
 
 // Server-side Gemini API client initialization
 let genAiClient: GoogleGenAI | null = null;
@@ -196,7 +264,7 @@ app.get("/api/health", (_req, res) => {
  * (including the cloud metadata IP) are rejected so a pasted URL can't be
  * used to make this server probe internal services on its network.
  */
-function isSafePublicUrl(rawUrl: string): boolean {
+async function isSafePublicUrl(rawUrl: string): Promise<boolean> {
   let parsed: URL;
   try {
     parsed = new URL(rawUrl);
@@ -205,20 +273,22 @@ function isSafePublicUrl(rawUrl: string): boolean {
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
 
-  const host = parsed.hostname.toLowerCase();
+  if (parsed.username || parsed.password || parsed.port && !["80", "443"].includes(parsed.port)) return false;
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".localhost")) return false;
   if (host === "169.254.169.254") return false; // cloud metadata endpoint
 
-  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (ipv4) {
-    const [a, b] = [parseInt(ipv4[1], 10), parseInt(ipv4[2], 10)];
-    if (a === 127 || a === 10 || a === 0) return false;
-    if (a === 169 && b === 254) return false;
-    if (a === 172 && b >= 16 && b <= 31) return false;
-    if (a === 192 && b === 168) return false;
+  const addresses = isIP(host) ? [{ address: host }] : await lookup(host, { all: true, verbatim: true }).catch(() => []);
+  if (addresses.length === 0) return false;
+  for (const entry of addresses) {
+    const address = entry.address.replace(/^\[|\]$/g, "");
+    if (isIP(address) === 6) return false;
+    const ipv4 = address.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!ipv4) return false;
+    const [a, b, c, d] = ipv4.slice(1).map(Number);
+    if ([a, b, c, d].some((part) => part < 0 || part > 255)) return false;
+    if (a === 127 || a === 10 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || (a === 198 && (b === 18 || b === 19)) || a >= 224) return false;
   }
-  if (host === "::1" || host === "[::1]") return false;
-
   return true;
 }
 
@@ -491,6 +561,133 @@ app.post("/api/research/quick-lookup", async (req, res) => {
   } catch (error: any) {
     console.error("Error in /api/research/quick-lookup:", error);
     return res.status(500).json({ error: error.message || "Lookup failed." });
+  }
+});
+
+const DEFAULT_UK_SPEC_RETAILERS = [
+  "C.Gars Ltd",
+  "James J. Fox (London)",
+  "Havana House",
+  "Smoke King",
+  "Sautter Cigars (London)",
+  "Turmeaus Tobacconist",
+  "Davidoff of London",
+];
+
+function validGroundedDimension(value: unknown, min: number, max: number): number | undefined {
+  const numberValue = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numberValue) && numberValue >= min && numberValue <= max ? numberValue : undefined;
+}
+
+function cleanGroundedCigarSpecs(parsed: any): {
+  vitola?: string;
+  lengthInches?: number;
+  ringGauge?: number;
+  sourceUrl?: string;
+} {
+  const lengthInches = validGroundedDimension(parsed?.lengthInches, 2.5, 9.5);
+  const ringGaugeValue = validGroundedDimension(parsed?.ringGauge, 20, 70);
+  const vitola = typeof parsed?.vitola === "string" && parsed.vitola.trim().length > 1
+    ? parsed.vitola.trim()
+    : undefined;
+  return {
+    vitola,
+    lengthInches,
+    ringGauge: ringGaugeValue ? Math.round(ringGaugeValue) : undefined,
+    sourceUrl: typeof parsed?.sourceUrl === "string" ? parsed.sourceUrl : undefined,
+  };
+}
+
+// Grounded UK product-page scan for dimensions. Unlike the generic quick lookup,
+// this deliberately searches named UK retailers and returns only explicit specs.
+async function lookupUkCigarSpecs(brand: string, name: string, retailers: string[]): Promise<{
+  grounded: boolean;
+  specs: ReturnType<typeof cleanGroundedCigarSpecs>;
+  sources: Array<{ title: string; uri: string }>;
+}> {
+  const cigarLabel = `${brand} ${name}`.trim();
+  const grounded = await groundedWebResearch(
+    `Find current UK product pages for the exact cigar "${cigarLabel}". ` +
+      `Search these retailers and their domains: ${retailerSearchBrief(retailers)}. ` +
+      `Extract only specifications explicitly printed on a product page: the product's named vitola, length in inches, and ring gauge. ` +
+      `Prefer a manufacturer specification or a retailer product page over search snippets. ` +
+      `If sources disagree, report the value repeated by the product pages and mention the disagreement. Do not guess, infer from a generic shape, or use a different size of the same cigar.`,
+    "You are a cigar product-specification researcher. Return only exact, source-supported specifications for the named cigar."
+  );
+  if (!grounded.text || grounded.sources.length === 0) return { grounded: false, specs: {}, sources: [] };
+  const parsed = await structureTextToSchema({
+    text: grounded.text,
+    instruction:
+      "Extract only the exact cigar product specifications stated in the source text. Leave unknown fields out; never guess. Include the source URL only if it is explicitly present in the source text.",
+    responseSchema: {
+      type: Type.OBJECT,
+      properties: {
+        vitola: { type: Type.STRING },
+        lengthInches: { type: Type.NUMBER },
+        ringGauge: { type: Type.NUMBER },
+        sourceUrl: { type: Type.STRING },
+      },
+    },
+  });
+  const specs = cleanGroundedCigarSpecs(parsed);
+  return {
+    grounded: Boolean(specs.vitola || specs.lengthInches !== undefined || specs.ringGauge !== undefined),
+    specs,
+    sources: grounded.sources,
+  };
+}
+
+app.post("/api/research/uk-specs", async (req, res) => {
+  try {
+    const cigarValidation = validateScanCigar(req.body);
+    if (!cigarValidation.ok) return res.status(400).json({ error: ('error' in cigarValidation ? cigarValidation.error : 'Invalid cigar request') });
+    const requestedRetailers = validatedRetailers(req.body.retailers, DEFAULT_UK_SPEC_RETAILERS);
+    if (!requestedRetailers) return res.status(400).json({ error: "Retailers must be provided as an array of names." });
+    const result = await lookupUkCigarSpecs(cigarValidation.cigar.brand, cigarValidation.cigar.name, requestedRetailers);
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error("Error in /api/research/uk-specs:", error);
+    return res.status(500).json({ error: error.message || "UK specification scan failed." });
+  }
+});
+
+app.post("/api/research/batch-uk-specs", async (req, res) => {
+  try {
+    const { cigars, retailers } = req.body;
+    if (!Array.isArray(cigars) || cigars.length === 0) return res.status(400).json({ error: "Please provide an array of cigars to scan." });
+    if (cigars.length > MAX_SCAN_BATCH) return res.status(400).json({ error: `A maximum of ${MAX_SCAN_BATCH} cigars can be scanned per request.` });
+    const validatedCigars = cigars.map((cigar) => validateScanCigar(cigar, true));
+    const invalid = validatedCigars.find((result) => !result.ok);
+    if (invalid && !invalid.ok) return res.status(400).json({ error: ('error' in invalid ? invalid.error : 'Invalid cigar request') });
+    const batch = validatedCigars.map((result) => result.ok ? result.cigar : null).filter(Boolean);
+    const requestedRetailers = validatedRetailers(retailers, DEFAULT_UK_SPEC_RETAILERS);
+    if (!requestedRetailers) return res.status(400).json({ error: "Retailers must be provided as an array of names." });
+    const results: any[] = new Array(batch.length);
+    let nextIndex = 0;
+    async function worker() {
+      while (nextIndex < batch.length) {
+        const index = nextIndex++;
+        const cigar = batch[index];
+        try {
+          const result = await lookupUkCigarSpecs(String(cigar.brand || ''), String(cigar.name || cigar.line || ''), requestedRetailers);
+          results[index] = { id: cigar.id, ...result };
+        } catch {
+          results[index] = { id: cigar.id, grounded: false, specs: {}, sources: [] };
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(3, batch.length) }, worker));
+    return res.json({
+      success: true,
+      data: {
+        scannedCount: results.length,
+        groundedCount: results.filter((result) => result.grounded && Object.keys(result.specs || {}).length > 0).length,
+        results,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error in /api/research/batch-uk-specs:", error);
+    return res.status(500).json({ error: error.message || "Batch UK specification scan failed." });
   }
 });
 
@@ -791,7 +988,7 @@ function cleanHtmlContent(html: string): { title: string; metaDesc: string; ogIm
   let jsonLd = "";
   const jsonLdMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
   if (jsonLdMatches) {
-    jsonLd = jsonLdMatches.map((m) => m.replace(/<\/?script[^>]*>/gi, "").trim()).join("\n");
+    jsonLd = jsonLdMatches.map((m) => m.replace(/<\/?script[^>]*>/gi, "").trim()).join("\n---JSONLD-SCRIPT---\n");
   }
 
   // Extract tabular specification key-value pairs (common in C.Gars, Havana House, etc.)
@@ -854,6 +1051,56 @@ function cleanHtmlContent(html: string): { title: string; metaDesc: string; ogIm
   };
 }
 
+
+function extractStructuredProductCigar(
+  parsed: ReturnType<typeof cleanHtmlContent>,
+  sourceUrl: string | undefined,
+  vendorName: string,
+): any | undefined {
+  const scripts = parsed.jsonLd.split("\n---JSONLD-SCRIPT---\n").flatMap((value) => {
+    try {
+      const parsedValue = JSON.parse(value);
+      return Array.isArray(parsedValue) ? parsedValue : [parsedValue];
+    } catch {
+      return [];
+    }
+  }).filter(Boolean) as any[];
+  const products = scripts.flatMap((entry) => {
+    if (String(entry?.['@type'] || '').toLowerCase() === 'product') return [entry];
+    return Array.isArray(entry?.['@graph']) ? entry['@graph'].filter((node: any) => String(node?.['@type'] || '').toLowerCase() === 'product') : [];
+  });
+  const product = products[0];
+  if (!product?.name) return undefined;
+  const description = String(product.description || parsed.metaDesc || parsed.textContent.slice(0, 2000))
+    .replace(/&(?:ndash|mdash);/gi, '–').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim();
+  const productName = String(product.name).replace(/\s+/g, ' ').trim();
+  const knownBrands = ['Oliva', 'Montecristo', 'Cohiba', 'Partagás', 'Partagas', 'Padrón', 'Padron', 'Davidoff', 'Plasencia', 'Arturo Fuente', 'Drew Estate', 'Hoyo de Monterrey', 'Romeo y Julieta', 'Punch'];
+  const brand = knownBrands.find((candidate) => new RegExp(`\\b${candidate.replace(/[.*+?^${}()|[\\]\\]/g, '\\\\$&')}\\b`, 'i').test(productName + ' ' + description)) || productName.split(/\s+/)[0];
+  const name = productName.replace(new RegExp(`^${brand}\\s*[-–|]?\\s*`, 'i'), '').replace(/\s*[-–|]\s*(single|box|tin).*$/i, '').trim() || productName;
+  const readNumber = (pattern: RegExp) => { const match = description.match(pattern); return match ? Number(match[1]) : undefined; };
+  const lengthInches = readNumber(/length\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*(?:inch|in|\")?/i);
+  const ringGauge = readNumber(/ring\s*gauge\s*:\s*([0-9]{2})/i);
+  const priceValue = Number(product.offers?.price ?? product.offers?.lowPrice);
+  const vitola = description.match(/vitola\s*:\s*([^|]+)/i)?.[1]?.trim() || name.match(/\b(cigarillo|robusto|churchill|toro|corona|lancero|torpedo|gordo)\b/i)?.[1] || 'Unknown';
+  const strength = description.match(/strength\s*:\s*([^|]+)/i)?.[1]?.trim() || 'Medium';
+  const smokingMinutes = readNumber(/smoking\s*time\s*:\s*([0-9]+)\s*minutes?/i);
+  const wrapper = description.match(/wrapper\s*:\s*([^|]+)/i)?.[1]?.trim();
+  const binder = description.match(/binder\s*:\s*([^|]+)/i)?.[1]?.trim();
+  const filler = description.match(/filler\s*:\s*([^|]+)/i)?.[1]?.trim();
+  const isCuban = /cuba|havana|habano/i.test(description);
+  return {
+    brand, name, line: name, vitola, lengthInches, ringGauge,
+    countryOrigin: /nicaragua/i.test(description) ? 'Nicaragua' : /dominican/i.test(description) ? 'Dominican Republic' : isCuban ? 'Cuba' : 'Unknown',
+    wrapper, binder, filler, strength,
+    purchasePrice: Number.isFinite(priceValue) && priceValue > 0 ? priceValue : undefined,
+    currency: product.offers?.priceCurrency === 'GBP' ? '£' : product.offers?.priceCurrency || '£',
+    vendor: vendorName, productDescription: description, smokeTimeMinutes: smokingMinutes,
+    idealRestMonths: isCuban ? 12 : 6, isCuban,
+    imageUrl: Array.isArray(product.image) ? product.image[0] : product.image || parsed.ogImage,
+    sourceUrl: sourceUrl || product.url || product.offers?.url || '', extractionSource: 'product-json-ld', selected: true,
+  };
+}
+
 // Local deterministic fallback parser for multi-cigar shopping baskets
 function extractBasketFromHtmlLocally({
   html,
@@ -877,6 +1124,9 @@ function extractBasketFromHtmlLocally({
   else if (combined.includes("davidoff")) vendorName = "Davidoff of London";
   else if (combined.includes("foxcigar")) vendorName = "Fox Cigar";
   else if (combined.includes("neptune")) vendorName = "Neptune Cigar";
+
+  const structuredProduct = extractStructuredProductCigar(parsed, sourceUrl, vendorName);
+  if (structuredProduct) return structuredProduct;
 
   const knownBrands = [
     "Montecristo", "Cohiba", "Partagás", "Partagas", "Ramón Allones", "Ramon Allones",
@@ -1019,6 +1269,26 @@ async function extractBasketFromHtmlPayload({
   else if (combinedCheck.includes("davidoff")) vendorName = "Davidoff of London";
   else if (combinedCheck.includes("foxcigar")) vendorName = "Fox Cigar";
   else if (combinedCheck.includes("neptune")) vendorName = "Neptune Cigar";
+  else if (combinedCheck.includes("simplycigars")) vendorName = "Simply Cigars (UK)";
+
+  const structuredProduct = extractStructuredProductCigar(parsed, sourceUrl, vendorName);
+  if (structuredProduct) {
+    const item = {
+      ...structuredProduct,
+      id: `extracted-${Date.now()}-0`,
+      quantity: 1,
+      totalPrice: structuredProduct.purchasePrice,
+      selected: true,
+    };
+    return {
+      vendorName: structuredProduct.vendor || vendorName,
+      basketTotal: structuredProduct.purchasePrice || 0,
+      currency: structuredProduct.currency || "£",
+      itemCount: 1,
+      items: [item],
+      notes: "Detected a single product page and imported it as one basket item.",
+    };
+  }
 
   const systemInstruction = `You are an expert Master Tobacconist, Sommelier, and data extraction engine specializing in cigar shopping baskets, carts, checkout summaries, and order confirmation HTML from retailers such as C.Gars Ltd (cgarsltd.co.uk), Havana House, Smoke King, Sautter London, Neptune, Famous Smoke, and Holt's.
 Extract EVERY individual cigar line item in the shopping basket or order into a structured list. Populate complete connoisseur specifications (brand, model/name, vitola, length in inches, ring gauge, country of origin, wrapper type, binder, filler, strength, quantity, unit price in £/currency, total price, flavor tags, resting recommendations, and critic rating).`;
@@ -1200,11 +1470,16 @@ async function extractCigarFromHtmlPayload({
     vendorName = "Fox Cigar";
   } else if (lowerCheck.includes("neptunecigar")) {
     vendorName = "Neptune Cigar";
+  } else if (lowerCheck.includes("simplycigars")) {
+    vendorName = "Simply Cigars (UK)";
   } else if (lowerCheck.includes("famous-smoke")) {
     vendorName = "Famous Smoke Shop";
   } else if (lowerCheck.includes("holts")) {
     vendorName = "Holt's Cigar Co.";
   }
+
+  const structuredProduct = extractStructuredProductCigar(parsed, sourceUrl, vendorName);
+  if (structuredProduct) return structuredProduct;
 
   const systemInstruction = `You are a Master Tobacconist, Sommelier, and data extraction engine specializing in British and international cigar retailers (including C.Gars Ltd cgarsltd.co.uk, Havana House, Smoke King, Sautter, Davidoff, Neptune, etc.). Extract precise cigar specifications, dimensions, blend composition, country of origin, vitola shape, ring gauge, length, strength, tasting notes, and price in British Pounds (£ GBP) from saved HTML files and webpages.`;
 
@@ -1358,7 +1633,7 @@ app.post("/api/import/cigar-from-url", async (req, res) => {
     let vendorName = "Online Cigar Retailer";
 
     if (url) {
-      if (!isSafePublicUrl(url)) {
+      if (!(await isSafePublicUrl(url))) {
         return res.status(400).json({ error: "That URL isn't allowed. Please provide a public http(s) product page." });
       }
       try {
@@ -1392,6 +1667,7 @@ app.post("/api/import/cigar-from-url", async (req, res) => {
 
         const response = await fetch(url, {
           signal: controller.signal,
+          redirect: "manual",
           headers: {
             "User-Agent":
               "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -1403,8 +1679,9 @@ app.post("/api/import/cigar-from-url", async (req, res) => {
         });
         clearTimeout(timeoutId);
 
-        if (response.ok) {
-          fetchedHtml = await response.text();
+        if (response.ok && Number(response.headers.get("content-length") || 0) <= 2_000_000) {
+          const body = await response.text();
+          if (body.length <= 2_000_000) fetchedHtml = body;
         }
       } catch (fetchErr: any) {
         console.warn(`Direct fetch for ${url} encountered: ${fetchErr.message}. Will use AI search fallback.`);
@@ -1539,7 +1816,7 @@ app.post("/api/import/basket-from-url", async (req, res) => {
     let vendorName = "C.Gars Ltd (UK)";
 
     if (url) {
-      if (!isSafePublicUrl(url)) {
+      if (!(await isSafePublicUrl(url))) {
         return res.status(400).json({ error: "That URL isn't allowed. Please provide a public http(s) basket/cart page." });
       }
       try {
@@ -1558,6 +1835,7 @@ app.post("/api/import/basket-from-url", async (req, res) => {
 
         const response = await fetch(url, {
           signal: controller.signal,
+          redirect: "manual",
           headers: {
             "User-Agent":
               "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -1567,8 +1845,9 @@ app.post("/api/import/basket-from-url", async (req, res) => {
         });
         clearTimeout(timeoutId);
 
-        if (response.ok) {
-          fetchedHtml = await response.text();
+        if (response.ok && Number(response.headers.get("content-length") || 0) <= 2_000_000) {
+          const body = await response.text();
+          if (body.length <= 2_000_000) fetchedHtml = body;
         }
       } catch (fetchErr: any) {
         console.warn(`Basket direct fetch for ${url} encountered: ${fetchErr.message}. Will use AI fallback.`);
@@ -1600,7 +1879,40 @@ app.post("/api/import/basket-from-url", async (req, res) => {
   }
 });
 
-// Deterministic UK Retailer Price Estimator & Market Intelligence for top UK merchants
+// UK retailer catalogue used to guide grounded searches and to create retailer search links.
+// Keep domains here rather than relying on fuzzy vendor-name matching: several UK shops
+// publish prices under domains that do not contain the shop's display name.
+const UK_RETAILER_CATALOG: Record<string, { domain: string; multiplier: number }> = {
+  "C.Gars Ltd": { domain: "cgarsltd.co.uk", multiplier: 1.0 },
+  "Cuban Cigar Club": { domain: "cubancigarclub.co.uk", multiplier: 0.98 },
+  "Havana House": { domain: "havanahouse.co.uk", multiplier: 1.02 },
+  "Smoke King": { domain: "smoke-king.co.uk", multiplier: 0.96 },
+  "Davidoff of London": { domain: "davidoffoflondon.com", multiplier: 1.05 },
+  "James J. Fox (London)": { domain: "jjfox.co.uk", multiplier: 1.04 },
+  "Sautter Cigars (London)": { domain: "sauttercigars.com", multiplier: 1.03 },
+  "Turmeaus Tobacconist": { domain: "turmeaus.co.uk", multiplier: 0.99 },
+  "Robert Graham 1874": { domain: "robertgraham1874.com", multiplier: 1.01 },
+  "GQ Tobaccos": { domain: "gqtobaccos.com", multiplier: 0.97 },
+  "Aston's of Manchester": { domain: "astonsofmanchester.co.uk", multiplier: 1.02 },
+  "Arthur Fletcher": { domain: "arthurfletcher.co.uk", multiplier: 1.01 },
+  "James Barber Tobacconist": { domain: "jamesbarber.co.uk", multiplier: 1.0 },
+  "Gauntleys": { domain: "gauntleys.com", multiplier: 1.02 },
+  "Fox Cigar": { domain: "foxcigar.com", multiplier: 1.04 },
+};
+
+const DEFAULT_UK_RETAILERS = Object.keys(UK_RETAILER_CATALOG);
+
+function retailerSearchBrief(retailers: string[]): string {
+  return retailers
+    .map((name) => {
+      const domain = UK_RETAILER_CATALOG[name]?.domain;
+      return domain ? `${name} (${domain})` : name;
+    })
+    .join(", ");
+}
+
+// Reference-price helper retained only for backwards compatibility with imported data.
+// It must never be presented as a live quote; live endpoints return no quotes when grounding fails.
 function getEstimatedUkRetailerQuotes(cigar: {
   brand: string;
   name?: string;
@@ -1653,70 +1965,15 @@ function getEstimatedUkRetailerQuotes(cigar: {
   const today = new Date().toISOString().split("T")[0];
 
   // Comprehensive UK tobacconist catalog
-  const defaultMerchantCatalog: Record<string, { multiplier: number; searchUrl: (q: string) => string }> = {
-    "C.Gars Ltd": {
-      multiplier: 1.0,
-      searchUrl: (q) => `https://www.cgarsltd.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Cuban Cigar Club": {
-      multiplier: 0.98,
-      searchUrl: (q) => `https://www.cubancigarclub.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Havana House": {
-      multiplier: 1.02,
-      searchUrl: (q) => `https://www.havanahouse.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Smoke King": {
-      multiplier: 0.96,
-      searchUrl: (q) => `https://www.smoke-king.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Davidoff of London": {
-      multiplier: 1.05,
-      searchUrl: (q) => `https://davidoffoflondon.com/search?q=${encodeURIComponent(q)}`,
-    },
-    "James J. Fox (London)": {
-      multiplier: 1.04,
-      searchUrl: (q) => `https://www.jjfox.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Sautter Cigars (London)": {
-      multiplier: 1.03,
-      searchUrl: (q) => `https://sauttercigars.com/search?q=${encodeURIComponent(q)}`,
-    },
-    "Turmeaus Tobacconist": {
-      multiplier: 0.99,
-      searchUrl: (q) => `https://www.turmeaus.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Robert Graham 1874": {
-      multiplier: 1.01,
-      searchUrl: (q) => `https://www.robertgraham1874.com/search?q=${encodeURIComponent(q)}`,
-    },
-    "GQ Tobaccos": {
-      multiplier: 0.97,
-      searchUrl: (q) => `https://www.gqtobaccos.com/search.php?search_query=${encodeURIComponent(q)}`,
-    },
-  };
-
   // Determine which retailers to quote
   const selectedRetailerNames = cigar.retailers && cigar.retailers.length > 0
     ? cigar.retailers
-    : [
-        "C.Gars Ltd",
-        "Cuban Cigar Club",
-        "Havana House",
-        "Smoke King",
-        "Davidoff of London",
-        "James J. Fox (London)",
-        "Sautter Cigars (London)",
-        "Turmeaus Tobacconist",
-      ];
+    : DEFAULT_UK_RETAILERS;
 
   return selectedRetailerNames.map((vendorName) => {
-    const meta = defaultMerchantCatalog[vendorName] || {
-      multiplier: 1.0 + (Math.random() * 0.08 - 0.04),
-      searchUrl: (q: string) => `https://www.google.com/search?q=${encodeURIComponent(vendorName + " " + q)}`,
-    };
+    const meta = UK_RETAILER_CATALOG[vendorName] || { multiplier: 1.0, domain: "" };
 
-    const unitPrice = Math.round((basePrice * meta.multiplier + (Math.random() * 1.5 - 0.75)) * 100) / 100;
+    const unitPrice = Math.round(basePrice * meta.multiplier * 100) / 100;
     const boxCount = isCuban ? (unitPrice > 40 ? 10 : 25) : 20;
     const boxPrice = Math.round(unitPrice * boxCount * 0.95 * 100) / 100;
 
@@ -1725,7 +1982,7 @@ function getEstimatedUkRetailerQuotes(cigar: {
       price: unitPrice,
       currency: "£",
       inStock: true,
-      url: meta.searchUrl(brand + " " + name),
+      url: `https://www.google.com/search?q=${encodeURIComponent(`${vendorName} ${brand} ${name}`)}`,
       boxPrice,
       boxCount,
       lastUpdated: today,
@@ -1736,32 +1993,11 @@ function getEstimatedUkRetailerQuotes(cigar: {
 // Endpoint: AI & Live Retailer Price Scanner for a single cigar
 app.post("/api/research/retailer-prices", async (req, res) => {
   try {
-    const { brand, name, vitola, countryOrigin, isCuban, retailers } = req.body;
-    if (!brand) {
-      return res.status(400).json({ error: "Please provide cigar brand and name." });
-    }
-
-    const requestedRetailers: string[] = Array.isArray(retailers) && retailers.length > 0
-      ? retailers
-      : [
-          "C.Gars Ltd",
-          "Cuban Cigar Club",
-          "Havana House",
-          "Smoke King",
-          "Davidoff of London",
-          "James J. Fox (London)",
-          "Sautter Cigars (London)",
-          "Turmeaus Tobacconist",
-        ];
-
-    const fallbackQuotes = getEstimatedUkRetailerQuotes({
-      brand,
-      name,
-      vitola,
-      countryOrigin,
-      isCuban,
-      retailers: requestedRetailers,
-    });
+    const cigarValidation = validateScanCigar(req.body);
+    if (!cigarValidation.ok) return res.status(400).json({ error: ('error' in cigarValidation ? cigarValidation.error : 'Invalid cigar request') });
+    const { brand, name, vitola, countryOrigin, isCuban } = cigarValidation.cigar;
+    const requestedRetailers = validatedRetailers(req.body.retailers, DEFAULT_UK_RETAILERS);
+    if (!requestedRetailers) return res.status(400).json({ error: "Retailers must be provided as an array of names." });
 
     const cigarLabel = `${brand} ${name || ""}`.trim();
 
@@ -1772,9 +2008,10 @@ app.post("/api/research/retailer-prices", async (req, res) => {
       const grounded = await groundedWebResearch(
         `Search for current UK retail prices in GBP for the cigar "${cigarLabel}" ` +
           `(Vitola: ${vitola || "Standard"}, Origin: ${countryOrigin || (isCuban ? "Cuba" : "New World")}). ` +
-          `Check these UK tobacconists specifically: ${requestedRetailers.join(", ")}. ` +
-          `Report the actual single-stick and box price and stock status you find for each retailer that has this cigar listed -- ` +
-          `do not estimate a price for a retailer whose page you didn't actually find.`,
+          `Search the retailer domains for these UK tobacconists specifically: ${retailerSearchBrief(requestedRetailers)}. ` +
+          `Use site-restricted searches where possible and check product pages, not snippets or general price guides. ` +
+          `Report the actual single-stick and box price, currency, stock status, product URL, and retailer for each retailer that has this exact cigar listed -- ` +
+          `do not estimate, convert, or invent a price for a retailer whose page you did not actually find.`,
         "You are a research assistant checking real UK cigar retailer websites. Only report prices you actually find via search."
       );
 
@@ -1812,19 +2049,9 @@ app.post("/api/research/retailer-prices", async (req, res) => {
 
       if (parsedData.quotes && parsedData.quotes.length > 0) {
         const today = new Date().toISOString().split("T")[0];
-        const mergedQuotes = parsedData.quotes.map((q: any) => {
-          const matchedSource = grounded.sources.find(
-            (src) =>
-              src.title.toLowerCase().includes(String(q.vendor).toLowerCase().split(" ")[0]) ||
-              src.uri.toLowerCase().includes(String(q.vendor).toLowerCase().replace(/\s+/g, ""))
-          );
-          return {
-            ...q,
-            currency: "£",
-            lastUpdated: today,
-            url: matchedSource?.uri, // real URL only -- never fabricated
-          };
-        });
+        const mergedQuotes = validateGroundedQuotes(parsedData.quotes, grounded.sources, UK_RETAILER_CATALOG, today);
+
+        if (mergedQuotes.length === 0) throw new Error("No valid GBP retailer quotes found.");
 
         const bestPrice = Math.min(...mergedQuotes.map((q: any) => q.price));
         const bestQuote = mergedQuotes.find((q: any) => q.price === bestPrice);
@@ -1850,21 +2077,19 @@ app.post("/api/research/retailer-prices", async (req, res) => {
       console.warn("[Price Scanner] Grounded lookup failed or found nothing, falling back to reference dataset:", aiErr.message);
     }
 
-    const bestPrice = Math.min(...fallbackQuotes.map((q) => q.price));
-    const bestQuote = fallbackQuotes.find((q) => q.price === bestPrice);
-
     return res.json({
       success: true,
       data: {
-        quotes: fallbackQuotes,
-        retailerQuotes: fallbackQuotes,
-        bestPrice: bestPrice,
-        bestVendor: bestQuote?.vendor || fallbackQuotes[0].vendor,
-        marketLow: bestPrice,
-        marketHigh: Math.max(...fallbackQuotes.map((q) => q.price)),
-        marketAverage: Math.round((fallbackQuotes.reduce((a, b) => a + b.price, 0) / fallbackQuotes.length) * 100) / 100,
-        pricingNotes: `Unverified reference estimate -- no live retailer page could be confirmed for this cigar.`,
+        quotes: [],
+        retailerQuotes: [],
+        bestPrice: null,
+        bestVendor: null,
+        marketLow: null,
+        marketHigh: null,
+        marketAverage: null,
+        pricingNotes: `No live UK retailer page could be confirmed. No estimate was added.`,
         grounded: false,
+        scanStatus: "no_verified_results",
       },
     });
   } catch (error: any) {
@@ -1882,27 +2107,25 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
     if (!Array.isArray(cigars) || cigars.length === 0) {
       return res.status(400).json({ error: "Please provide an array of cigars to scan." });
     }
-
-    const batch = cigars.slice(0, 25); // grounded search per-item is real work; cap the batch
-    const requestedRetailers: string[] = Array.isArray(retailers) && retailers.length > 0 ? retailers : [];
+    if (cigars.length > MAX_SCAN_BATCH) {
+      return res.status(400).json({ error: `A maximum of ${MAX_SCAN_BATCH} cigars can be scanned per request.` });
+    }
+    const validatedCigars = cigars.map((cigar) => validateScanCigar(cigar, true));
+    const invalid = validatedCigars.find((result) => !result.ok);
+    if (invalid && !invalid.ok) return res.status(400).json({ error: ('error' in invalid ? invalid.error : 'Invalid cigar request') });
+    const batch = validatedCigars.map((result) => result.ok ? result.cigar : null).filter(Boolean);
+    const requestedRetailers = validatedRetailers(retailers, []);
+    if (!requestedRetailers) return res.status(400).json({ error: "Retailers must be provided as an array of names." });
     const CONCURRENCY = 3;
     const results: any[] = new Array(batch.length);
 
     async function scanOne(c: any): Promise<any> {
-      const fallbackQuotes = getEstimatedUkRetailerQuotes({
-        brand: c.brand,
-        name: c.name || c.line,
-        vitola: c.vitola,
-        countryOrigin: c.countryOrigin,
-        isCuban: c.isCuban,
-        retailers: requestedRetailers,
-      });
-
       try {
         const cigarLabel = `${c.brand} ${c.name || c.line || ""}`.trim();
         const grounded = await groundedWebResearch(
-          `Search for current UK retail prices in GBP for the cigar "${cigarLabel}". ` +
-            `Only report prices you actually find via search, for retailers that genuinely stock it.`,
+          `Search for current UK retail prices in GBP for the exact cigar "${cigarLabel}" ` +
+            `(Vitola: ${c.vitola || "Standard"}). Search these UK retailer domains: ${retailerSearchBrief(requestedRetailers.length ? requestedRetailers : DEFAULT_UK_RETAILERS)}. ` +
+            `Use product pages and report only prices, currency, stock status, retailer, and URLs you actually find. Do not estimate or invent missing quotes.`,
           "You are a research assistant checking real UK cigar retailer websites. Only report prices you actually find."
         );
         if (!grounded.text || grounded.sources.length === 0) throw new Error("no grounded results");
@@ -1930,16 +2153,12 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
           },
         });
 
-        if (parsed.quotes && parsed.quotes.length > 0) {
+        const validQuotes = Array.isArray(parsed.quotes)
+          ? parsed.quotes.filter((q: any) => Number.isFinite(Number(q.price)) && Number(q.price) > 0 && Number(q.price) < 2000)
+          : [];
+        if (validQuotes.length > 0) {
           const today = new Date().toISOString().split("T")[0];
-          const quotes = parsed.quotes.map((q: any) => {
-            const matchedSource = grounded.sources.find(
-              (src) =>
-                src.title.toLowerCase().includes(String(q.vendor).toLowerCase().split(" ")[0]) ||
-                src.uri.toLowerCase().includes(String(q.vendor).toLowerCase().replace(/\s+/g, ""))
-            );
-            return { ...q, currency: "£", lastUpdated: today, url: matchedSource?.uri };
-          });
+          const quotes = validateGroundedQuotes(validQuotes, grounded.sources, UK_RETAILER_CATALOG, today);
           return {
             id: c.id,
             brand: c.brand,
@@ -1958,10 +2177,11 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
         id: c.id,
         brand: c.brand,
         name: c.name || c.line,
-        quotes: fallbackQuotes,
-        bestPrice: Math.min(...fallbackQuotes.map((q) => q.price)),
-        bestVendor: fallbackQuotes.reduce((prev, curr) => (curr.price < prev.price ? curr : prev)).vendor,
+        quotes: [],
+        bestPrice: null,
+        bestVendor: null,
         grounded: false,
+        scanStatus: "no_verified_results",
       };
     }
 
@@ -2192,10 +2412,9 @@ function getCuratedReviewScores(cigar: {
 // Endpoint: Multi-Source AI Review Scores & Critic Intelligence for a single cigar
 app.post("/api/research/review-scores", async (req, res) => {
   try {
-    const { brand, name, line, vitola, countryOrigin, wrapper, isCuban } = req.body;
-    if (!brand) {
-      return res.status(400).json({ error: "Please provide cigar brand and name." });
-    }
+    const cigarValidation = validateScanCigar(req.body);
+    if (!cigarValidation.ok) return res.status(400).json({ error: ('error' in cigarValidation ? cigarValidation.error : 'Invalid cigar request') });
+    const { brand, name, line, vitola, countryOrigin, wrapper, isCuban } = cigarValidation.cigar;
 
     const fallbackData = getCuratedReviewScores({
       brand,
@@ -2323,8 +2542,13 @@ app.post("/api/research/batch-review-scores", async (req, res) => {
     if (!Array.isArray(cigars) || cigars.length === 0) {
       return res.status(400).json({ error: "Please provide an array of cigars to score." });
     }
-
-    const batch = cigars.slice(0, 25); // grounded search per-item is expensive; cap the batch
+    if (cigars.length > MAX_SCAN_BATCH) {
+      return res.status(400).json({ error: `A maximum of ${MAX_SCAN_BATCH} cigars can be scored per request.` });
+    }
+    const validatedCigars = cigars.map((cigar) => validateScanCigar(cigar, true));
+    const invalid = validatedCigars.find((result) => !result.ok);
+    if (invalid && !invalid.ok) return res.status(400).json({ error: ('error' in invalid ? invalid.error : 'Invalid cigar request') });
+    const batch = validatedCigars.map((result) => result.ok ? result.cigar : null).filter(Boolean);
 
     // Small concurrency pool so a batch of cigars doesn't fire 25+
     // simultaneous grounded-search calls at once.
