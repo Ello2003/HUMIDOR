@@ -446,6 +446,17 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
         showToast(`Successfully extracted ${itemsWithSelected.length} cigars from ${basketData.vendorName || 'shopping basket'}!`);
       }
     } catch (err: any) {
+      // Log the FULL error (name, stack, wherever it actually threw) to the
+      // console -- the UI only ever showed the bare message text, which for
+      // a native browser exception like a URL-parsing DOMException gives no
+      // clue which line threw it. Open DevTools > Console after seeing the
+      // "Extraction Notice" banner to see exactly where this came from.
+      console.error('[Basket Import] Extraction failed:', {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+        raw: err,
+      });
       setError(cleanErrorMessage(err.message || err));
     } finally {
       setLoading(false);
