@@ -35,6 +35,7 @@ import {
   StrengthRating,
 } from '../types';
 import { fetchWithTimeout } from '../utils/fetchUtils';
+import { extractClientBasketFromHtml } from '../utils/clientBasketParser';
 import { formatCurrency } from '../utils/currencyUtils';
 import {
   findMatchingResearchCigar,
@@ -403,6 +404,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
 
     try {
       let res: Response;
+      let basketData: ShoppingBasketExtractResult;
       // 100s client timeout: the server's own retry/fallback chain across
       // multiple AI models can legitimately take up to ~100s in the worst
       // case (each of up to 4 attempts has its own 25s server-side
@@ -428,36 +430,27 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
           },
           100000
         );
-      } else {
-        res = await fetchWithTimeout(
-          '/api/import/basket-from-html',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              htmlContent: contentToProcess,
-              fileName: fileNameToPass,
-            }),
-          },
-          100000
-        );
-      }
-
-      const responseText = await res.text();
-      let data: any;
-      try {
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch {
-        if (res.status === 405 || responseText.includes('405 Not Allowed')) {
-          throw new Error('Live URL extraction is unavailable on this static deployment. Save the retailer page as an HTML file or paste its HTML, then use the File or Paste tab instead.');
+        const responseText = await res.text();
+        let data: any;
+        try {
+          data = responseText ? JSON.parse(responseText) : null;
+        } catch {
+          if (res.status === 405 || responseText.includes('405 Not Allowed')) {
+            throw new Error('Live URL extraction is unavailable on this static deployment. Save the retailer page as an HTML file or paste its HTML, then use the File or Paste tab instead.');
+          }
+          throw new Error(`The extraction service returned an unexpected response (${res.status}).`);
         }
-        throw new Error(`The extraction service returned an unexpected response (${res.status}).`);
-      }
-      if (!res.ok || !data.success || !data.data) {
-        throw new Error(data.error || 'Failed to extract cigar items from shopping basket HTML.');
+        if (!res.ok || !data.success || !data.data) {
+          throw new Error(data.error || 'Failed to extract cigar items from the retailer webpage.');
+        }
+        basketData = data.data;
+      } else {
+        // GitHub Pages is static and cannot execute the Express /api routes.
+        // Parse pasted or uploaded HTML in the browser so these modes remain
+        // useful without a separate Node deployment.
+        basketData = extractClientBasketFromHtml(contentToProcess, undefined, undefined);
       }
 
-      const basketData: ShoppingBasketExtractResult = data.data;
       setExtractedResult(basketData);
 
       const itemsWithSelected = (basketData.items || []).map((it, idx) => ({

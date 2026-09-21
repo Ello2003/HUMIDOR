@@ -1,6 +1,6 @@
 import { VersionHistoryEntry, AppSettings } from '../types';
 
-export const APP_VERSION = 'v2.14.1';
+export const APP_VERSION = 'v2.14.2';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   visibleTabs: {
@@ -97,6 +97,18 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 };
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
+  {
+    version: 'v2.14.2',
+    releaseDate: 'September 2026',
+    title: 'Working Offline HTML Basket Import',
+    summary: 'Added browser-side extraction for pasted and uploaded retailer HTML so basket imports work on the static GitHub Pages deployment without waiting for an unavailable API backend.',
+    type: 'patch',
+    highlights: [
+      'Paste Import: Product JSON-LD, basket rows, quantities, prices, vitolas, dimensions, and smoke times are parsed locally in the browser.',
+      'File Import: Saved HTML files use the same local parser and no longer hang on a static-host API request.',
+      'URL Import: URL mode remains clearly marked as requiring a Node-capable backend deployment.',
+    ],
+  },
   {
     version: 'v2.14.1',
     releaseDate: 'September 2026',
