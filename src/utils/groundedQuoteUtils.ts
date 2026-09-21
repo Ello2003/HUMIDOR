@@ -78,8 +78,18 @@ export function selectGroundedRetailerSource(
   const matching = vendorEntry
     ? candidates.filter(({ host }) => hostMatchesDomain(host, vendorEntry[1]))
     : candidates.filter(({ source, host }) => {
+        // Previously this branch ALSO required the source's host to match
+        // one of the pre-defined catalog domains -- meaning a genuinely
+        // found, legitimate retailer that simply isn't one of the ~15
+        // shops in UK_RETAILER_CATALOG (e.g. a New World specialist not
+        // yet added to the list) had its result silently discarded here,
+        // even though the live search correctly found it. The catalog is
+        // for enriching *known* retailers with confidence, not for
+        // gatekeeping which real retailers are allowed to exist. Any real
+        // https source whose title/URL actually mentions this vendor name
+        // is accepted.
         const sourceText = normalizeToken(`${source.title || ''} ${source.uri || ''}`);
-        return sourceText.includes(vendorToken) && entries.some(([, domain]) => hostMatchesDomain(host, domain));
+        return sourceText.includes(vendorToken) || (host && normalizeToken(host).includes(vendorToken));
       });
 
   const selected = matching[0];

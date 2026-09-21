@@ -1898,6 +1898,7 @@ const UK_RETAILER_CATALOG: Record<string, { domain: string; multiplier: number }
   "James Barber Tobacconist": { domain: "jamesbarber.co.uk", multiplier: 1.0 },
   "Gauntleys": { domain: "gauntleys.com", multiplier: 1.02 },
   "Fox Cigar": { domain: "foxcigar.com", multiplier: 1.04 },
+  "Simply Cigars": { domain: "simplycigars.co.uk", multiplier: 0.98 },
 };
 
 const DEFAULT_UK_RETAILERS = Object.keys(UK_RETAILER_CATALOG);
@@ -2006,13 +2007,17 @@ app.post("/api/research/retailer-prices", async (req, res) => {
       // from training data (which by definition can't reflect current
       // stock or pricing).
       const grounded = await groundedWebResearch(
-        `Search for current UK retail prices in GBP for the cigar "${cigarLabel}" ` +
+        `Search the web for current UK retail prices in GBP for the cigar "${cigarLabel}" ` +
           `(Vitola: ${vitola || "Standard"}, Origin: ${countryOrigin || (isCuban ? "Cuba" : "New World")}). ` +
-          `Search the retailer domains for these UK tobacconists specifically: ${retailerSearchBrief(requestedRetailers)}. ` +
+          `Check these known UK tobacconists first: ${retailerSearchBrief(requestedRetailers)}. ` +
+          `Then also search more broadly for any OTHER genuine UK cigar retailer that stocks this specific cigar -- ` +
+          `do not limit yourself to the list above. New World brands (Nicaragua, Honduras, Dominican Republic) are ` +
+          `often carried by different specialist shops than Cuban-only retailers, so don't assume the known list is exhaustive. ` +
           `Use site-restricted searches where possible and check product pages, not snippets or general price guides. ` +
-          `Report the actual single-stick and box price, currency, stock status, product URL, and retailer for each retailer that has this exact cigar listed -- ` +
-          `do not estimate, convert, or invent a price for a retailer whose page you did not actually find.`,
-        "You are a research assistant checking real UK cigar retailer websites. Only report prices you actually find via search."
+          `Report the actual single-stick and box price, currency, stock status, product URL, and retailer for every ` +
+          `real UK retailer that has this exact cigar listed -- do not estimate, convert, or invent a price for a ` +
+          `retailer whose page you did not actually find, and do not stop after finding just one.`,
+        "You are a research assistant checking real UK cigar retailer websites. Search broadly, not just a fixed list. Only report prices you actually find via search."
       );
 
       if (!grounded.text || grounded.sources.length === 0) {
@@ -2123,10 +2128,13 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
       try {
         const cigarLabel = `${c.brand} ${c.name || c.line || ""}`.trim();
         const grounded = await groundedWebResearch(
-          `Search for current UK retail prices in GBP for the exact cigar "${cigarLabel}" ` +
-            `(Vitola: ${c.vitola || "Standard"}). Search these UK retailer domains: ${retailerSearchBrief(requestedRetailers.length ? requestedRetailers : DEFAULT_UK_RETAILERS)}. ` +
-            `Use product pages and report only prices, currency, stock status, retailer, and URLs you actually find. Do not estimate or invent missing quotes.`,
-          "You are a research assistant checking real UK cigar retailer websites. Only report prices you actually find."
+          `Search the web for current UK retail prices in GBP for the exact cigar "${cigarLabel}" ` +
+            `(Vitola: ${c.vitola || "Standard"}). Check these known UK retailer domains first: ${retailerSearchBrief(requestedRetailers.length ? requestedRetailers : DEFAULT_UK_RETAILERS)}. ` +
+            `Then also search more broadly for any OTHER genuine UK cigar retailer that stocks this specific cigar -- ` +
+            `New World brands are often carried by different specialist shops than Cuban-only retailers, so don't ` +
+            `assume the known list is exhaustive. Use product pages and report only prices, currency, stock status, ` +
+            `retailer, and URLs you actually find. Do not estimate or invent missing quotes, and do not stop after finding just one.`,
+          "You are a research assistant checking real UK cigar retailer websites. Search broadly, not just a fixed list. Only report prices you actually find."
         );
         if (!grounded.text || grounded.sources.length === 0) throw new Error("no grounded results");
 
