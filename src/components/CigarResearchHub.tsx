@@ -70,6 +70,7 @@ import {
   resolveVitolaDetails,
 } from '../utils/researchUtils';
 import { PersonalReviewModal } from './PersonalReviewModal';
+import { apiUrl } from '../utils/api';
 
 // Clean and format error messages to avoid raw JSON dumps
 function cleanErrorMessage(raw: any, fallback = 'Unable to complete request.'): string {
@@ -794,7 +795,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   const handleScanRetailerPricesForCigar = async (cigar: CigarResearchItem) => {
     setScanningPriceCigarId(cigar.id);
     try {
-      const res = await fetch('/api/research/retailer-prices', {
+      const res = await fetch(apiUrl('/api/research/retailer-prices'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -870,7 +871,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     const requestId = ++retailerBatchRequestRef.current;
     setIsBatchScanningPrices(true);
     try {
-      const res = await fetch('/api/research/batch-retailer-prices', {
+      const res = await fetch(apiUrl('/api/research/batch-retailer-prices'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
