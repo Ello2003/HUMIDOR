@@ -32,15 +32,20 @@ export function extractMerchantFromUrlOrText(source: string = ''): string {
   if (!source) return 'Online Retailer';
   const clean = source.trim();
 
-  // If URL or domain string, parse domain
-  if (
-    clean.startsWith('http://') ||
-    clean.startsWith('https://') ||
-    clean.includes('.co') ||
-    clean.includes('.com') ||
-    clean.includes('.org') ||
-    clean.includes('.net')
-  ) {
+  // Only attempt URL parsing when the string actually looks like one --
+  // a bare domain or full URL, with no spaces. The previous check
+  // (`clean.includes('.co')`) matched on a bare substring, so any
+  // AI-extracted vendor text that merely *mentioned* ".com" or ".co"
+  // somewhere in a longer description would get the whole sentence --
+  // spaces, punctuation and all -- handed to `new URL()`. That's already
+  // caught here, but constructing a URL from a full sentence is pointless
+  // work and, in some browsers, throws a much less forgiving parse error
+  // than a plain invalid-domain case would.
+  const looksLikeUrlOrDomain =
+    !clean.includes(' ') &&
+    (/^https?:\/\//i.test(clean) || /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/.*)?$/i.test(clean));
+
+  if (looksLikeUrlOrDomain) {
     try {
       const urlObj = clean.startsWith('http') ? new URL(clean) : new URL(`https://${clean}`);
       const host = urlObj.hostname.toLowerCase().replace(/^www\./, '');

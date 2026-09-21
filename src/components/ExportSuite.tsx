@@ -39,6 +39,7 @@ interface ExportSuiteProps {
   settings?: AppSettings;
   onOpenSettings?: () => void;
   onOpenBasketImporter?: () => void;
+  onOpenGitHubSync?: () => void;
   onImportVault: (data: {
     kind?: 'full-vault' | 'research-library';
     cigars?: Cigar[];
@@ -58,6 +59,7 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
   settings,
   onOpenSettings,
   onOpenBasketImporter,
+  onOpenGitHubSync,
   onImportVault,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -303,6 +305,28 @@ export const ExportSuite: React.FC<ExportSuiteProps> = ({
           </div>
         )}
       </div>
+
+      {/* GitHub Encrypted Sync */}
+      {onOpenGitHubSync && (
+        <div className="p-6 bg-card border border-gold/30 rounded-lg flex flex-col justify-between shadow-sm space-y-4">
+          <div>
+            <div className="w-10 h-10 rounded-md bg-gold/10 border border-gold/30 flex items-center justify-center text-gold mb-3">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <h3 className="font-serif font-semibold text-base text-text">GitHub Vault Sync</h3>
+            <p className="text-xs text-text-muted mt-1 leading-relaxed">
+              Push or pull the complete Humidor vault, wishlist, research database, journal and shopping basket. The sync snapshot is encrypted before it is committed.
+            </p>
+          </div>
+          <button
+            onClick={onOpenGitHubSync}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-gold hover:brightness-110 text-ink rounded font-bold uppercase tracking-wider text-xs shadow-sm transition cursor-pointer"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Open GitHub Push / Pull</span>
+          </button>
+        </div>
+      )}
 
       {/* Restore & Import Vault Section */}
       {opts.showRestoreBackup && (

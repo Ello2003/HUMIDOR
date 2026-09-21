@@ -34,6 +34,7 @@ import {
   WrapperType,
   StrengthRating,
 } from '../types';
+import { fetchWithTimeout } from '../utils/fetchUtils';
 import { formatCurrency } from '../utils/currencyUtils';
 import {
   findMatchingResearchCigar,
@@ -399,21 +400,34 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
 
     try {
       let res: Response;
+      // 100s client timeout: the server's own retry/fallback chain across
+      // multiple AI models can legitimately take up to ~100s in the worst
+      // case (each of up to 4 attempts has its own 25s server-side
+      // timeout), so this needs to comfortably exceed that rather than
+      // aborting a request the server might still have succeeded on.
       if (inputMode === 'url') {
-        res = await fetch('/api/import/basket-from-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: url.trim() }),
-        });
+        res = await fetchWithTimeout(
+          '/api/import/basket-from-url',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url.trim() }),
+          },
+          100000
+        );
       } else {
-        res = await fetch('/api/import/basket-from-html', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            htmlContent: contentToProcess,
-            fileName: fileNameToPass,
-          }),
-        });
+        res = await fetchWithTimeout(
+          '/api/import/basket-from-html',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              htmlContent: contentToProcess,
+              fileName: fileNameToPass,
+            }),
+          },
+          100000
+        );
       }
 
       const data = await res.json();
@@ -454,6 +468,17 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
         showToast(`Successfully extracted ${itemsWithSelected.length} cigars from ${basketData.vendorName || 'shopping basket'}!`);
       }
     } catch (err: any) {
+      // Log the FULL error (name, stack, wherever it actually threw) to the
+      // console -- the UI only ever showed the bare message text, which for
+      // a native browser exception like a URL-parsing DOMException gives no
+      // clue which line threw it. Open DevTools > Console after seeing the
+      // "Extraction Notice" banner to see exactly where this came from.
+      console.error('[Basket Import] Extraction failed:', {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+        raw: err,
+      });
       setError(cleanErrorMessage(err.message || err));
     } finally {
       setLoading(false);
