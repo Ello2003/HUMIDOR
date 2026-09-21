@@ -1,6 +1,6 @@
 import { VersionHistoryEntry, AppSettings } from '../types';
 
-export const APP_VERSION = 'v2.14.0';
+export const APP_VERSION = 'v2.14.1';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   visibleTabs: {
@@ -97,6 +97,18 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 };
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
+  {
+    version: 'v2.14.1',
+    releaseDate: 'September 2026',
+    title: 'Clear Static Deployment Extraction Errors',
+    summary: 'Improved retailer URL validation and replaced misleading browser pattern errors with a clear explanation of the static deployment limitation and available HTML import alternatives.',
+    type: 'patch',
+    highlights: [
+      'URL Normalization: Retailer links without an explicit protocol are normalized to HTTPS before submission.',
+      'Error Recovery: Non-JSON, 405, and static-host responses now produce an actionable File/Paste import message.',
+      'User Guidance: The importer no longer exposes the misleading “string did not match the expected pattern” notice for this deployment condition.',
+    ],
+  },
   {
     version: 'v2.13.18',
     releaseDate: 'September 2026',

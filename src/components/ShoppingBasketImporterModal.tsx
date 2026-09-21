@@ -225,6 +225,9 @@ function cleanErrorMessage(raw: any): string {
   if (str.includes('503') || str.includes('high demand') || str.includes('UNAVAILABLE') || str.includes('unavailable')) {
     return 'The AI service is experiencing a temporary spike in demand. Automatic retries are active—please try clicking "Extract Shopping Basket" again in a few moments, or use the local HTML file tab.';
   }
+  if (str.includes('string did not match the expected pattern') || str.includes('Failed to fetch')) {
+    return 'Live URL extraction is unavailable on this static deployment. Save the retailer page as an HTML file or paste its HTML, then use the File or Paste tab instead.';
+  }
   return str;
 }
 
@@ -406,12 +409,22 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
       // timeout), so this needs to comfortably exceed that rather than
       // aborting a request the server might still have succeeded on.
       if (inputMode === 'url') {
+        const enteredUrl = url.trim();
+        let normalizedUrl: string;
+        try {
+          const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(enteredUrl) ? enteredUrl : `https://${enteredUrl}`;
+          const parsed = new URL(candidate);
+          if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname) throw new Error('invalid URL');
+          normalizedUrl = parsed.toString();
+        } catch {
+          throw new Error('Please enter a valid http(s) retailer webpage link, for example https://www.simplycigars.co.uk/...');
+        }
         res = await fetchWithTimeout(
           '/api/import/basket-from-url',
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url.trim() }),
+            body: JSON.stringify({ url: normalizedUrl }),
           },
           100000
         );
@@ -430,7 +443,16 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
         );
       }
 
-      const data = await res.json();
+      const responseText = await res.text();
+      let data: any;
+      try {
+        data = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        if (res.status === 405 || responseText.includes('405 Not Allowed')) {
+          throw new Error('Live URL extraction is unavailable on this static deployment. Save the retailer page as an HTML file or paste its HTML, then use the File or Paste tab instead.');
+        }
+        throw new Error(`The extraction service returned an unexpected response (${res.status}).`);
+      }
       if (!res.ok || !data.success || !data.data) {
         throw new Error(data.error || 'Failed to extract cigar items from shopping basket HTML.');
       }
