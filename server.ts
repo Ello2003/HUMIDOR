@@ -235,17 +235,17 @@ async function groundedWebResearch(query: string, systemInstruction?: string): P
 
 /** Optional Firecrawl-backed price retrieval. Kept server-side; the browser never sees the API key. */
 function normalizeSearchText(value: unknown): string {
-  return String(value || '').toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').replace(/\\s+/g, ' ').trim();
+  return String(value || '').toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').replace(/\s+/g, ' ').trim();
 }
 function retailerForHost(hostname: string): string | undefined {
-  const host = hostname.toLowerCase().replace(/^www\\./, '');
+  const host = hostname.toLowerCase().replace(/^www\./, '');
   return Object.entries(UK_RETAILER_CATALOG).find(([, meta]) => {
-    const domain = meta.domain.toLowerCase().replace(/^www\\./, '');
+    const domain = meta.domain.toLowerCase().replace(/^www\./, '');
     return host === domain || host.endsWith('.' + domain);
   })?.[0];
 }
 function extractPoundsFromText(text: string): number | undefined {
-  const matches = [...text.matchAll(/(?:£|GBP\\s*)([0-9]{1,4}(?:\\.[0-9]{1,2})?)/gi)].map((m) => Number(m[1])).filter((n) => Number.isFinite(n) && n >= 3 && n < 2000);
+  const matches = [...text.matchAll(/(?:£|GBP\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi)].map((m) => Number(m[1])).filter((n) => Number.isFinite(n) && n >= 3 && n < 2000);
   return matches[0];
 }
 async function firecrawlRetailerPriceSearch(params: { brand: string; name: string; vitola?: string; retailers: string[] }) {
@@ -1129,7 +1129,7 @@ function extractStructuredProductCigar(
   const productName = String(product.name).replace(/\s+/g, ' ').trim();
   const knownBrands = ['Oliva', 'Montecristo', 'Cohiba', 'Partagás', 'Partagas', 'Padrón', 'Padron', 'Davidoff', 'Plasencia', 'Arturo Fuente', 'Drew Estate', 'Hoyo de Monterrey', 'Romeo y Julieta', 'Punch'];
   const brand = knownBrands.find((candidate) => new RegExp(`\\b${candidate.replace(/[.*+?^${}()|[\\]\\]/g, '\\\\$&')}\\b`, 'i').test(productName + ' ' + description)) || productName.split(/\s+/)[0];
-  const name = productName.replace(new RegExp(`^${brand}\\s*[-–|]?\\s*`, 'i'), '').replace(/\s*[-–|]\s*(single|box|tin).*$/i, '').trim() || productName;
+  const name = productName.replace(new RegExp(`^${brand}\s*[-–|]?\s*`, 'i'), '').replace(/\s*[-–|]\s*(single|box|tin).*$/i, '').trim() || productName;
   const readNumber = (pattern: RegExp) => { const match = description.match(pattern); return match ? Number(match[1]) : undefined; };
   const lengthInches = readNumber(/length\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*(?:inch|in|\")?/i);
   const ringGauge = readNumber(/ring\s*gauge\s*:\s*([0-9]{2})/i);
