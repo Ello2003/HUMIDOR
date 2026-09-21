@@ -235,7 +235,7 @@ async function groundedWebResearch(query: string, systemInstruction?: string): P
 
 /** Optional Firecrawl-backed price retrieval. Kept server-side; the browser never sees the API key. */
 function normalizeSearchText(value: unknown): string {
-  return String(value || '').toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').replace(/\s+/g, ' ').trim();
+  return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 }
 function retailerForHost(hostname: string): string | undefined {
   const host = hostname.toLowerCase().replace(/^www\./, '');
