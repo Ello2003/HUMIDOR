@@ -233,6 +233,59 @@ async function groundedWebResearch(query: string, systemInstruction?: string): P
   };
 }
 
+/** Optional Firecrawl-backed price retrieval. Kept server-side; the browser never sees the API key. */
+function normalizeSearchText(value: unknown): string {
+  return String(value || '').toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').replace(/\\s+/g, ' ').trim();
+}
+function retailerForHost(hostname: string): string | undefined {
+  const host = hostname.toLowerCase().replace(/^www\\./, '');
+  return Object.entries(UK_RETAILER_CATALOG).find(([, meta]) => {
+    const domain = meta.domain.toLowerCase().replace(/^www\\./, '');
+    return host === domain || host.endsWith('.' + domain);
+  })?.[0];
+}
+function extractPoundsFromText(text: string): number | undefined {
+  const matches = [...text.matchAll(/(?:£|GBP\\s*)([0-9]{1,4}(?:\\.[0-9]{1,2})?)/gi)].map((m) => Number(m[1])).filter((n) => Number.isFinite(n) && n >= 3 && n < 2000);
+  return matches[0];
+}
+async function firecrawlRetailerPriceSearch(params: { brand: string; name: string; vitola?: string; retailers: string[] }) {
+  const apiKey = process.env.FIRECRAWL_API_KEY;
+  if (!apiKey) return { quotes: [], sources: [] };
+  const label = [params.brand, params.name, params.vitola].filter(Boolean).join(' ').trim();
+  const response = await fetch('https://api.firecrawl.dev/v2/search', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: `"${label}" UK price GBP cigar`, limit: 12, sources: ['web'], scrapeOptions: { formats: ['markdown', 'product'], onlyMainContent: true } }),
+  });
+  if (!response.ok) throw new Error(`Firecrawl search failed (${response.status})`);
+  const payload: any = await response.json();
+  const rawResults = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.data?.web) ? payload.data.web : [];
+  const brandNeedle = normalizeSearchText(params.brand);
+  const nameTokens = normalizeSearchText(params.name).split(' ').filter((token) => token.length >= 3);
+  const today = new Date().toISOString().split('T')[0];
+  const sources: Array<{ title: string; uri: string }> = [];
+  const quotes: any[] = [];
+  const seen = new Set<string>();
+  for (const result of rawResults) {
+    const url = typeof result?.url === 'string' ? result.url : '';
+    if (!url.startsWith('https://')) continue;
+    let parsedUrl: URL; try { parsedUrl = new URL(url); } catch { continue; }
+    const vendor = retailerForHost(parsedUrl.hostname);
+    if (!vendor) continue;
+    const title = String(result?.title || result?.metadata?.title || url);
+    const markdown = String(result?.markdown || result?.metadata?.description || result?.description || '');
+    const haystack = normalizeSearchText(title + ' ' + markdown);
+    if (!haystack.includes(brandNeedle)) continue;
+    if (nameTokens.length > 0 && !nameTokens.some((token) => haystack.includes(token))) continue;
+    const product = result?.product || result?.data?.product;
+    const structuredPrice = Number(product?.price);
+    const price = Number.isFinite(structuredPrice) && structuredPrice >= 3 && structuredPrice < 2000 ? structuredPrice : extractPoundsFromText(markdown);
+    if (!price || seen.has(url)) continue;
+    seen.add(url); sources.push({ title, uri: url });
+    quotes.push({ vendor, price: Math.round(price * 100) / 100, currency: '£', inStock: product?.availability ? !/out of stock|unavailable|sold out/i.test(String(product.availability)) : true, url, lastUpdated: today });
+  }
+  return { quotes, sources };
+}
 /**
  * Takes free-text (typically the output of `groundedWebResearch`) and
  * reshapes it into a specific JSON schema via a second, ungrounded call.
@@ -255,7 +308,7 @@ async function structureTextToSchema(params: {
 
 // Health check endpoint
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
+  res.json({ status: "ok", time: new Date().toISOString(), priceScanner: { gemini: Boolean(process.env.GEMINI_API_KEY), firecrawl: Boolean(process.env.FIRECRAWL_API_KEY) } });
 });
 
 /**
@@ -2003,9 +2056,15 @@ app.post("/api/research/retailer-prices", async (req, res) => {
     const cigarLabel = `${brand} ${name || ""}`.trim();
 
     try {
-      // Real live search first -- not the model recalling "realistic" prices
-      // from training data (which by definition can't reflect current
-      // stock or pricing).
+      if (process.env.FIRECRAWL_API_KEY) {
+        const firecrawl = await firecrawlRetailerPriceSearch({ brand, name, vitola, retailers: requestedRetailers });
+        if (firecrawl.quotes.length > 0) {
+          const bestPrice = Math.min(...firecrawl.quotes.map((q: any) => q.price));
+          const bestQuote = firecrawl.quotes.find((q: any) => q.price === bestPrice);
+          return res.json({ success: true, data: { quotes: firecrawl.quotes, retailerQuotes: firecrawl.quotes, bestPrice, bestVendor: bestQuote?.vendor, marketLow: bestPrice, marketHigh: Math.max(...firecrawl.quotes.map((q: any) => q.price)), marketAverage: Math.round(firecrawl.quotes.reduce((sum: number, q: any) => sum + q.price, 0) / firecrawl.quotes.length * 100) / 100, pricingNotes: 'Live UK retailer pages retrieved via Firecrawl.', groundedSources: firecrawl.sources, grounded: true, provider: 'firecrawl' } });
+        }
+      }
+      // Gemini grounded-search fallback.
       const grounded = await groundedWebResearch(
         `Search the web for current UK retail prices in GBP for the cigar "${cigarLabel}" ` +
           `(Vitola: ${vitola || "Standard"}, Origin: ${countryOrigin || (isCuban ? "Cuba" : "New World")}). ` +
@@ -2127,6 +2186,12 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
     async function scanOne(c: any): Promise<any> {
       try {
         const cigarLabel = `${c.brand} ${c.name || c.line || ""}`.trim();
+        if (process.env.FIRECRAWL_API_KEY) {
+          const firecrawl = await firecrawlRetailerPriceSearch({ brand: c.brand, name: c.name || c.line || '', vitola: c.vitola, retailers: requestedRetailers.length ? requestedRetailers : DEFAULT_UK_RETAILERS });
+          if (firecrawl.quotes.length > 0) {
+            return { id: c.id, brand: c.brand, name: c.name || c.line, quotes: firecrawl.quotes, bestPrice: Math.min(...firecrawl.quotes.map((q: any) => q.price)), bestVendor: firecrawl.quotes.reduce((prev: any, curr: any) => curr.price < prev.price ? curr : prev).vendor, grounded: true, provider: 'firecrawl', groundedSources: firecrawl.sources };
+          }
+        }
         const grounded = await groundedWebResearch(
           `Search the web for current UK retail prices in GBP for the exact cigar "${cigarLabel}" ` +
             `(Vitola: ${c.vitola || "Standard"}). Check these known UK retailer domains first: ${retailerSearchBrief(requestedRetailers.length ? requestedRetailers : DEFAULT_UK_RETAILERS)}. ` +
@@ -2693,4 +2758,8 @@ async function startServer() {
   });
 }
 
-startServer();
+export default app;
+
+if (process.env.VERCEL !== '1') {
+  startServer();
+}
