@@ -456,7 +456,7 @@ async function directWebSearch(query: string): Promise<any[]> {
       seen.add(url);
       let pathname = url;
       try { pathname = decodeURIComponent(new URL(url).pathname); } catch { /* keep URL */ }
-      const title = pathname.replace(/^\/+|\/+$/g, '').replace(/[-_]+/g, ' ').replace(/\/+g, ' > ').trim();
+      const title = pathname.replace(/^\/+|\/+$/g, '').replace(/[-_]+/g, ' ').replace(/\/+\/g, ' > ').trim();
       results.push({ url, title, description: '' });
       if (results.length >= MAX_SEARCH_RESULTS) break;
     }
