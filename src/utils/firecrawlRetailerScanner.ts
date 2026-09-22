@@ -519,10 +519,15 @@ async function directSearchEngine(query: string): Promise<any[]> {
         } catch { continue; }
         if (!url.startsWith('https://') || seen.has(url)) continue;
         seen.add(url);
+        const resultWindow = html.slice(match.index ?? 0, (match.index ?? 0) + 2200);
+        const snippetMatch = resultWindow.match(/class=["'][^"']*\bresult__snippet\b[^"']*["'][^>]*>([\s\S]*?)<\/a?>/i);
+        const description = snippetMatch
+          ? decodeXml(String(snippetMatch[1] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+          : '';
         results.push({
           url,
           title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()),
-          description: '',
+          description,
         });
       }
     }
