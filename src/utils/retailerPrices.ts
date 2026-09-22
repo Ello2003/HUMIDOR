@@ -84,7 +84,6 @@ export async function scanRetailerPrices(payload: RetailerPricePayload): Promise
     data: result ? { ...result, retailerQuotes: result.quotes } : {
       quotes: [],
       retailerQuotes: [],
-      retailerQuotes: [],
       bestPrice: null,
       bestVendor: null,
       grounded: false,
