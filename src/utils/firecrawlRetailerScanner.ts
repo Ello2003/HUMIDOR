@@ -382,22 +382,35 @@ async function directWebSearch(query: string): Promise<any[]> {
     query.replace(/cigar UK price GBP/i, 'UK cigar price'),
     ...retailerGroups.map((group) => `${group.map((domain) => `site:${domain}`).join(' OR ')} ${query}`),
   ];
+
   const results: any[] = [];
   const seen = new Set<string>();
 
-  for (const searchQuery of queries) {
+  const addResult = (url: string, title: string) => {
+    if (!url.startsWith('https://') || seen.has(url)) return;
+    results.push({ url, title, description: '' });
+    seen.add(url);
+  };
+
+  const decodeHtml = (value: string) => value
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+
+  const searchDuckDuckGo = async (searchQuery: string) => {
     const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
         Accept: 'text/html',
       },
     });
-    if (!response.ok) throw new Error(`Direct web search failed (${response.status})`);
+    if (!response.ok) return;
     const html = await response.text();
     const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
     const alternateAnchorPattern = /<a\b[^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
     const matches = [...html.matchAll(anchorPattern), ...html.matchAll(alternateAnchorPattern)];
-
     for (const match of matches) {
       let url = String(match[1] || '');
       try {
@@ -407,11 +420,36 @@ async function directWebSearch(query: string): Promise<any[]> {
       } catch {
         continue;
       }
-      if (!url.startsWith('https://') || seen.has(url)) continue;
-      const title = String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
-      results.push({ url, title, description: '' });
-      seen.add(url);
-      if (results.length >= MAX_SEARCH_RESULTS) return results;
+      addResult(url, decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()));
+      if (results.length >= MAX_SEARCH_RESULTS) return;
+    }
+  };
+
+  const searchBing = async (searchQuery: string) => {
+    const response = await fetch(`https://www.bing.com/search?setlang=en-GB&count=20&q=${encodeURIComponent(searchQuery)}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
+        Accept: 'text/html',
+      },
+    });
+    if (!response.ok) return;
+    const html = await response.text();
+    const resultPattern = /<li[^>]*class=["'][^"']*\\bb_algo\\b[^"']*["'][^>]*>[\\s\\S]*?<h2[^>]*>\\s*<a[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+    for (const match of html.matchAll(resultPattern)) {
+      addResult(decodeHtml(String(match[1] || '')), decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()));
+      if (results.length >= MAX_SEARCH_RESULTS) return;
+    }
+  };
+
+  for (const searchQuery of queries) {
+    await searchDuckDuckGo(searchQuery);
+    if (results.length >= MAX_SEARCH_RESULTS) break;
+  }
+
+  if (results.length < 5) {
+    for (const searchQuery of queries) {
+      await searchBing(searchQuery);
+      if (results.length >= MAX_SEARCH_RESULTS) break;
     }
   }
 
