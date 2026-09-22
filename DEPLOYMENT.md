@@ -26,9 +26,13 @@ This makes scheduled scans cheaper and faster than starting the full Express/Gem
 
 ## Frontend
 
-When `VITE_API_BASE_URL` is unset, the browser reads the latest static snapshot from `data/retailer-prices.json`. This is the production path.
+GitHub Pages hosts the Vite frontend as a static site.
 
-The Express server remains available for local development and for any future dedicated API host, but it is not required to publish the frontend or run scheduled price scans.
+`VITE_API_BASE_URL` is a public build-time variable containing the origin of the separately hosted Express API. When it is set, browser research, AI Sommelier, identification, imports, and other API features call that service.
+
+When `VITE_API_BASE_URL` is unset, the browser continues to use relative `/api/...` paths and the static retailer-price snapshot remains available from `data/retailer-prices.json`.
+
+The Express server holds the Gemini and Firecrawl secrets server-side and must never expose those keys to the browser.
 
 ## GitHub Pages
 
