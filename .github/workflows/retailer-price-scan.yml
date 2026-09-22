@@ -1,6 +1,9 @@
 name: UK Retailer Price Scan
 
 on:
+  push:
+    paths-ignore:
+      - 'data/retailer-prices.json'
   workflow_dispatch:
   schedule:
     - cron: '17 */6 * * *'
