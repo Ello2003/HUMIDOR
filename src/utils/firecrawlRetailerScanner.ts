@@ -51,7 +51,7 @@ export const UK_RETAILER_CATALOG: Record<string, { domain: string }> = {
 };
 
 const RETAILER_DOMAINS = Object.values(UK_RETAILER_CATALOG).map(({ domain }) => domain);
-const MAX_SEARCH_RESULTS = 20;
+const MAX_SEARCH_RESULTS = 30;
 const MAX_PAGE_SCRAPES = 12;
 
 function normalize(value: unknown): string {
@@ -374,6 +374,11 @@ async function firecrawlSearch(
 async function directWebSearch(query: string): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
+  const discoveryDomains = [
+    ...RETAILER_DOMAINS.slice(0, 10),
+    'surreycigars.com',
+    'ukcigarstore.co.uk',
+  ];
 
   const addResult = (url: string, title: string) => {
     if (!url.startsWith('https://') || seen.has(url)) return;
@@ -388,46 +393,37 @@ async function directWebSearch(query: string): Promise<any[]> {
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>');
 
-  for (const domain of RETAILER_DOMAINS) {
-    const queries = [
-      `site:${domain} ${query}`,
-      `site:${domain} ${query.replace(/ UK cigar price GBP/i, '')}`,
-    ];
+  for (const domain of discoveryDomains) {
+    const searchQuery = `site:${domain} ${query}`;
+    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
+        Accept: 'text/html',
+      },
+    }).catch(() => undefined);
+    if (!response?.ok) continue;
 
-    for (const searchQuery of queries) {
-      const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
-          Accept: 'text/html',
-        },
-      }).catch(() => undefined);
-      if (!response?.ok) continue;
+    const html = await response.text();
+    const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
+    const alternateAnchorPattern = /<a\b[^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
 
-      const html = await response.text();
-      const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
-      const alternateAnchorPattern = /<a\b[^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-
-      for (const match of [...html.matchAll(anchorPattern), ...html.matchAll(alternateAnchorPattern)]) {
-        let url = String(match[1] || '');
-        try {
-          const parsed = new URL(url, 'https://html.duckduckgo.com');
-          const target = parsed.searchParams.get('uddg');
-          url = target ? decodeURIComponent(target) : parsed.toString();
-        } catch {
-          continue;
-        }
-
-        if (!url.startsWith('https://')) continue;
-        const hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-        if (!(hostname === domain || hostname.endsWith(`.${domain}`))) continue;
-
-        const title = decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
-        addResult(url, title);
-        if (results.length >= MAX_SEARCH_RESULTS) return results;
+    for (const match of [...html.matchAll(anchorPattern), ...html.matchAll(alternateAnchorPattern)]) {
+      let url = String(match[1] || '');
+      try {
+        const parsed = new URL(url, 'https://html.duckduckgo.com');
+        const target = parsed.searchParams.get('uddg');
+        url = target ? decodeURIComponent(target) : parsed.toString();
+      } catch {
+        continue;
       }
 
-      // A single good retailer query is enough to move to the next retailer.
-      if (results.some((item) => new URL(item.url).hostname.replace(/^www\./, '') === domain)) break;
+      if (!url.startsWith('https://')) continue;
+      const hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+      if (!(hostname === domain || hostname.endsWith(`.${domain}`))) continue;
+
+      const title = decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+      addResult(url, title);
+      if (results.length >= MAX_SEARCH_RESULTS) return results;
     }
   }
 
@@ -647,7 +643,7 @@ export async function scanRetailerPrices(
 
   const results: RetailerScanResult[] = new Array(unique.length);
   let nextIndex = 0;
-  const concurrency = Math.max(1, Math.min(options.concurrency ?? 2, 2));
+  const concurrency = Math.max(1, Math.min(options.concurrency ?? 4, 4));
 
   async function worker() {
     while (true) {
