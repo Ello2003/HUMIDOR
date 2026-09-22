@@ -544,18 +544,18 @@ async function directBingSearch(query: string): Promise<any[]> {
     }).catch(() => undefined);
     if (!response?.ok) continue;
     const html = await response.text();
-    const pattern = /<li[^>]*class=["'][^"']*b_algo[^"']*["'][^>]*>[\\s\\S]*?<h2[^>]*><a[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>[\\s\\S]*?<\\/li>/gi;
+    const pattern = /<li[^>]*class=["'][^"']*b_algo[^"']*["'][^>]*>[\s\S]*?<h2[^>]*><a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>[\s\S]*?<\/li>/gi;
     for (const match of html.matchAll(pattern)) {
       const url = decodeXml(String(match[1] || '').trim());
       try {
-        const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+        const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
         if (!(host === domain || host.endsWith(\`.\${domain}\`))) continue;
       } catch { continue; }
       if (!url.startsWith('https://') || seen.has(url)) continue;
       seen.add(url);
       results.push({
         url,
-        title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()),
+        title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()),
         description: '',
       });
     }
