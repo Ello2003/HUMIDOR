@@ -420,7 +420,7 @@ async function directWebSearch(query: string): Promise<any[]> {
       } catch {
         continue;
       }
-      addResult(url, decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()));
+      addResult(decodeHtml(String(match[1] || '')), decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()));
       if (results.length >= MAX_SEARCH_RESULTS) return;
     }
   };
@@ -434,7 +434,7 @@ async function directWebSearch(query: string): Promise<any[]> {
     });
     if (!response.ok) return;
     const html = await response.text();
-    const resultPattern = /<li[^>]*class=["'][^"']*\\bb_algo\\b[^"']*["'][^>]*>[\\s\\S]*?<h2[^>]*>\\s*<a[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+    const resultPattern = /<li[^>]*class=["'][^"']*\bb_algo\b[^"']*["'][^>]*>[\s\S]*?<h2[^>]*>\s*<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
     for (const match of html.matchAll(resultPattern)) {
       addResult(decodeHtml(String(match[1] || '')), decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()));
       if (results.length >= MAX_SEARCH_RESULTS) return;
