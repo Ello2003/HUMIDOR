@@ -371,60 +371,122 @@ async function firecrawlSearch(
     : Array.isArray(payload?.data) ? payload.data : [];
 }
 
+const sitemapCache = new Map<string, string[]>();
+
+function decodeXml(value: string): string {
+  return value.replace(/&amp;/gi, '&').replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/&lt;/gi, '<').replace(/&gt;/gi, '>');
+}
+
+function sitemapLocs(xml: string): string[] {
+  return [...xml.matchAll(/<loc\\b[^>]*>([\\s\\S]*?)<\\/loc>/gi)]
+    .map((match) => decodeXml(String(match[1] || '').trim()))
+    .filter((url) => /^https?:\\/\\//i.test(url));
+}
+
+function sitemapUrlLooksRelevant(url: string, query: string): boolean {
+  const urlText = normalize(decodeURIComponent(url));
+  const tokens = meaningfulTokens(query)
+    .filter((token) => token.length >= 4)
+    .filter((token) => !/^(cigar|price|prices|pounds|gbp|uk)$/.test(token));
+  if (!tokens.length) return true;
+  const hits = tokens.filter((token) => urlText.includes(token));
+  return hits.length >= Math.min(2, tokens.length);
+}
+
+async function fetchText(url: string): Promise<string | undefined> {
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
+      Accept: 'text/xml,application/xml,text/plain,text/html;q=0.8',
+    },
+  }).catch(() => undefined);
+  if (!response?.ok) return undefined;
+  return response.text().catch(() => undefined);
+}
+
+async function retailerSitemapUrls(domain: string): Promise<string[]> {
+  const cached = sitemapCache.get(domain);
+  if (cached) return cached;
+
+  const sitemapCandidates = new Set<string>([
+    `https://${domain}/sitemap.xml`,
+    `https://${domain}/sitemap_index.xml`,
+    `https://${domain}/wp-sitemap.xml`,
+  ]);
+  const robots = await fetchText(`https://${domain}/robots.txt`);
+  if (robots) {
+    for (const match of robots.matchAll(/^\\s*sitemap:\\s*(https?:\\/\\/\\S+)/gim)) sitemapCandidates.add(String(match[1]).trim());
+  }
+
+  const productUrls = new Set<string>();
+  const childSitemaps = new Set<string>();
+  for (const sitemap of sitemapCandidates) {
+    const xml = await fetchText(sitemap);
+    if (!xml) continue;
+    const locs = sitemapLocs(xml);
+    if (/<sitemap(?:index)?[\\s>]/i.test(xml.slice(0, 1000))) locs.forEach((loc) => childSitemaps.add(loc));
+    else locs.forEach((loc) => productUrls.add(loc));
+  }
+
+  await Promise.all(Array.from(childSitemaps).slice(0, 12).map(async (sitemap) => {
+    const xml = await fetchText(sitemap);
+    if (!xml) return;
+    sitemapLocs(xml).forEach((loc) => productUrls.add(loc));
+  }));
+
+  const urls = Array.from(productUrls).filter((url) => {
+    try {
+      const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+      return host === domain || host.endsWith(`.${domain}`);
+    } catch { return false; }
+  });
+  sitemapCache.set(domain, urls);
+  return urls;
+}
+
 async function directWebSearch(query: string): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
-  // Search every configured UK retailer. These requests are concurrent, so
-  // expanding coverage does not re-introduce the old serial scan bottleneck.
-  const discoveryDomains = RETAILER_DOMAINS;
 
-  const addResult = (url: string, title: string) => {
-    if (!url.startsWith('https://') || seen.has(url)) return;
-    results.push({ url, title, description: '' });
-    seen.add(url);
-  };
+  // Retailer-owned catalogues are free and avoid search-engine throttling.
+  await Promise.all(RETAILER_DOMAINS.map(async (domain) => {
+    const urls = await retailerSitemapUrls(domain);
+    for (const url of urls) {
+      if (!sitemapUrlLooksRelevant(url, query) || seen.has(url)) continue;
+      seen.add(url);
+      let pathname = url;
+      try { pathname = decodeURIComponent(new URL(url).pathname); } catch { /* keep URL */ }
+      const title = pathname.replace(/^\\/+|\\/+$/g, '').replace(/[-_]+/g, ' ').replace(/\\/+g, ' > ').trim();
+      results.push({ url, title, description: '' });
+      if (results.length >= MAX_SEARCH_RESULTS) break;
+    }
+  }));
 
-  const decodeHtml = (value: string) => value
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>');
-
-  await Promise.all(discoveryDomains.map(async (domain) => {
-    const searchQuery = `site:${domain} ${query}`;
-    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
-        Accept: 'text/html',
-      },
+  // Low-volume fallback only if no retailer sitemap exposed a candidate.
+  if (results.length) return results;
+  const fallbackDomains = RETAILER_DOMAINS.slice(0, 8);
+  await Promise.all(fallbackDomains.map(async (domain) => {
+    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(`site:${domain} ${query}`)}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)', Accept: 'text/html' },
     }).catch(() => undefined);
     if (!response?.ok) return;
-
     const html = await response.text();
-    const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
-    const alternateAnchorPattern = /<a\b[^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-
-    for (const match of [...html.matchAll(anchorPattern), ...html.matchAll(alternateAnchorPattern)]) {
+    const pattern = /<a\\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\\bresult__a\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+    for (const match of html.matchAll(pattern)) {
       let url = String(match[1] || '');
       try {
         const parsed = new URL(url, 'https://html.duckduckgo.com');
         const target = parsed.searchParams.get('uddg');
         url = target ? decodeURIComponent(target) : parsed.toString();
-      } catch {
-        continue;
-      }
-
-      if (!url.startsWith('https://')) continue;
-      const hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-      if (!(hostname === domain || hostname.endsWith(`.${domain}`))) continue;
-
-      const title = decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
-      addResult(url, title);
-      }
+        const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+        if (!(host === domain || host.endsWith(`.${domain}`))) continue;
+      } catch { continue; }
+      if (seen.has(url)) continue;
+      seen.add(url);
+      results.push({ url, title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()), description: '' });
+    }
   }));
-
-  return results;
+  return results.slice(0, MAX_SEARCH_RESULTS);
 }
 
 async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; product?: any }> {
