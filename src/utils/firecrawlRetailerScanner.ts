@@ -453,6 +453,27 @@ async function directWebSearch(query: string): Promise<any[]> {
     }
   }
 
+  if (results.length < 5) {
+    for (const searchQuery of queries) {
+      const response = await fetch(`https://www.google.co.uk/search?hl=en-GB&num=20&q=${encodeURIComponent(searchQuery)}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
+          Accept: 'text/html',
+        },
+      }).catch(() => undefined);
+
+      if (!response?.ok) continue;
+      const html = await response.text();
+      const resultPattern = /<a[^>]+href=["'](https?:\\/\\/[^"']+)["'][^>]*>[\\s\\S]*?<h3[^>]*>([\\s\\S]*?)<\\/h3>/gi;
+      for (const match of html.matchAll(resultPattern)) {
+        const title = decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim());
+        addResult(decodeHtml(String(match[1] || '')), title);
+        if (results.length >= MAX_SEARCH_RESULTS) break;
+      }
+      if (results.length >= MAX_SEARCH_RESULTS) break;
+    }
+  }
+
   return results;
 }
 
