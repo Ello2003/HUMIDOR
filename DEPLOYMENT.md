@@ -1,27 +1,37 @@
-# HUMIDOR price scanner deployment
+# HUMIDOR deployment architecture
 
-The live price scanner is server-side because retailer search API keys must not be exposed in the browser.
+HUMIDOR is now intentionally split into two simple pieces:
 
-## Recommended deployment
+1. **GitHub Pages** hosts the Vite frontend.
+2. **GitHub Actions** runs the UK retailer price scanner every six hours and writes the verified snapshot to `data/retailer-prices.json`.
 
-Deploy this repository to Vercel. The repository includes `api/index.ts` and `vercel.json`, which expose the existing Express API as a serverless function.
+There is no Vercel deployment and no serverless price endpoint in the production architecture.
 
-Set these Vercel environment variables:
+## Price scanner
 
-- `GEMINI_API_KEY` — existing Gemini research key.
-- `FIRECRAWL_API_KEY` — recommended for live retailer price search. When present, the price scanner tries Firecrawl first and falls back to Gemini grounded search.
-- `ALLOWED_ORIGIN` — optional. Leave unset for same-origin Vercel hosting.
+The scheduled scanner uses the repository's `FIRECRAWL_API_KEY` Actions secret directly from the GitHub runner. The key is never bundled into the browser.
 
-Firecrawl is deliberately optional; without its key the existing Gemini path remains available.
+The scanner is deliberately deterministic:
 
-## GitHub Pages frontend
+- Search the known UK specialist-retailer domains first.
+- Search the wider web only when the first search finds no verified product.
+- Require brand + exact line/variant + vitola/package compatibility.
+- Prefer Firecrawl's structured product price data.
+- Scrape at most four candidate product pages when structured price data is missing.
+- Run up to four cigars concurrently.
+- Deduplicate identical cigar requests in the same run.
+- Never invent a price when no verified product page can be matched.
 
-GitHub Pages can host the static frontend, but it cannot run `server.ts`. If the frontend remains on Pages, set the repository variable `VITE_API_BASE_URL` to the public URL of the deployed Vercel API, then the Pages workflow injects it at build time.
+This makes scheduled scans cheaper and faster than starting the full Express/Gemini server for every run.
 
-For the simplest setup, host both frontend and API on Vercel so the browser can call `/api/...` on the same origin.
+## Frontend
 
-## Price-scanner behaviour
+When `VITE_API_BASE_URL` is unset, the browser reads the latest static snapshot from `data/retailer-prices.json`. This is the production path.
 
-The scanner only stores quotes when it can associate a price with a HTTPS retailer product/search result. It does not generate synthetic retailer prices when live retrieval fails.
+The Express server remains available for local development and for any future dedicated API host, but it is not required to publish the frontend or run scheduled price scans.
 
-Firecrawl search can return search results together with scraped page content, and its product format can expose structured product price/availability data. This makes it a better fit for retailer-price extraction than relying on one AI structured-output call. The Gemini grounded-search route remains the fallback.
+## GitHub Pages
+
+GitHub Pages is a static host; it does not run the Express backend. The Pages workflow builds the Vite app and deploys `dist/`.
+
+After the price scan workflow completes successfully, the Pages workflow is triggered with `workflow_run` and republishes the latest price snapshot.

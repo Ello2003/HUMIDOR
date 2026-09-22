@@ -1,33 +1,33 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# The Humidor
 
-# Run and deploy your AI Studio app
+The Humidor is a React/Vite cigar-management app with local-first vault data, research tools, wishlist hunting, and a scheduled UK retailer price snapshot.
 
-This contains everything you need to run your app locally.
+## Run locally
 
-View your app in AI Studio: https://ai.studio/apps/4ebb76a2-a3f3-4f51-9872-df04620739ad
+```bash
+npm ci
+npm run dev
+```
 
-## Run Locally
+The local Express server remains available for research/import features that use `/api`.
 
-**Prerequisites:**  Node.js
+## Production architecture
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
-
+- **Frontend:** GitHub Pages
+- **Price data:** GitHub Actions + Firecrawl → `data/retailer-prices.json`
+- **No Vercel dependency**
+- **No browser-side Firecrawl secret**
 
 ## Automated UK retailer price scans
 
-UK retailer price scanning now runs in GitHub Actions rather than requiring Vercel to execute the Firecrawl job.
+Add an Actions secret named `FIRECRAWL_API_KEY` under **Settings → Secrets and variables → Actions**.
 
-1. Add a repository Actions secret named `FIRECRAWL_API_KEY` under **Settings → Secrets and variables → Actions**.
-2. Open **Actions → UK Retailer Price Scan** and run it manually once.
-3. The workflow also runs automatically every 6 hours.
-4. The scan writes verified results to `data/retailer-prices.json`, which the GitHub Pages frontend reads by default.
-5. `VITE_API_BASE_URL` remains an optional escape hatch for a live API deployment; when it is unset, the frontend uses the latest GitHub Actions snapshot.
+The workflow runs every six hours and can also be started manually from **Actions → UK Retailer Price Scan**.
 
-The Firecrawl key is only exposed to the GitHub Actions runner through the repository secret; it is not bundled into the frontend.
+Each run:
+1. scans the catalog directly from the GitHub runner;
+2. writes verified results to `data/retailer-prices.json`;
+3. commits only that generated data when it changes;
+4. triggers the Pages deployment workflow.
+
+If a retailer cannot be verified, HUMIDOR records no quote rather than an estimate.

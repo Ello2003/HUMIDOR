@@ -1,23 +1,15 @@
 # Build the Vite app and deploy the compiled output to GitHub Pages.
-#
-# This repo uses Bun (bun.lock is the committed lock file, not
-# package-lock.json). Previous versions of this workflow uploaded the raw
-# repository (`path: '.'`) with no build step at all -- so GitHub Pages
-# served the unbuilt index.html, whose <script src="/src/main.tsx"> the
-# browser can't execute (it's untranspiled TS/JSX), causing a 404. This
-# version runs `vite build` (which uses the `base: '/HUMIDOR/'` production
-# setting in vite.config.ts and rewrites all asset references correctly)
-# and deploys only the resulting dist/ folder.
-#
-# Note: this deploys the static frontend only. GitHub Pages cannot run the
-# Express/Gemini backend in server.ts, so any feature that calls /api/...
-# will not work on this deployment -- those need a real Node host.
+# Price data is already materialized in data/retailer-prices.json by the
+# scheduled scanner, so the deployed app needs no server or secret.
 name: Deploy static content to Pages
 
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["UK Retailer Price Scan"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -30,20 +22,20 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: 22
+          cache: npm
       - name: Install dependencies
-        run: bun install
+        run: npm ci
       - name: Build static site
-        env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-        run: bun run lint && bun run build
+        run: npm run lint && npm run build
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
