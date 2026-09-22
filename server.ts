@@ -422,8 +422,9 @@ function extractStructuredProductPrice(
 
   const matchingVariants = usableVariants.filter((candidate: any) => {
     const candidateTitle = String(candidate?.title || JSON.stringify(candidate?.values || {}));
+    const candidateIdentity = [productTitle, candidateTitle].filter(Boolean).join(" ");
     return exactProductMatch(
-      candidateTitle,
+      candidateIdentity,
       "",
       "",
       requested.brand,
@@ -479,6 +480,39 @@ function extractStructuredProductPrice(
     currency: currency || "GBP",
     title: String(variant?.title || product.title || ""),
   };
+}
+
+function groundedQuoteMatchesRequestedCigar(
+  quote: any,
+  sources: Array<{ title: string; uri: string }>,
+  requested: {
+    brand: string;
+    name: string;
+    line?: string;
+    variant?: string;
+    vitola?: string;
+    packageType?: string;
+    boxCount?: number;
+  },
+): boolean {
+  const sourceUrl = typeof quote?.sourceUrl === "string" ? quote.sourceUrl.trim() : "";
+  const source = sources.find((item) => item.uri === sourceUrl) ||
+    (sourceUrl ? sources.find((item) => normalizeSearchText(item.uri) === normalizeSearchText(sourceUrl)) : undefined);
+  if (!source) return false;
+
+  const productTitle = String(quote?.productTitle || source.title || "");
+  return exactProductMatch(
+    productTitle,
+    source.uri,
+    "",
+    requested.brand,
+    requested.name,
+    requested.vitola,
+    requested.line,
+    requested.variant,
+    requested.packageType,
+    requested.boxCount,
+  );
 }
 
 async function firecrawlScrapeProductPage(apiKey: string, url: string): Promise<{
@@ -2443,7 +2477,7 @@ app.post("/api/research/retailer-prices", async (req, res) => {
         text: grounded.text,
         instruction:
           "Extract the retailer price quotes mentioned in this search-grounded research into structured JSON, in GBP. " +
-          "Only include retailers explicitly mentioned with a price -- do not invent quotes for retailers not found.",
+          "Only include retailers explicitly mentioned with a price -- do not invent quotes for retailers not found. For every quote, include the exact product-page title and exact source URL from the grounded results. Treat the requested cigar variant and packaging as exact: never substitute a sibling variant or a box for a single.",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
@@ -2457,6 +2491,9 @@ app.post("/api/research/retailer-prices", async (req, res) => {
                   inStock: { type: Type.BOOLEAN },
                   boxPrice: { type: Type.NUMBER },
                   boxCount: { type: Type.INTEGER },
+                  productTitle: { type: Type.STRING },
+                  sourceUrl: { type: Type.STRING },
+                  packageType: { type: Type.STRING },
                 },
                 required: ["vendor", "price", "inStock"],
               },
@@ -2469,7 +2506,8 @@ app.post("/api/research/retailer-prices", async (req, res) => {
 
       if (parsedData.quotes && parsedData.quotes.length > 0) {
         const today = new Date().toISOString().split("T")[0];
-        const mergedQuotes = validateGroundedQuotes(parsedData.quotes, grounded.sources, UK_RETAILER_CATALOG, today);
+        const exactQuotes = parsedData.quotes.filter((quote: any) => groundedQuoteMatchesRequestedCigar(quote, grounded.sources, { brand, name, line, variant, vitola, packageType, boxCount }));
+        const mergedQuotes = validateGroundedQuotes(exactQuotes, grounded.sources, UK_RETAILER_CATALOG, today);
 
         if (mergedQuotes.length === 0) throw new Error("No valid GBP retailer quotes found.");
 
@@ -2561,7 +2599,7 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
 
         const parsed = await structureTextToSchema({
           text: grounded.text,
-          instruction: "Extract retailer price quotes from this search-grounded research into structured JSON, in GBP.",
+          instruction: "Extract retailer price quotes from this search-grounded research into structured JSON, in GBP. For every quote, include the exact product-page title and exact source URL from the grounded sources. Never substitute a sibling variant or packaging size.",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
@@ -2573,6 +2611,14 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
                     vendor: { type: Type.STRING },
                     price: { type: Type.NUMBER },
                     inStock: { type: Type.BOOLEAN },
+                    productTitle: { type: Type.STRING },
+                    sourceUrl: { type: Type.STRING },
+                    packageType: { type: Type.STRING },
+                    boxCount: { type: Type.INTEGER },
+                    productTitle: { type: Type.STRING },
+                    sourceUrl: { type: Type.STRING },
+                    packageType: { type: Type.STRING },
+                    boxCount: { type: Type.INTEGER },
                   },
                   required: ["vendor", "price", "inStock"],
                 },
@@ -2583,7 +2629,9 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
         });
 
         const validQuotes = Array.isArray(parsed.quotes)
-          ? parsed.quotes.filter((q: any) => Number.isFinite(Number(q.price)) && Number(q.price) > 0 && Number(q.price) < 2000)
+          ? parsed.quotes
+              .filter((q: any) => Number.isFinite(Number(q.price)) && Number(q.price) > 0 && Number(q.price) < 2000)
+              .filter((q: any) => groundedQuoteMatchesRequestedCigar(q, grounded.sources, { brand: c.brand, name: c.name || c.line || "", line: c.line, variant: c.variant, vitola: c.vitola, packageType: c.packageType, boxCount: c.boxCount }))
           : [];
         if (validQuotes.length > 0) {
           const today = new Date().toISOString().split("T")[0];
