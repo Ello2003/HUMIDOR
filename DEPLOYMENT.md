@@ -1,11 +1,12 @@
 # HUMIDOR deployment architecture
 
-HUMIDOR is now intentionally split into two simple pieces:
+HUMIDOR is intentionally designed as a **$0 personal-use application**:
 
 1. **GitHub Pages** hosts the Vite frontend.
 2. **GitHub Actions** runs the UK retailer price scanner every six hours and writes the verified snapshot to `data/retailer-prices.json`.
+3. The Express/Gemini server remains available for **local use on the collector's Mac**; no paid API host is required.
 
-There is no Vercel deployment and no serverless price endpoint in the production architecture.
+GitHub Pages is a static host and does not run `server.ts`.
 
 ## Price scanner
 
@@ -22,20 +23,27 @@ The scanner is deliberately deterministic:
 - Deduplicate identical cigar requests in the same run.
 - Never invent a price when no verified product page can be matched.
 
-This makes scheduled scans cheaper and faster than starting the full Express/Gemini server for every run.
+## Frontend and local API
 
-## Frontend
+The GitHub Pages build does **not** require `VITE_API_BASE_URL` and no paid API host is configured.
 
-GitHub Pages hosts the Vite frontend as a static site.
+- Static retailer prices come from `data/retailer-prices.json`.
+- Research, AI Sommelier, live identification, and basket URL research use the Express API when it is available.
+- On the production GitHub Pages build, those API calls default to `http://localhost:3000`, so they work when the collector is also running HUMIDOR locally with `npm run dev`.
+- If the local server is not running, the static parts of the GitHub Pages application continue to work; live API-only features simply cannot run.
 
-`VITE_API_BASE_URL` is a public build-time variable containing the origin of the separately hosted Express API. When it is set, browser research, AI Sommelier, identification, imports, and other API features call that service.
+The Express server keeps Gemini and Firecrawl secrets server-side and must never expose those keys to the browser.
 
-When `VITE_API_BASE_URL` is unset, the browser continues to use relative `/api/...` paths and the static retailer-price snapshot remains available from `data/retailer-prices.json`.
+## Local development
 
-The Express server holds the Gemini and Firecrawl secrets server-side and must never expose those keys to the browser.
+From the repository directory:
+
+```bash
+npm run dev
+```
+
+The local Express/Vite server runs on port 3000 and provides the API features that cannot be executed by a static GitHub Pages site.
 
 ## GitHub Pages
 
-GitHub Pages is a static host; it does not run the Express backend. The Pages workflow builds the Vite app and deploys `dist/`.
-
-After the price scan workflow completes successfully, the Pages workflow is triggered with `workflow_run` and republishes the latest price snapshot.
+GitHub Pages builds and deploys `dist/` through the Pages workflow. After the price scan workflow completes successfully, the Pages workflow republishes the latest price snapshot.
