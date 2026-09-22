@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-22T21:45:26.167Z",
+  "generatedAt": "2026-09-22T21:48:45.200Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 1,
+  "groundedCount": 0,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
@@ -20,27 +20,13 @@
       "id": "res-padron-1926-no9",
       "brand": "Padrón",
       "name": "1926 Serie",
-      "quotes": [
-        {
-          "vendor": "Padrón Serie 1926 No. 9 Natural",
-          "price": 10,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://blackpoolbourbon.com/products/padron-serie-1926-no-9-natural",
-          "lastUpdated": "2026-09-22"
-        }
-      ],
-      "bestPrice": 10,
-      "bestVendor": "Padrón Serie 1926 No. 9 Natural",
-      "grounded": true,
+      "quotes": [],
+      "bestPrice": null,
+      "bestVendor": null,
+      "grounded": false,
       "provider": "direct-web",
-      "groundedSources": [
-        {
-          "title": "Padrón 1926 Serie",
-          "uri": "https://blackpoolbourbon.com/products/padron-serie-1926-no-9-natural"
-        }
-      ],
-      "scanStatus": "verified"
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-arturo-fuente-opusx-perfecxion-x",
