@@ -435,7 +435,11 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
 
   const quotes: Record<string, any>[] = [];
   for (const candidate of candidates.slice(0, MAX_PAGE_SCRAPES)) {
-    let productData = { product: candidate.product };
+    let productData: {
+  product: any;
+  metadata?: Record<string, any>;
+  markdown?: string;
+} = { product: candidate.product };
     let title = candidate.title;
     let markdown = candidate.markdown;
 
