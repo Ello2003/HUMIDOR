@@ -393,7 +393,7 @@ async function directWebSearch(query: string): Promise<any[]> {
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>');
 
-  for (const domain of discoveryDomains) {
+  await Promise.all(discoveryDomains.map(async (domain) => {
     const searchQuery = `site:${domain} ${query}`;
     const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`, {
       headers: {
@@ -401,7 +401,7 @@ async function directWebSearch(query: string): Promise<any[]> {
         Accept: 'text/html',
       },
     }).catch(() => undefined);
-    if (!response?.ok) continue;
+    if (!response?.ok) return;
 
     const html = await response.text();
     const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -423,9 +423,8 @@ async function directWebSearch(query: string): Promise<any[]> {
 
       const title = decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
       addResult(url, title);
-      if (results.length >= MAX_SEARCH_RESULTS) return results;
-    }
-  }
+      }
+  }));
 
   return results;
 }
@@ -591,7 +590,14 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
   }
 
   const quotes: Record<string, any>[] = [];
-  for (const candidate of candidates.slice(0, MAX_PAGE_SCRAPES)) {
+  const selectedCandidates = candidates.slice(0, MAX_PAGE_SCRAPES);
+  const scrapeConcurrency = Math.min(6, selectedCandidates.length);
+  let nextCandidate = 0;
+
+  async function processCandidate(): Promise<Record<string, any> | undefined> {
+    while (true) {
+      const candidate = selectedCandidates[nextCandidate++];
+      if (!candidate) return undefined;
     let productData: {
       product: any;
       metadata?: Record<string, any>;
@@ -616,8 +622,12 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
     if (!exactProductMatch(title, String(candidate.result.url), cigar.brand, cigar.name, cigar.vitola, cigar.line, cigar.variant, cigar.packageType, cigar.boxCount, markdown)) continue;
 
     const quote = buildQuote(candidate.result, cigar, productData, title, markdown);
-    if (quote) quotes.push(quote);
+    return quote;
+    }
   }
+
+  const processed = await Promise.all(Array.from({ length: scrapeConcurrency }, () => processCandidate()));
+  quotes.push(...processed.filter((quote): quote is Record<string, any> => Boolean(quote)));
 
   return quotes;
 }
@@ -643,7 +653,7 @@ export async function scanRetailerPrices(
 
   const results: RetailerScanResult[] = new Array(unique.length);
   let nextIndex = 0;
-  const concurrency = Math.max(1, Math.min(options.concurrency ?? 4, 4));
+  const concurrency = Math.max(1, Math.min(options.concurrency ?? 6, 6));
 
   async function worker() {
     while (true) {
