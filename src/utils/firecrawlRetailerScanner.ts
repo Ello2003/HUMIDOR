@@ -198,6 +198,12 @@ function exactProductMatch(
   const brandTokens = meaningfulTokens(brand);
   const requestedName = identityName({ id: '', brand, name, line, variant });
   const nameTokens = meaningfulTokens(requestedName);
+  const nameAliases = new Set<string>([
+    requestedName,
+    name,
+    line || '',
+    variant || '',
+  ].filter(Boolean).map(normalize));
   if (!brandTokens.length || !nameTokens.length) return false;
 
   const brandCompact = compact(brand);
@@ -209,7 +215,13 @@ function exactProductMatch(
     (brandCoreTokens.length > 0 && brandCoreTokens.every((token) => identity.includes(token))) ||
     (normalize(brand).includes('e.p. carrillo') && /\\bcarrillo\\b/i.test(identity));
   const nameMatched =
-    (nameCompact.length >= 3 && compact(identity).includes(nameCompact)) ||
+    [...nameAliases].some((alias) => {
+      const aliasCompact = compact(alias);
+      const aliasTokens = meaningfulTokens(alias);
+      return (aliasCompact.length >= 3 && identityCompact.includes(aliasCompact)) ||
+        (aliasTokens.length > 0 && aliasTokens.every((token) => identity.includes(token)));
+    }) ||
+    (nameCompact.length >= 3 && identityCompact.includes(nameCompact)) ||
     nameTokens.every((token) => identity.includes(token));
 
   return brandMatched && nameMatched && vitolaMatches(vitola, identity) &&
