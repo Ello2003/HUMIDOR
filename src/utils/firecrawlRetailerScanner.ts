@@ -51,8 +51,8 @@ export const UK_RETAILER_CATALOG: Record<string, { domain: string }> = {
 };
 
 const RETAILER_DOMAINS = Object.values(UK_RETAILER_CATALOG).map(({ domain }) => domain);
-const MAX_SEARCH_RESULTS = 30;
-const MAX_PAGE_SCRAPES = 6;
+const MAX_SEARCH_RESULTS = 200;
+const MAX_PAGE_SCRAPES = 12;
 
 function normalize(value: unknown): string {
   return String(value || '')
