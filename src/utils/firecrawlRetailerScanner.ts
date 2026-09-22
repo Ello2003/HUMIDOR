@@ -52,7 +52,7 @@ export const UK_RETAILER_CATALOG: Record<string, { domain: string }> = {
 
 const RETAILER_DOMAINS = Object.values(UK_RETAILER_CATALOG).map(({ domain }) => domain);
 const MAX_SEARCH_RESULTS = 30;
-const MAX_PAGE_SCRAPES = 12;
+const MAX_PAGE_SCRAPES = 6;
 
 function normalize(value: unknown): string {
   return String(value || '')
@@ -375,7 +375,7 @@ async function directWebSearch(query: string): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
   const discoveryDomains = [
-    ...RETAILER_DOMAINS.slice(0, 10),
+    ...RETAILER_DOMAINS.slice(0, 6),
     'surreycigars.com',
     'ukcigarstore.co.uk',
   ];
