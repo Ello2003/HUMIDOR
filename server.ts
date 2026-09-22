@@ -318,6 +318,122 @@ function productPackageMatches(
   return true;
 }
 
+type ParsedVitola = {
+  name?: string;
+  lengthMm?: number;
+  ringGauge?: number;
+};
+
+const COMMON_VITOLA_NAMES = [
+  "double corona",
+  "petit corona",
+  "corona gorda",
+  "short robusto",
+  "double toro",
+  "robusto",
+  "rothschild",
+  "corona",
+  "lonsdale",
+  "churchill",
+  "toro",
+  "gordo",
+  "gigante",
+  "lancero",
+  "panetela",
+  "belicoso",
+  "torpedo",
+  "pyramid",
+  "perfecto",
+  "salomon",
+  "diadema",
+];
+
+function parseLengthMm(value: string): number | undefined {
+  const normalized = value.trim().replace(/\u00a0/g, " ");
+  const parts = normalized.split(/\\s+/);
+  let inches: number;
+  if (parts.length === 2 && /^\\d+$/.test(parts[0]) && /^\\d+\\/\\d+$/.test(parts[1])) {
+    const [numerator, denominator] = parts[1].split("/").map(Number);
+    if (!denominator) return undefined;
+    inches = Number(parts[0]) + numerator / denominator;
+  } else if (/^\\d+\\/\\d+$/.test(normalized)) {
+    const [numerator, denominator] = normalized.split("/").map(Number);
+    if (!denominator) return undefined;
+    inches = numerator / denominator;
+  } else {
+    inches = Number(normalized);
+  }
+  return Number.isFinite(inches) ? inches * 25.4 : undefined;
+}
+
+function parseVitolaDimensions(text: string): { lengthMm?: number; ringGauge?: number } {
+  const normalized = normalizeSearchText(text)
+    .replace(/[×✕]/g, "x")
+    .replace(/\\b(inches?|inch|in)\\b/g, '"')
+    .replace(/\\s+/g, " ");
+
+  const patterns = [
+    /(d+(?:\\s+\\d+\\/\\d+)?(?:\\.\\d+)?)\\s*(?:"|')?\\s*x\\s*(\\d{2})\\b/i,
+    /(\\d+(?:\\.\\d+)?)\\s*mm\\s*x\\s*(\\d{2})\\b/i,
+    /(\\d{2,3})\\s*mm\\s*(?:x|by)\\s*(\\d{2})\\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (!match) continue;
+    const first = parseLengthMm(match[1]);
+    const ringGauge = Number(match[2]);
+    if (!first || !Number.isFinite(ringGauge) || ringGauge < 20 || ringGauge > 80) continue;
+
+    // A first dimension above 20 is overwhelmingly a millimetre length;
+    // ordinary cigar notation such as 5 x 50 is inches x ring gauge.
+    const lengthMm = first > 20 ? first : first;
+    return { lengthMm, ringGauge };
+  }
+
+  return {};
+}
+
+function extractVitolaName(text: string): string | undefined {
+  const normalized = normalizeSearchText(text).replace(/[–—/|,()[\]{}:+]/g, " ");
+  const found = COMMON_VITOLA_NAMES
+    .filter((name) => new RegExp(`\\b${name.replace(/ /g, "\\\\s+")}\\b`, "i").test(normalized))
+    .sort((a, b) => b.length - a.length);
+  return found[0];
+}
+
+function vitolaMatches(requestedVitola: string | undefined, retailerIdentity: string): boolean {
+  if (!requestedVitola) return true;
+
+  const requested = parseVitolaDimensions(requestedVitola);
+  const retailer = parseVitolaDimensions(retailerIdentity);
+  const requestedName = extractVitolaName(requestedVitola);
+  const retailerName = extractVitolaName(retailerIdentity);
+
+  const requestedHasDimensions = Boolean(requested.lengthMm && requested.ringGauge);
+  const retailerHasDimensions = Boolean(retailer.lengthMm && retailer.ringGauge);
+
+  if (requestedHasDimensions && retailerHasDimensions) {
+    // Retailers routinely round or convert dimensions differently. Keep the
+    // match tight enough to reject a genuinely different vitola while allowing
+    // normal inch/mm rounding and small catalogue discrepancies.
+    if (Math.abs(requested.lengthMm! - retailer.lengthMm!) > 5) return false;
+    if (Math.abs(requested.ringGauge! - retailer.ringGauge!) > 1) return false;
+    return true;
+  }
+
+  if (requestedName && retailerName) {
+    // Different names are acceptable only when physical dimensions above have
+    // already established equivalence. Without dimensions, don't guess that
+    // two differently named vitolas are the same cigar.
+    return requestedName === retailerName;
+  }
+
+  // If the retailer omits the vitola from its title/URL, don't reject an
+  // otherwise exact product match. There is no conflicting size evidence.
+  return true;
+}
+
 function exactProductMatch(
   title: string,
   url: string,
@@ -352,10 +468,7 @@ function exactProductMatch(
 
   if (!brandMatched || !nameMatched) return false;
 
-  if (vitola) {
-    const vitolaTokens = meaningfulProductTokens(vitola);
-    if (vitolaTokens.length > 0 && !vitolaTokens.every((token) => identity.includes(token))) return false;
-  }
+  if (!vitolaMatches(vitola, identity)) return false;
 
   return productPackageMatches(title, url, packageType, boxCount);
 }
