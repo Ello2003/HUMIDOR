@@ -30,9 +30,11 @@ import {
   MapPin,
   Activity,
   SlidersHorizontal,
+  ShieldCheck,
 } from 'lucide-react';
 import { AppSettings } from '../types';
 import { DEFAULT_APP_SETTINGS } from '../data/versionHistory';
+import { apiUrl } from '../utils/api';
 
 interface AppSettingsModalProps {
   isOpen: boolean;
@@ -47,6 +49,46 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
   settings,
   onUpdateSettings,
 }) => {
+  type PriceServiceStatus = {
+    status?: string;
+    priceScanner?: {
+      gemini?: boolean;
+      firecrawl?: boolean;
+      apiReady?: boolean;
+      firecrawlPrimary?: boolean;
+      fallbackAvailable?: boolean;
+    };
+  };
+
+  const [priceServiceStatus, setPriceServiceStatus] = React.useState<PriceServiceStatus | null>(null);
+  const [priceServiceChecking, setPriceServiceChecking] = React.useState(false);
+  const [priceServiceError, setPriceServiceError] = React.useState<string | null>(null);
+
+  const checkPriceService = React.useCallback(async () => {
+    setPriceServiceChecking(true);
+    setPriceServiceError(null);
+    try {
+      const response = await fetch(apiUrl('/api/health'), { headers: { Accept: 'application/json' } });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data) {
+        throw new Error(data?.error || `Price service returned HTTP ${response.status}.`);
+      }
+      setPriceServiceStatus(data);
+    } catch (error: any) {
+      setPriceServiceStatus(null);
+      setPriceServiceError(
+        error?.message ||
+          'The price API could not be reached. Deploy the API on Vercel and check VITE_API_BASE_URL if this frontend is on GitHub Pages.'
+      );
+    } finally {
+      setPriceServiceChecking(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (isOpen) void checkPriceService();
+  }, [isOpen, checkPriceService]);
+
   if (!isOpen) return null;
 
   const toggleTab = (tabKey: keyof AppSettings['visibleTabs']) => {
@@ -768,6 +810,70 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               })}
             </div>
           </div>
+          {/* Section 9: Price Service / UK retailer scanner */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-gold" />
+                <span>Price Service & UK Retailer Scanner</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => void checkPriceService()}
+                disabled={priceServiceChecking}
+                className="px-2.5 py-1.5 bg-surface border border-line hover:border-gold/50 rounded-md text-[10px] font-semibold uppercase tracking-wider text-text-muted hover:text-white disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3 h-3 ${priceServiceChecking ? 'animate-spin' : ''}`} />
+                Test connection
+              </button>
+            </div>
+
+            <div className="p-4 bg-surface border border-line rounded-xl space-y-3">
+              {priceServiceError ? (
+                <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/5 text-xs text-red-200">
+                  <div className="font-semibold">Price API unavailable</div>
+                  <div className="mt-1 text-red-200/80">{priceServiceError}</div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {[
+                    ['API', priceServiceStatus?.priceScanner?.apiReady],
+                    ['Firecrawl', priceServiceStatus?.priceScanner?.firecrawl],
+                    ['Gemini fallback', priceServiceStatus?.priceScanner?.gemini],
+                  ].map(([label, ready]) => (
+                    <div key={String(label)} className="p-3 rounded-lg border border-line bg-modal flex items-center justify-between">
+                      <span className="text-xs font-semibold text-white">{String(label)}</span>
+                      <span className={`text-[10px] font-bold uppercase ${ready ? 'text-emerald-400' : 'text-text-muted'}`}>
+                        {ready ? 'Configured' : 'Missing'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="p-3 rounded-lg border border-gold/20 bg-gold/5">
+                <div className="text-xs font-semibold text-white">UK price scanner</div>
+                <div className="text-[11px] text-text-muted mt-1 leading-relaxed">
+                  Firecrawl searches live UK retailer pages first. Gemini is used as the fallback. HUMIDOR only saves a quote when a real retailer result and price can be verified.
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg border border-line bg-modal space-y-2">
+                <div className="text-xs font-semibold text-white">Vercel setup</div>
+                <div className="text-[11px] text-text-muted leading-relaxed">
+                  Add these as <span className="text-white font-mono">Environment Variables</span> in your Vercel project, then redeploy:
+                </div>
+                <div className="font-mono text-[11px] text-gold bg-surface rounded p-2">
+                  GEMINI_API_KEY<br />
+                  FIRECRAWL_API_KEY
+                </div>
+                <div className="text-[11px] text-text-muted leading-relaxed">
+                  If this frontend stays on GitHub Pages, set the repository variable <span className="text-white font-mono">VITE_API_BASE_URL</span> to your Vercel API origin. Do not put either secret key in VITE_ variables or in browser storage.
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* Footer */}

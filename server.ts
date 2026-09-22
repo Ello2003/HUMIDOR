@@ -21,6 +21,11 @@ app.use((req, res, next) => {
   if (allowedOrigin && req.headers.origin === allowedOrigin) {
     res.header("Access-Control-Allow-Origin", allowedOrigin);
     res.header("Vary", "Origin");
+  } else if (!allowedOrigin) {
+    // The API uses no browser credentials; when ALLOWED_ORIGIN is intentionally
+    // unset, allow a separately hosted static frontend (e.g. GitHub Pages) to
+    // call the serverless API. Secrets remain server-side.
+    res.header("Access-Control-Allow-Origin", "*");
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
@@ -308,7 +313,19 @@ async function structureTextToSchema(params: {
 
 // Health check endpoint
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString(), priceScanner: { gemini: Boolean(process.env.GEMINI_API_KEY), firecrawl: Boolean(process.env.FIRECRAWL_API_KEY) } });
+  const geminiConfigured = Boolean(process.env.GEMINI_API_KEY);
+  const firecrawlConfigured = Boolean(process.env.FIRECRAWL_API_KEY);
+  res.json({
+    status: "ok",
+    time: new Date().toISOString(),
+    priceScanner: {
+      gemini: geminiConfigured,
+      firecrawl: firecrawlConfigured,
+      apiReady: geminiConfigured || firecrawlConfigured,
+      firecrawlPrimary: firecrawlConfigured,
+      fallbackAvailable: geminiConfigured,
+    },
+  });
 });
 
 /**
