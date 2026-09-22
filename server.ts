@@ -250,47 +250,208 @@ function retailerForHost(hostname: string): string | undefined {
   })?.[0];
 }
 function extractPoundsFromText(text: string): number | undefined {
-  const matches = [...text.matchAll(/(?:£|GBP\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi)].map((m) => Number(m[1])).filter((n) => Number.isFinite(n) && n >= 3 && n < 2000);
+  const matches = [...text.matchAll(/(?:£|GBP\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi)]
+    .map((m) => Number(m[1]))
+    .filter((n) => Number.isFinite(n) && n >= 3 && n < 2000);
+
   return matches[0];
 }
-async function firecrawlRetailerPriceSearch(params: { brand: string; name: string; vitola?: string; retailers: string[] }) {
+
+function exactProductMatch(
+  title: string,
+  markdown: string,
+  brand: string,
+  name: string,
+  vitola?: string,
+): boolean {
+  const haystack = normalizeSearchText(`${title} ${markdown}`);
+  const brandNeedle = normalizeSearchText(brand);
+  const nameTokens = normalizeSearchText(name)
+    .split(' ')
+    .filter((token) => token.length >= 3);
+
+  if (!brandNeedle || !haystack.includes(brandNeedle)) return false;
+
+  if (
+    nameTokens.length > 0 &&
+    !nameTokens.every((token) => haystack.includes(token))
+  ) {
+    return false;
+  }
+
+  const vitolaTokens = normalizeSearchText(vitola || '')
+    .split(' ')
+    .filter((token) => token.length >= 3);
+
+  if (
+    vitolaTokens.length > 0 &&
+    !vitolaTokens.every((token) => haystack.includes(token))
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+async function firecrawlRetailerPriceSearch(params: {
+  brand: string;
+  name: string;
+  vitola?: string;
+  retailers: string[];
+}) {
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) return { quotes: [], sources: [] };
-  const label = [params.brand, params.name, params.vitola].filter(Boolean).join(' ').trim();
-  const response = await fetch('https://api.firecrawl.dev/v2/search', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: `"${label}" UK price GBP cigar`, limit: 12, sources: ['web'], scrapeOptions: { formats: ['markdown', 'product'], onlyMainContent: true } }),
-  });
-  if (!response.ok) throw new Error(`Firecrawl search failed (${response.status})`);
-  const payload: any = await response.json();
-  const rawResults = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.data?.web) ? payload.data.web : [];
-  const brandNeedle = normalizeSearchText(params.brand);
-  const nameTokens = normalizeSearchText(params.name).split(' ').filter((token) => token.length >= 3);
-  const today = new Date().toISOString().split('T')[0];
+
+  const label = [params.brand, params.name, params.vitola]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  const retailerEntries = params.retailers
+    .map((retailerName) => {
+      const meta = UK_RETAILER_CATALOG[retailerName];
+      return meta
+        ? { name: retailerName, domain: meta.domain }
+        : undefined;
+    })
+    .filter(
+      (entry): entry is { name: string; domain: string } =>
+        Boolean(entry),
+    );
+
+  const queries =
+    retailerEntries.length > 0
+      ? retailerEntries.map(
+          ({ domain }) => `site:${domain} "${label}" cigar price GBP`,
+        )
+      : [`"${label}" UK price GBP cigar`];
+
   const sources: Array<{ title: string; uri: string }> = [];
   const quotes: any[] = [];
   const seen = new Set<string>();
-  for (const result of rawResults) {
-    const url = typeof result?.url === 'string' ? result.url : '';
-    if (!url.startsWith('https://')) continue;
-    let parsedUrl: URL; try { parsedUrl = new URL(url); } catch { continue; }
-    const vendor = retailerForHost(parsedUrl.hostname);
-    if (!vendor) continue;
-    const title = String(result?.title || result?.metadata?.title || url);
-    const markdown = String(result?.markdown || result?.metadata?.description || result?.description || '');
-    const haystack = normalizeSearchText(title + ' ' + markdown);
-    if (!haystack.includes(brandNeedle)) continue;
-    if (nameTokens.length > 0 && !nameTokens.some((token) => haystack.includes(token))) continue;
-    const product = result?.product || result?.data?.product;
-    const structuredPrice = Number(product?.price);
-    const price = Number.isFinite(structuredPrice) && structuredPrice >= 3 && structuredPrice < 2000 ? structuredPrice : extractPoundsFromText(markdown);
-    if (!price || seen.has(url)) continue;
-    seen.add(url); sources.push({ title, uri: url });
-    quotes.push({ vendor, price: Math.round(price * 100) / 100, currency: '£', inStock: product?.availability ? !/out of stock|unavailable|sold out/i.test(String(product.availability)) : true, url, lastUpdated: today });
+
+  for (const query of queries) {
+    const response = await fetch(
+      'https://api.firecrawl.dev/v2/search',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          limit: 8,
+          sources: ['web'],
+          scrapeOptions: {
+            formats: ['markdown', 'product'],
+            onlyMainContent: true,
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Firecrawl search failed (${response.status})`);
+    }
+
+    const payload: any = await response.json();
+
+    const rawResults = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.data?.web)
+        ? payload.data.web
+        : [];
+
+    for (const result of rawResults) {
+      const url =
+        typeof result?.url === 'string'
+          ? result.url
+          : '';
+
+      if (!url.startsWith('https://') || seen.has(url)) continue;
+
+      let parsedUrl: URL;
+
+      try {
+        parsedUrl = new URL(url);
+      } catch {
+        continue;
+      }
+
+      const vendor = retailerForHost(parsedUrl.hostname);
+      if (!vendor) continue;
+
+      const title = String(
+        result?.title ||
+        result?.metadata?.title ||
+        url,
+      );
+
+      const markdown = String(
+        result?.markdown ||
+        result?.metadata?.description ||
+        result?.description ||
+        '',
+      );
+
+      if (
+        !exactProductMatch(
+          title,
+          markdown,
+          params.brand,
+          params.name,
+          params.vitola,
+        )
+      ) {
+        continue;
+      }
+
+      const product =
+        result?.product ||
+        result?.data?.product;
+
+      const structuredPrice = Number(product?.price);
+
+      const priceFromProduct =
+        Number.isFinite(structuredPrice) &&
+        structuredPrice >= 3 &&
+        structuredPrice < 2000
+          ? structuredPrice
+          : undefined;
+
+      const price =
+        priceFromProduct ??
+        extractPoundsFromText(markdown);
+
+      if (!price) continue;
+
+      seen.add(url);
+
+      sources.push({
+        title,
+        uri: url,
+      });
+
+      quotes.push({
+        vendor,
+        price: Math.round(price * 100) / 100,
+        currency: '£',
+        inStock: product?.availability
+          ? !/out of stock|unavailable|sold out/i.test(
+              String(product.availability),
+            )
+          : true,
+        url,
+        lastUpdated:
+          new Date().toISOString().split('T')[0],
+      });
+    }
   }
+
   return { quotes, sources };
 }
+
 /**
  * Takes free-text (typically the output of `groundedWebResearch`) and
  * reshapes it into a specific JSON schema via a second, ungrounded call.
