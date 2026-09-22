@@ -81,8 +81,9 @@ export async function scanRetailerPrices(payload: RetailerPricePayload): Promise
   const result = data.results.find((candidate) => matches(payload, candidate));
   return {
     success: true,
-    data: result || {
+    data: result ? { ...result, retailerQuotes: result.quotes } : {
       quotes: [],
+      retailerQuotes: [],
       retailerQuotes: [],
       bestPrice: null,
       bestVendor: null,
