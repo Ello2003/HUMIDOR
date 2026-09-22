@@ -326,9 +326,11 @@ async function directWebSearch(query: string): Promise<any[]> {
   if (!response.ok) throw new Error(`Direct web search failed (${response.status})`);
   const html = await response.text();
   const results: any[] = [];
-  const pattern = /<a[^>]+class=["']result__a["'][^>]+href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
-  for (const match of html.matchAll(pattern)) {
-    let url = String(match[1] || '');
+  const anchorPattern = /<a\\b[^>]*class=["'][^"']*\\bresult__a\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+  for (const match of html.matchAll(anchorPattern)) {
+    const anchor = String(match[0] || '');
+    const hrefMatch = anchor.match(/\\bhref=["']([^"']+)["']/i);
+    let url = String(hrefMatch?.[1] || '');
     try {
       const parsed = new URL(url, 'https://html.duckduckgo.com');
       const target = parsed.searchParams.get('uddg');
@@ -337,7 +339,7 @@ async function directWebSearch(query: string): Promise<any[]> {
       continue;
     }
     if (!url.startsWith('https://')) continue;
-    const title = String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&');
+    const title = String(match[1] || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&');
     results.push({ url, title, description: '' });
     if (results.length >= MAX_SEARCH_RESULTS) break;
   }
