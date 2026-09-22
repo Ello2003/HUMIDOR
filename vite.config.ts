@@ -3,6 +3,15 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  base: process.env.VERCEL ? '/' : '/HUMIDOR/',
+})
+
 export default defineConfig(({ command }) => {
   return {
     // Only apply the /HUMIDOR/ subpath when actually building for
