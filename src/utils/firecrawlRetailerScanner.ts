@@ -374,11 +374,9 @@ async function firecrawlSearch(
 async function directWebSearch(query: string): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
-  const discoveryDomains = [
-    ...RETAILER_DOMAINS.slice(0, 6),
-    'surreycigars.com',
-    'ukcigarstore.co.uk',
-  ];
+  // Search every configured UK retailer. These requests are concurrent, so
+  // expanding coverage does not re-introduce the old serial scan bottleneck.
+  const discoveryDomains = RETAILER_DOMAINS;
 
   const addResult = (url: string, title: string) => {
     if (!url.startsWith('https://') || seen.has(url)) return;
