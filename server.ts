@@ -243,15 +243,15 @@ function normalizeSearchText(value: unknown): string {
   return String(value || "")
     .toLowerCase()
     .normalize("NFKD")
-    .replace(/[\\u0300-\\u036f]/g, "")
-    .replace(/\\s+/g, " ")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
 function retailerForHost(hostname: string): string | undefined {
-  const host = hostname.toLowerCase().replace(/^www\\./, "");
+  const host = hostname.toLowerCase().replace(/^www\./, "");
   return Object.entries(UK_RETAILER_CATALOG).find(([, meta]) => {
-    const domain = meta.domain.toLowerCase().replace(/^www\\./, "");
+    const domain = meta.domain.toLowerCase().replace(/^www\./, "");
     return host === domain || host.endsWith("." + domain);
   })?.[0];
 }
@@ -263,7 +263,7 @@ function meaningfulProductTokens(value: string): string[] {
   ]);
   return normalizeSearchText(value)
     .replace(/[–—/|,()[\]{}:+]/g, " ")
-    .split(/\\s+/)
+    .split(/\s+/)
     .filter((token) => token.length >= 2 && !generic.has(token));
 }
 
