@@ -560,6 +560,10 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
       rawResults = await directWebSearch(query);
       quotes = await collectQuotes('', cigar, rawResults, true);
       provider = 'direct-web';
+      console.log(`[price-scan] ${label}: direct search results=${rawResults.length}, verified quotes=${quotes.length}`);
+      if (!quotes.length && rawResults.length) {
+        console.log(`[price-scan] ${label}: candidates=${rawResults.slice(0, 5).map((item: any) => String(item?.title || item?.url || '')).join(' | ')}`);
+      }
     } catch (error: any) {
       console.warn(`Direct web fallback unavailable for ${label}: ${String(error?.message || error)}`);
     }
