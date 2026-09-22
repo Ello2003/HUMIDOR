@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-22T22:30:03.208Z",
+  "generatedAt": "2026-09-22T22:32:13.450Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 3,
+  "groundedCount": 5,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
@@ -46,6 +46,14 @@
       "name": "Don Carlos",
       "quotes": [
         {
+          "vendor": "GQ Tobaccos",
+          "price": 32.59,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.gqtobaccos.com/cigars/arturo-fuente-don-carlos-belicoso-single-cigar/",
+          "lastUpdated": "2026-09-22"
+        },
+        {
           "vendor": "Smoke King",
           "price": 19.95,
           "currency": "£",
@@ -61,6 +69,10 @@
       "groundedSources": [
         {
           "title": "Arturo Fuente Don Carlos",
+          "uri": "https://www.gqtobaccos.com/cigars/arturo-fuente-don-carlos-belicoso-single-cigar/"
+        },
+        {
+          "title": "Arturo Fuente Don Carlos",
           "uri": "https://www.smoke-king.co.uk/products/arturo-fuente-don-carlos-no-2-cigar-single"
         }
       ],
@@ -70,13 +82,75 @@
       "id": "res-davidoff-late-hour-churchill",
       "brand": "Davidoff",
       "name": "Winston Churchill Late Hour",
-      "quotes": [],
-      "bestPrice": null,
-      "bestVendor": null,
-      "grounded": false,
+      "quotes": [
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.smoke-king.co.uk/products/tin-of-4-davidoff-winston-churchill-the-late-hour-belicosos-cigars",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-belicosos-cigar",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar",
+          "lastUpdated": "2026-09-22"
+        }
+      ],
+      "bestPrice": 19.95,
+      "bestVendor": "Smoke King",
+      "grounded": true,
       "provider": "direct-web",
-      "groundedSources": [],
-      "scanStatus": "no_verified_results"
+      "groundedSources": [
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar"
+        },
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.smoke-king.co.uk/products/tin-of-4-davidoff-winston-churchill-the-late-hour-belicosos-cigars"
+        },
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-belicosos-cigar"
+        },
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single"
+        },
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar"
+        }
+      ],
+      "scanStatus": "verified"
     },
     {
       "id": "res-davidoff-millennium-robusto",
@@ -242,13 +316,39 @@
       "id": "res-my-father-le-bijou-1922-torpedo",
       "brand": "My Father Cigars",
       "name": "Le Bijou 1922",
-      "quotes": [],
-      "bestPrice": null,
-      "bestVendor": null,
-      "grounded": false,
+      "quotes": [
+        {
+          "vendor": "Simply Cigars",
+          "price": 49.78,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Hava Havana",
+          "price": 575,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp",
+          "lastUpdated": "2026-09-22"
+        }
+      ],
+      "bestPrice": 49.78,
+      "bestVendor": "Simply Cigars",
+      "grounded": true,
       "provider": "direct-web",
-      "groundedSources": [],
-      "scanStatus": "no_verified_results"
+      "groundedSources": [
+        {
+          "title": "My Father Cigars Le Bijou 1922",
+          "uri": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html"
+        },
+        {
+          "title": "My Father Cigars Le Bijou 1922",
+          "uri": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp"
+        }
+      ],
+      "scanStatus": "verified"
     },
     {
       "id": "res-foundation-the-tabernacle-broadleaf",
