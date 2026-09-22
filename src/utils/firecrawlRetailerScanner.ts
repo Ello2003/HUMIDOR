@@ -342,9 +342,8 @@ function structuredPrice(product: any, requested: RetailerScanCigar): {
 function retailerForHost(hostname: string): string | undefined {
   const host = hostname.toLowerCase().replace(/^www\./, '');
   return Object.entries(UK_RETAILER_CATALOG)
-        if (!(host === domain || host.endsWith(`.${domain}`))) continue;
+    .find(([, meta]) => host === meta.domain || host.endsWith(`.${meta.domain}`))?.[0];
 }
-
 async function firecrawlSearch(
   apiKey: string,
   query: string,
