@@ -1,6 +1,6 @@
 # Build the Vite app and deploy the compiled output to GitHub Pages.
-# Price data is already materialized in data/retailer-prices.json by the
-# scheduled scanner, so the deployed app needs no server or secret.
+# Price data is materialized in data/retailer-prices.json by the scheduled
+# scanner and copied into the Pages artifact during the build.
 name: Deploy static content to Pages
 
 on:
@@ -34,6 +34,10 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Prepare static price data
+        run: |
+          mkdir -p public/data
+          cp data/retailer-prices.json public/data/retailer-prices.json
       - name: Build static site
         run: npm run lint && npm run build
       - name: Setup Pages
