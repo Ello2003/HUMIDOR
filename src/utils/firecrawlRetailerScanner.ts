@@ -378,9 +378,9 @@ function decodeXml(value: string): string {
 }
 
 function sitemapLocs(xml: string): string[] {
-  return [...xml.matchAll(/<loc\\b[^>]*>([\\s\\S]*?)<\\/loc>/gi)]
+  return [...xml.matchAll(/<loc\b[^>]*>([\s\S]*?)<\/loc>/gi)]
     .map((match) => decodeXml(String(match[1] || '').trim()))
-    .filter((url) => /^https?:\\/\\//i.test(url));
+    .filter((url) => /^https?:\/\//i.test(url));
 }
 
 function sitemapUrlLooksRelevant(url: string, query: string): boolean {
@@ -415,7 +415,7 @@ async function retailerSitemapUrls(domain: string): Promise<string[]> {
   ]);
   const robots = await fetchText(`https://${domain}/robots.txt`);
   if (robots) {
-    for (const match of robots.matchAll(/^\\s*sitemap:\\s*(https?:\\/\\/\\S+)/gim)) sitemapCandidates.add(String(match[1]).trim());
+    for (const match of robots.matchAll(/^\s*sitemap:\s*(https?:\/\/\S+)/gim)) sitemapCandidates.add(String(match[1]).trim());
   }
 
   const productUrls = new Set<string>();
@@ -424,7 +424,7 @@ async function retailerSitemapUrls(domain: string): Promise<string[]> {
     const xml = await fetchText(sitemap);
     if (!xml) continue;
     const locs = sitemapLocs(xml);
-    if (/<sitemap(?:index)?[\\s>]/i.test(xml.slice(0, 1000))) locs.forEach((loc) => childSitemaps.add(loc));
+    if (/<sitemap(?:index)?[\s>]/i.test(xml.slice(0, 1000))) locs.forEach((loc) => childSitemaps.add(loc));
     else locs.forEach((loc) => productUrls.add(loc));
   }
 
@@ -436,7 +436,7 @@ async function retailerSitemapUrls(domain: string): Promise<string[]> {
 
   const urls = Array.from(productUrls).filter((url) => {
     try {
-      const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+      const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
       return host === domain || host.endsWith(`.${domain}`);
     } catch { return false; }
   });
@@ -456,7 +456,7 @@ async function directWebSearch(query: string): Promise<any[]> {
       seen.add(url);
       let pathname = url;
       try { pathname = decodeURIComponent(new URL(url).pathname); } catch { /* keep URL */ }
-      const title = pathname.replace(/^\\/+|\\/+$/g, '').replace(/[-_]+/g, ' ').replace(/\\/+g, ' > ').trim();
+      const title = pathname.replace(/^\/+|\/+$/g, '').replace(/[-_]+/g, ' ').replace(/\/+g, ' > ').trim();
       results.push({ url, title, description: '' });
       if (results.length >= MAX_SEARCH_RESULTS) break;
     }
@@ -471,19 +471,19 @@ async function directWebSearch(query: string): Promise<any[]> {
     }).catch(() => undefined);
     if (!response?.ok) return;
     const html = await response.text();
-    const pattern = /<a\\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\\bresult__a\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+    const pattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
     for (const match of html.matchAll(pattern)) {
       let url = String(match[1] || '');
       try {
         const parsed = new URL(url, 'https://html.duckduckgo.com');
         const target = parsed.searchParams.get('uddg');
         url = target ? decodeURIComponent(target) : parsed.toString();
-        const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+        const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
         if (!(host === domain || host.endsWith(`.${domain}`))) continue;
       } catch { continue; }
       if (seen.has(url)) continue;
       seen.add(url);
-      results.push({ url, title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()), description: '' });
+      results.push({ url, title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()), description: '' });
     }
   }));
   return results.slice(0, MAX_SEARCH_RESULTS);
