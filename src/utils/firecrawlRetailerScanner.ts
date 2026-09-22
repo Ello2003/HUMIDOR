@@ -370,10 +370,17 @@ async function firecrawlSearch(
 }
 
 async function directWebSearch(query: string): Promise<any[]> {
+  const retailerGroups = [
+    RETAILER_DOMAINS.slice(0, 8),
+    RETAILER_DOMAINS.slice(8, 16),
+    RETAILER_DOMAINS.slice(16),
+  ].filter((group) => group.length);
+
   const queries = [
     query,
     query.replace(/"/g, ''),
     query.replace(/cigar UK price GBP/i, 'UK cigar price'),
+    ...retailerGroups.map((group) => `${group.map((domain) => `site:${domain}`).join(' OR ')} ${query}`),
   ];
   const results: any[] = [];
   const seen = new Set<string>();
