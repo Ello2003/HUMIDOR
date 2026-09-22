@@ -44,6 +44,7 @@ import {
   areCigarsMatching,
 } from '../utils/researchUtils';
 import { bestComparableQuote, comparableQuotes, normalizeCurrency, unitPrice } from '../utils/priceUtils';
+import { batchScanRetailerPrices, scanRetailerPrices } from '../utils/retailerPrices';
 
 const DEFAULT_QUICK_RETAILERS = [
   'C.Gars Ltd',
@@ -777,17 +778,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
     setFeedbackNotice(null);
 
     try {
-      const response = await fetch('/api/research/retailer-prices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brand: item.brand,
-          name: item.name,
-          vitola: item.vitola,
-        }),
+      const data = await scanRetailerPrices({
+        brand: item.brand,
+        name: item.name,
+        vitola: item.vitola,
       });
-
-      const data = await response.json();
       if (!response.ok || !data?.success) {
         throw new Error(data?.error || data?.message || `Scanner request failed (${response.status})`);
       }
@@ -863,21 +858,15 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
     setFeedbackNotice(null);
 
     try {
-      const response = await fetch('/api/research/batch-retailer-prices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cigars: wishlist.map((w) => ({
-            id: w.id,
-            brand: w.brand,
-            line: w.name,
-            name: w.name,
-            vitola: w.vitola,
-          })),
-        }),
+      const data = await batchScanRetailerPrices({
+        cigars: wishlist.map((w) => ({
+          id: w.id,
+          brand: w.brand,
+          line: w.name,
+          name: w.name,
+          vitola: w.vitola,
+        })),
       });
-
-      const data = await response.json();
       if (!response.ok || !data?.success) {
         throw new Error(data?.error || data?.message || `Batch scanner request failed (${response.status})`);
       }
