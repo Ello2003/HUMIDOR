@@ -76,8 +76,14 @@ function validateScanCigar(value: any, requireId = false): { ok: true; cigar: an
       id: id || undefined,
       brand,
       name,
-      line: name,
+      // Preserve the original line/variant fields. Some catalogues store
+      // "Pledge" in name and "Pledge Prequel" in line; collapsing line=name
+      // was allowing sibling variants such as Sojourn to match.
+      line: boundedText(value.line) || name,
+      variant: boundedText(value.variant || value.subline || value.model),
       vitola: boundedText(value.vitola),
+      packageType: boundedText(value.packageType || value.packaging),
+      boxCount: Number.isInteger(Number(value.boxCount)) ? Number(value.boxCount) : undefined,
       countryOrigin: boundedText(value.countryOrigin),
       wrapper: boundedText(value.wrapper),
     },
@@ -258,7 +264,7 @@ function retailerForHost(hostname: string): string | undefined {
 
 function meaningfulProductTokens(value: string): string[] {
   const generic = new Set([
-    "cigar", "cigars", "single", "stick", "box", "pack", "of", "the",
+    "cigar", "cigars", "single", "stick", "sticks", "box", "pack", "of", "the",
     "new", "world", "cuban", "cuba", "habano", "habanos",
   ]);
   return normalizeSearchText(value)
@@ -271,25 +277,71 @@ function compactSearchText(value: unknown): string {
   return normalizeSearchText(value).replace(/[^a-z0-9]+/g, "");
 }
 
+function requestedIdentityName(name: string, line?: string, variant?: string): string {
+  const candidates = [name, line, variant]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .sort((a, b) => meaningfulProductTokens(b).length - meaningfulProductTokens(a).length);
+  return candidates[0] || name;
+}
+
+function packageKind(value?: string, boxCount?: number): "single" | "box" | "other" {
+  const text = normalizeSearchText(value || "");
+  if (Number.isInteger(boxCount) && Number(boxCount) >= 2) return "box";
+  if (/box|carton|case|bundle|pack of|\bpack\b/.test(text)) return "box";
+  if (/single|stick|loose|1 cigar|1 single/.test(text)) return "single";
+  return "single";
+}
+
+function productPackageMatches(
+  title: string,
+  url: string,
+  requestedPackage?: string,
+  requestedBoxCount?: number,
+): boolean {
+  const text = normalizeSearchText(`${title} ${url}`);
+  const target = packageKind(requestedPackage, requestedBoxCount);
+  const explicitBox = /box(?:-|\s+of)?|carton|case|bundle|pack(?:-|\s+of)?|\b[0-9]{1,3}\s+cigars\b/.test(text);
+  const explicitSingle = /single|loose|1[-\s]*(?:single|cigar|stick)|single[-\s]*cigar/.test(text);
+
+  if (target === "single") {
+    // A single-stick scan must never consume a box/carton/bundle URL or title.
+    return !explicitBox || explicitSingle && !/box(?:-|\s+of)?|carton|case|bundle/.test(text);
+  }
+
+  if (target === "box") {
+    if (!explicitBox) return false;
+    if (requestedBoxCount && !new RegExp(`(?:box|pack|carton|case|bundle)[^0-9]{0,8}${requestedBoxCount}\\s*(?:cigars?|sticks?)?\\b`).test(text)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function exactProductMatch(
   title: string,
   url: string,
   _markdown: string,
   brand: string,
   name: string,
+  vitola?: string,
+  line?: string,
+  variant?: string,
+  packageType?: string,
+  boxCount?: number,
 ): boolean {
-  // Product identity must be present in the result title/URL. The page body
-  // is deliberately excluded because retailer pages contain recommendations,
-  // reviews and navigation for unrelated cigars.
+  // Only title + URL establish identity. Page body is deliberately excluded
+  // because retailer pages contain recommendations and related products.
   const identity = normalizeSearchText(`${title} ${url}`);
   const compactIdentity = compactSearchText(identity);
   const brandTokens = meaningfulProductTokens(brand);
-  const nameTokens = meaningfulProductTokens(name);
+  const identityName = requestedIdentityName(name, line, variant);
+  const nameTokens = meaningfulProductTokens(identityName);
 
   if (brandTokens.length === 0 || nameTokens.length === 0) return false;
 
   const compactBrand = compactSearchText(brand);
-  const compactName = compactSearchText(name);
+  const compactName = compactSearchText(identityName);
   const brandMatched =
     (compactBrand.length >= 4 && compactIdentity.includes(compactBrand)) ||
     brandTokens.every((token) => identity.includes(token));
@@ -298,10 +350,14 @@ function exactProductMatch(
     (compactName.length >= 3 && compactIdentity.includes(compactName)) ||
     nameTokens.every((token) => identity.includes(token));
 
-  // Normal retailer naming differences are allowed, e.g.
-  // "E.P. Carrillo" vs "EP Carrillo", while still requiring both the
-  // requested brand and requested cigar line to be identifiable.
-  return brandMatched && nameMatched;
+  if (!brandMatched || !nameMatched) return false;
+
+  if (vitola) {
+    const vitolaTokens = meaningfulProductTokens(vitola);
+    if (vitolaTokens.length > 0 && !vitolaTokens.every((token) => identity.includes(token))) return false;
+  }
+
+  return productPackageMatches(title, url, packageType, boxCount);
 }
 
 function extractPoundsFromText(text: string, productLabel?: string): number | undefined {
@@ -309,7 +365,7 @@ function extractPoundsFromText(text: string, productLabel?: string): number | un
   const label = normalizeSearchText(productLabel || "");
 
   const matches = [
-    ...normalized.matchAll(/(?:£|gbp\\s*)([0-9]{1,4}(?:\\.[0-9]{1,2})?)/gi),
+    ...normalized.matchAll(/(?:£|gbp\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi),
   ]
     .map((match) => ({
       price: Number(match[1]),
@@ -328,7 +384,6 @@ function extractPoundsFromText(text: string, productLabel?: string): number | un
     labelIndexes.push(idx);
     from = idx + Math.max(label.length, 1);
   }
-
   if (labelIndexes.length === 0) return undefined;
 
   const nearby = matches
@@ -336,13 +391,24 @@ function extractPoundsFromText(text: string, productLabel?: string): number | un
       ...match,
       distance: Math.min(...labelIndexes.map((idx) => Math.abs(match.index - idx))),
     }))
-    .filter((match) => match.distance <= 600)
+    .filter((match) => match.distance <= 300)
     .sort((a, b) => a.distance - b.distance);
 
   return nearby[0]?.price;
 }
 
-function extractStructuredProductPrice(product: any): {
+function extractStructuredProductPrice(
+  product: any,
+  requested: {
+    brand: string;
+    name: string;
+    line?: string;
+    variant?: string;
+    vitola?: string;
+    packageType?: string;
+    boxCount?: number;
+  },
+): {
   price?: number;
   inStock?: boolean;
   currency?: string;
@@ -350,16 +416,43 @@ function extractStructuredProductPrice(product: any): {
 } {
   if (!product || typeof product !== "object") return {};
 
+  const productTitle = String(product.title || "");
   const variants = Array.isArray(product.variants) ? product.variants : [];
   const usableVariants = variants.filter((variant: any) => variant && typeof variant === "object");
 
-  const variant =
-    usableVariants.find((candidate: any) => {
-      const title = normalizeSearchText(candidate?.title || JSON.stringify(candidate?.values || {}));
-      return /single|1\\s*single|1\\s*stick/.test(title);
-    }) ||
-    usableVariants.find((candidate: any) => candidate?.availability?.inStock !== false) ||
-    usableVariants[0];
+  const matchingVariants = usableVariants.filter((candidate: any) => {
+    const candidateTitle = String(candidate?.title || JSON.stringify(candidate?.values || {}));
+    return exactProductMatch(
+      candidateTitle,
+      "",
+      "",
+      requested.brand,
+      requested.name,
+      requested.vitola,
+      requested.line,
+      requested.variant,
+      requested.packageType,
+      requested.boxCount,
+    );
+  });
+
+  // If variants exist, never silently fall back to the first in-stock option.
+  // A box variant must not supply the price for a single-stick request.
+  const variant = matchingVariants[0];
+  if (usableVariants.length > 0 && !variant) return {};
+
+  if (!variant && !exactProductMatch(
+    productTitle,
+    "",
+    "",
+    requested.brand,
+    requested.name,
+    requested.vitola,
+    requested.line,
+    requested.variant,
+    requested.packageType,
+    requested.boxCount,
+  )) return {};
 
   const priceObject = variant?.price;
   const rawPrice =
@@ -420,13 +513,17 @@ async function firecrawlScrapeProductPage(apiKey: string, url: string): Promise<
 async function firecrawlRetailerPriceSearch(params: {
   brand: string;
   name: string;
+  line?: string;
+  variant?: string;
   vitola?: string;
+  packageType?: string;
+  boxCount?: number;
   retailers: string[];
 }) {
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) return { quotes: [], sources: [] };
 
-  const label = [params.brand, params.name, params.vitola]
+  const label = [params.brand, requestedIdentityName(params.name, params.line, params.variant), params.vitola]
     .filter(Boolean)
     .join(" ")
     .trim();
@@ -480,12 +577,12 @@ async function firecrawlRetailerPriceSearch(params: {
       const looksLikeUkMerchant = host.endsWith(".co.uk") || host.endsWith(".uk") || /cigar|cigars|tobacco|tobacconist|smoke|humidor/i.test(`${host} ${title}`);
 
       if (!knownVendor && !looksLikeUkMerchant) continue;
-      if (!exactProductMatch(title, url, markdown, params.brand, params.name)) continue;
+      if (!exactProductMatch(title, url, markdown, params.brand, params.name, params.vitola, params.line, params.variant, params.packageType, params.boxCount)) continue;
 
       let product = result?.product || result?.data?.product;
       let verifiedTitle = title;
       let verifiedMarkdown = markdown;
-      let structured = extractStructuredProductPrice(product);
+      let structured = extractStructuredProductPrice(product, params);
 
       // Search results are discovery only. If Firecrawl did not return a
       // reliable product price, scrape the actual product page and extract
@@ -497,13 +594,13 @@ async function firecrawlRetailerPriceSearch(params: {
           verifiedTitle = scraped.title || title;
           verifiedMarkdown = scraped.markdown || markdown;
           product = scraped.product || product;
-          structured = extractStructuredProductPrice(product);
+          structured = extractStructuredProductPrice(product, params);
         } catch (scrapeError) {
           console.warn(`[Price Scanner] Product-page scrape failed for ${url}:`, scrapeError);
         }
       }
 
-      if (!exactProductMatch(verifiedTitle, url, verifiedMarkdown, params.brand, params.name)) continue;
+      if (!exactProductMatch(verifiedTitle, url, verifiedMarkdown, params.brand, params.name, params.vitola, params.line, params.variant, params.packageType, params.boxCount)) continue;
 
       const priceFromProduct = structured.price;
       const price = priceFromProduct ?? extractPoundsFromText(
@@ -2308,15 +2405,15 @@ app.post("/api/research/retailer-prices", async (req, res) => {
   try {
     const cigarValidation = validateScanCigar(req.body);
     if (!cigarValidation.ok) return res.status(400).json({ error: ('error' in cigarValidation ? cigarValidation.error : 'Invalid cigar request') });
-    const { brand, name, vitola, countryOrigin, isCuban } = cigarValidation.cigar;
+    const { brand, name, line, variant, vitola, packageType, boxCount, countryOrigin, isCuban } = cigarValidation.cigar;
     const requestedRetailers = validatedRetailers(req.body.retailers, DEFAULT_UK_RETAILERS);
     if (!requestedRetailers) return res.status(400).json({ error: "Retailers must be provided as an array of names." });
 
-    const cigarLabel = `${brand} ${name || ""}`.trim();
+    const cigarLabel = `${brand} ${requestedIdentityName(name, line, variant)}`.trim();
 
     try {
       if (process.env.FIRECRAWL_API_KEY) {
-        const firecrawl = await firecrawlRetailerPriceSearch({ brand, name, vitola, retailers: requestedRetailers });
+        const firecrawl = await firecrawlRetailerPriceSearch({ brand, name, line, variant, vitola, packageType, boxCount, retailers: requestedRetailers });
         if (firecrawl.quotes.length > 0) {
           const bestPrice = Math.min(...firecrawl.quotes.map((q: any) => q.price));
           const bestQuote = firecrawl.quotes.find((q: any) => q.price === bestPrice);
@@ -2444,9 +2541,9 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
 
     async function scanOne(c: any): Promise<any> {
       try {
-        const cigarLabel = `${c.brand} ${c.name || c.line || ""}`.trim();
+        const cigarLabel = `${c.brand} ${requestedIdentityName(c.name || c.line || '', c.line, c.variant)}`.trim();
         if (process.env.FIRECRAWL_API_KEY) {
-          const firecrawl = await firecrawlRetailerPriceSearch({ brand: c.brand, name: c.name || c.line || '', vitola: c.vitola, retailers: requestedRetailers.length ? requestedRetailers : DEFAULT_UK_RETAILERS });
+          const firecrawl = await firecrawlRetailerPriceSearch({ brand: c.brand, name: c.name || c.line || '', line: c.line, variant: c.variant, vitola: c.vitola, packageType: c.packageType, boxCount: c.boxCount, retailers: requestedRetailers.length ? requestedRetailers : DEFAULT_UK_RETAILERS });
           if (firecrawl.quotes.length > 0) {
             return { id: c.id, brand: c.brand, name: c.name || c.line, quotes: firecrawl.quotes, bestPrice: Math.min(...firecrawl.quotes.map((q: any) => q.price)), bestVendor: firecrawl.quotes.reduce((prev: any, curr: any) => curr.price < prev.price ? curr : prev).vendor, grounded: true, provider: 'firecrawl', groundedSources: firecrawl.sources };
           }
