@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-22T21:23:13.008Z",
-  "source": "github-actions-firecrawl",
+  "generatedAt": "2026-09-22T21:42:38.290Z",
+  "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 0,
+  "groundedCount": 1,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
@@ -12,19 +12,47 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-padron-1926-no9",
       "brand": "Padrón",
       "name": "1926 Serie",
-      "quotes": [],
-      "bestPrice": null,
-      "bestVendor": null,
-      "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "quotes": [
+        {
+          "vendor": "Padrón Serie 1926 No. 9 Natural",
+          "price": 10,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://blackpoolbourbon.com/products/padron-serie-1926-no-9-natural",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "GQ Tobaccos",
+          "price": 75,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-maduro-no-9-single-cigar/",
+          "lastUpdated": "2026-09-22"
+        }
+      ],
+      "bestPrice": 10,
+      "bestVendor": "Padrón Serie 1926 No. 9 Natural",
+      "grounded": true,
+      "provider": "direct-web",
+      "groundedSources": [
+        {
+          "title": "Padrón 1926 Serie",
+          "uri": "https://blackpoolbourbon.com/products/padron-serie-1926-no-9-natural"
+        },
+        {
+          "title": "Padrón 1926 Serie",
+          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-maduro-no-9-single-cigar/"
+        }
+      ],
+      "scanStatus": "verified"
     },
     {
       "id": "res-arturo-fuente-opusx-perfecxion-x",
@@ -34,8 +62,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-arturo-fuente-don-carlos-no2",
@@ -45,8 +74,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-davidoff-late-hour-churchill",
@@ -56,8 +86,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-davidoff-millennium-robusto",
@@ -67,8 +98,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-cohiba-behike-bhk52",
@@ -78,8 +110,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-montecristo-no2-cuban",
@@ -89,8 +122,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-montecristo-no4-cuban",
@@ -100,8 +134,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-partagas-serie-d-no4",
@@ -111,8 +146,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (402)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-oliva-serie-v-melanio-figurado",
@@ -122,8 +158,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-drew-estate-liga-privada-no9",
@@ -133,8 +170,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-plasencia-alma-fuerte-sixto-ii",
@@ -144,8 +182,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-dunbarton-sobremesa-brulee-blue",
@@ -155,8 +194,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-my-father-le-bijou-1922-torpedo",
@@ -166,8 +206,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-foundation-the-tabernacle-broadleaf",
@@ -177,8 +218,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-ashton-vsg-sorcerer",
@@ -188,8 +230,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-tatuaje-selecion-de-cazador-unfiltered",
@@ -199,8 +242,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-roma-craft-neanderthal-hn",
@@ -210,8 +254,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-perdomo-reserve-10th-champagne-epicure",
@@ -221,8 +266,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-ep-carrillo-pledge-sojourner",
@@ -232,8 +278,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-trinidad-vigia-cuban",
@@ -243,8 +290,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-hoyo-de-monterrey-epicure-no2",
@@ -254,8 +302,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-romeo-y-julieta-churchill-cuban",
@@ -265,8 +314,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-warped-flor-del-valle-cristales",
@@ -276,8 +326,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "wish-1",
@@ -287,8 +338,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "wish-2",
@@ -298,8 +350,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "wish-3",
@@ -309,8 +362,9 @@
       "bestPrice": null,
       "bestVendor": null,
       "grounded": false,
-      "provider": "firecrawl",
-      "scanStatus": "scan_error: Firecrawl search failed (429)"
+      "provider": "direct-web",
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     }
   ]
 }
