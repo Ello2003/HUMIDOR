@@ -541,19 +541,33 @@ async function directScrape(url: string): Promise<{ metadata?: Record<string, an
       'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
       Accept: 'text/html,application/xhtml+xml',
     },
-  });
-  if (!response.ok) throw new Error(`Direct page fetch failed (${response.status})`);
-  const html = await response.text();
+  }).catch(() => undefined);
+
+  if (response?.ok) {
+    const html = await response.text();
+    return {
+      metadata: { title: html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '' },
+      markdown: html
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    };
+  }
+
+  // Some retailer sites reject GitHub's direct HTTP client. Jina Reader is a
+  // free last-mile retrieval fallback; the source URL remains the retailer URL.
+  const reader = await fetch(`https://r.jina.ai/${url}`, {
+    headers: { 'User-Agent': 'HUMIDOR price scanner' },
+  }).catch(() => undefined);
+  if (!reader?.ok) throw new Error(`Direct page fetch failed${response ? ` (${response.status})` : ''}`);
+  const markdown = await reader.text();
   return {
-    metadata: { title: html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '' },
-    markdown: html
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/gi, ' ')
-      .replace(/&amp;/gi, '&')
-      .replace(/\s+/g, ' ')
-      .trim(),
+    metadata: { title: markdown.match(/^#\s+(.+)$/m)?.[1] || '' },
+    markdown,
   };
 }
 
