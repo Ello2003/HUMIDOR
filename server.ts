@@ -570,7 +570,7 @@ async function firecrawlRetailerPriceSearch(params: {
   for (let i = 0; i < domains.length; i += 8) domainGroups.push(domains.slice(i, i + 8));
 
   const searchPlans: Array<{ query: string; includeDomains?: string[] }> = domainGroups.map((group) => ({
-    query: `"${params.brand}" "${params.name}" cigar price UK GBP`,
+    query: `"${params.brand}" "${requestedIdentityName(params.name, params.line, params.variant)}" cigar price UK GBP`,
     includeDomains: group,
   }));
   // Always search broadly too, so newly discovered UK merchants can be used immediately.
