@@ -202,9 +202,12 @@ function exactProductMatch(
 
   const brandCompact = compact(brand);
   const nameCompact = compact(requestedName);
+  const identityCompact = compact(identity);
+  const brandCoreTokens = brandTokens.filter((token) => token.length >= 3);
   const brandMatched =
-    (brandCompact.length >= 4 && compact(identity).includes(brandCompact)) ||
-    brandTokens.every((token) => identity.includes(token));
+    (brandCompact.length >= 4 && identityCompact.includes(brandCompact)) ||
+    (brandCoreTokens.length > 0 && brandCoreTokens.every((token) => identity.includes(token))) ||
+    (normalize(brand).includes('e.p. carrillo') && /\\bcarrillo\\b/i.test(identity));
   const nameMatched =
     (nameCompact.length >= 3 && compact(identity).includes(nameCompact)) ||
     nameTokens.every((token) => identity.includes(token));
@@ -326,11 +329,11 @@ async function directWebSearch(query: string): Promise<any[]> {
   if (!response.ok) throw new Error(`Direct web search failed (${response.status})`);
   const html = await response.text();
   const results: any[] = [];
-  const anchorPattern = /<a\\b[^>]*class=["'][^"']*\\bresult__a\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
-  for (const match of html.matchAll(anchorPattern)) {
-    const anchor = String(match[0] || '');
-    const hrefMatch = anchor.match(/\\bhref=["']([^"']+)["']/i);
-    let url = String(hrefMatch?.[1] || '');
+  const anchorPattern = /<a\\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\\bresult__a\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+  const alternateAnchorPattern = /<a\\b[^>]*class=["'][^"']*\\bresult__a\\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+  const matches = [...html.matchAll(anchorPattern), ...html.matchAll(alternateAnchorPattern)];
+  for (const match of matches) {
+    let url = String(match[1] || '');
     try {
       const parsed = new URL(url, 'https://html.duckduckgo.com');
       const target = parsed.searchParams.get('uddg');
@@ -339,7 +342,7 @@ async function directWebSearch(query: string): Promise<any[]> {
       continue;
     }
     if (!url.startsWith('https://')) continue;
-    const title = String(match[1] || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&');
+    const title = String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&');
     results.push({ url, title, description: '' });
     if (results.length >= MAX_SEARCH_RESULTS) break;
   }
