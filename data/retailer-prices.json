@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T21:43:51.441Z",
+  "generatedAt": "2026-09-22T21:45:26.167Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
   "groundedCount": 1,
@@ -28,14 +28,6 @@
           "inStock": false,
           "url": "https://blackpoolbourbon.com/products/padron-serie-1926-no-9-natural",
           "lastUpdated": "2026-09-22"
-        },
-        {
-          "vendor": "GQ Tobaccos",
-          "price": 75,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-maduro-no-9-single-cigar/",
-          "lastUpdated": "2026-09-22"
         }
       ],
       "bestPrice": 10,
@@ -46,10 +38,6 @@
         {
           "title": "Padrón 1926 Serie",
           "uri": "https://blackpoolbourbon.com/products/padron-serie-1926-no-9-natural"
-        },
-        {
-          "title": "Padrón 1926 Serie",
-          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-maduro-no-9-single-cigar/"
         }
       ],
       "scanStatus": "verified"
