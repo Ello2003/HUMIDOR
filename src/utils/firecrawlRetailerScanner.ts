@@ -539,7 +539,7 @@ async function directBingSearch(query: string): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
   for (const domain of RETAILER_DOMAINS.slice(0, 8)) {
-    const response = await fetch(\`https://www.bing.com/search?q=\${encodeURIComponent(\`site:\${domain} \${query}\`)}\`, {
+    const response = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(`site:${domain} ${query}`)}`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)', Accept: 'text/html' },
     }).catch(() => undefined);
     if (!response?.ok) continue;
