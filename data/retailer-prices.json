@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-22T22:32:13.450Z",
+  "generatedAt": "2026-09-22T22:38:43.421Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 5,
+  "groundedCount": 6,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
@@ -20,13 +20,39 @@
       "id": "res-padron-1926-no9",
       "brand": "Padrón",
       "name": "1926 Serie",
-      "quotes": [],
-      "bestPrice": null,
-      "bestVendor": null,
-      "grounded": false,
+      "quotes": [
+        {
+          "vendor": "GQ Tobaccos",
+          "price": 37.59,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-35-single-cigar/",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "GQ Tobaccos",
+          "price": 50.99,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-2-single-cigar/",
+          "lastUpdated": "2026-09-22"
+        }
+      ],
+      "bestPrice": 37.59,
+      "bestVendor": "GQ Tobaccos",
+      "grounded": true,
       "provider": "direct-web",
-      "groundedSources": [],
-      "scanStatus": "no_verified_results"
+      "groundedSources": [
+        {
+          "title": "Padrón 1926 Serie",
+          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-35-single-cigar/"
+        },
+        {
+          "title": "Padrón 1926 Serie",
+          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-2-single-cigar/"
+        }
+      ],
+      "scanStatus": "verified"
     },
     {
       "id": "res-arturo-fuente-opusx-perfecxion-x",
@@ -112,7 +138,7 @@
           "price": 19.95,
           "currency": "£",
           "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single",
+          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-robusto-handmade-cigar",
           "lastUpdated": "2026-09-22"
         },
         {
@@ -120,7 +146,7 @@
           "price": 19.95,
           "currency": "£",
           "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar",
+          "url": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single",
           "lastUpdated": "2026-09-22"
         }
       ],
@@ -143,11 +169,11 @@
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single"
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-robusto-handmade-cigar"
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar"
+          "uri": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single"
         }
       ],
       "scanStatus": "verified"
@@ -318,19 +344,19 @@
       "name": "Le Bijou 1922",
       "quotes": [
         {
-          "vendor": "Simply Cigars",
-          "price": 49.78,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html",
-          "lastUpdated": "2026-09-22"
-        },
-        {
           "vendor": "Hava Havana",
           "price": 575,
           "currency": "£",
           "inStock": false,
           "url": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Simply Cigars",
+          "price": 49.78,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html",
           "lastUpdated": "2026-09-22"
         }
       ],
@@ -341,11 +367,11 @@
       "groundedSources": [
         {
           "title": "My Father Cigars Le Bijou 1922",
-          "uri": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html"
+          "uri": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp"
         },
         {
           "title": "My Father Cigars Le Bijou 1922",
-          "uri": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp"
+          "uri": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html"
         }
       ],
       "scanStatus": "verified"
