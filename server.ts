@@ -267,27 +267,41 @@ function meaningfulProductTokens(value: string): string[] {
     .filter((token) => token.length >= 2 && !generic.has(token));
 }
 
+function compactSearchText(value: unknown): string {
+  return normalizeSearchText(value).replace(/[^a-z0-9]+/g, "");
+}
+
 function exactProductMatch(
   title: string,
   url: string,
-  markdown: string,
+  _markdown: string,
   brand: string,
   name: string,
 ): boolean {
-  // Do not identify a cigar from the whole page body: retailer pages often
-  // contain recommendations, reviews, navigation and unrelated prices.
-  // The product identity must appear in the result title or URL.
+  // Product identity must be present in the result title/URL. The page body
+  // is deliberately excluded because retailer pages contain recommendations,
+  // reviews and navigation for unrelated cigars.
   const identity = normalizeSearchText(`${title} ${url}`);
-  const brandNeedle = normalizeSearchText(brand);
-  const normalizedName = normalizeSearchText(name);
+  const compactIdentity = compactSearchText(identity);
+  const brandTokens = meaningfulProductTokens(brand);
+  const nameTokens = meaningfulProductTokens(name);
 
-  if (!brandNeedle || !normalizedName) return false;
-  if (!identity.includes(brandNeedle)) return false;
-  if (identity.includes(normalizedName)) return true;
+  if (brandTokens.length === 0 || nameTokens.length === 0) return false;
 
-  const tokens = meaningfulProductTokens(name);
-  if (tokens.length === 0) return false;
-  return tokens.every((token) => identity.includes(token));
+  const compactBrand = compactSearchText(brand);
+  const compactName = compactSearchText(name);
+  const brandMatched =
+    (compactBrand.length >= 4 && compactIdentity.includes(compactBrand)) ||
+    brandTokens.every((token) => identity.includes(token));
+
+  const nameMatched =
+    (compactName.length >= 3 && compactIdentity.includes(compactName)) ||
+    nameTokens.every((token) => identity.includes(token));
+
+  // Normal retailer naming differences are allowed, e.g.
+  // "E.P. Carrillo" vs "EP Carrillo", while still requiring both the
+  // requested brand and requested cigar line to be identifiable.
+  return brandMatched && nameMatched;
 }
 
 function extractPoundsFromText(text: string, productLabel?: string): number | undefined {
@@ -295,7 +309,7 @@ function extractPoundsFromText(text: string, productLabel?: string): number | un
   const label = normalizeSearchText(productLabel || "");
 
   const matches = [
-    ...normalized.matchAll(/(?:£|gbp\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi),
+    ...normalized.matchAll(/(?:£|gbp\\s*)([0-9]{1,4}(?:\\.[0-9]{1,2})?)/gi),
   ]
     .map((match) => ({
       price: Number(match[1]),
@@ -325,8 +339,82 @@ function extractPoundsFromText(text: string, productLabel?: string): number | un
     .filter((match) => match.distance <= 600)
     .sort((a, b) => a.distance - b.distance);
 
-  // Never use a distant page-wide price as the cigar price.
   return nearby[0]?.price;
+}
+
+function extractStructuredProductPrice(product: any): {
+  price?: number;
+  inStock?: boolean;
+  currency?: string;
+  title?: string;
+} {
+  if (!product || typeof product !== "object") return {};
+
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  const usableVariants = variants.filter((variant: any) => variant && typeof variant === "object");
+
+  const variant =
+    usableVariants.find((candidate: any) => {
+      const title = normalizeSearchText(candidate?.title || candidate?.values ? JSON.stringify(candidate.values || {}) : "");
+      return /single|1\\s*single|1\\s*stick/.test(title);
+    }) ||
+    usableVariants.find((candidate: any) => candidate?.availability?.inStock !== false) ||
+    usableVariants[0];
+
+  const priceObject = variant?.price;
+  const rawPrice =
+    typeof priceObject === "object" ? priceObject?.amount :
+    Number.isFinite(Number(priceObject)) ? Number(priceObject) :
+    Number.isFinite(Number(product.price)) ? Number(product.price) :
+    undefined;
+
+  const price = Number(rawPrice);
+  const currency = String(
+    (typeof priceObject === "object" ? priceObject?.currency : undefined) ||
+    product.currency ||
+    ""
+  ).toUpperCase();
+
+  if (!Number.isFinite(price) || price < 3 || price >= 2000) return {};
+  if (currency && currency !== "GBP" && currency !== "£") return {};
+
+  return {
+    price,
+    inStock: variant?.availability?.inStock !== undefined
+      ? Boolean(variant.availability.inStock)
+      : undefined,
+    currency: currency || "GBP",
+    title: String(variant?.title || product.title || ""),
+  };
+}
+
+async function firecrawlScrapeProductPage(apiKey: string, url: string): Promise<{
+  title: string;
+  markdown: string;
+  product: any;
+}> {
+  const response = await fetch("https://api.firecrawl.dev/v2/scrape", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url,
+      formats: ["markdown", "product"],
+      onlyMainContent: true,
+      location: { country: "GB", languages: ["en-GB"] },
+    }),
+  });
+
+  if (!response.ok) throw new Error(`Firecrawl scrape failed (${response.status})`);
+
+  const payload: any = await response.json();
+  return {
+    title: String(payload?.data?.metadata?.title || payload?.data?.product?.title || ""),
+    markdown: String(payload?.data?.markdown || ""),
+    product: payload?.data?.product || {},
+  };
 }
 
 async function firecrawlRetailerPriceSearch(params: {
@@ -394,10 +482,34 @@ async function firecrawlRetailerPriceSearch(params: {
       if (!knownVendor && !looksLikeUkMerchant) continue;
       if (!exactProductMatch(title, url, markdown, params.brand, params.name)) continue;
 
-      const product = result?.product || result?.data?.product;
-      const structuredPrice = Number(product?.price);
-      const priceFromProduct = Number.isFinite(structuredPrice) && structuredPrice >= 3 && structuredPrice < 2000 ? structuredPrice : undefined;
-      const price = priceFromProduct ?? extractPoundsFromText(`${title} ${markdown}`, `${params.brand} ${params.name}`);
+      let product = result?.product || result?.data?.product;
+      let verifiedTitle = title;
+      let verifiedMarkdown = markdown;
+      let structured = extractStructuredProductPrice(product);
+
+      // Search results are discovery only. If Firecrawl did not return a
+      // reliable product price, scrape the actual product page and extract
+      // its structured product data. This is what makes different retailer
+      // page structures work instead of relying on a page-wide first £ value.
+      if (!structured.price) {
+        try {
+          const scraped = await firecrawlScrapeProductPage(apiKey, url);
+          verifiedTitle = scraped.title || title;
+          verifiedMarkdown = scraped.markdown || markdown;
+          product = scraped.product || product;
+          structured = extractStructuredProductPrice(product);
+        } catch (scrapeError) {
+          console.warn(`[Price Scanner] Product-page scrape failed for ${url}:`, scrapeError);
+        }
+      }
+
+      if (!exactProductMatch(verifiedTitle, url, verifiedMarkdown, params.brand, params.name)) continue;
+
+      const priceFromProduct = structured.price;
+      const price = priceFromProduct ?? extractPoundsFromText(
+        `${verifiedTitle} ${verifiedMarkdown}`,
+        `${params.brand} ${params.name}`
+      );
       if (!price) continue;
 
       const vendor = knownVendor || String(result?.metadata?.siteName || result?.metadata?.source || title.split("|")[0] || host).trim();
