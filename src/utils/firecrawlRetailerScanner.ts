@@ -578,17 +578,17 @@ async function directNativeSearch(query: string): Promise<any[]> {
       }).catch(() => undefined);
       if (!response?.ok) continue;
       const html = await response.text();
-      const pattern = /<a\\b[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+      const pattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
       let added = 0;
       for (const match of html.matchAll(pattern)) {
         let url = String(match[1] || '');
         try { url = new URL(url, \`https://\${domain}\`).toString(); } catch { continue; }
         try {
-          const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+          const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
           if (!(host === domain || host.endsWith(\`.\${domain}\`))) continue;
         } catch { continue; }
         if (seen.has(url)) continue;
-        const title = decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim());
+        const title = decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
         if (!title || title.length < 4) continue;
         if (!/(cigar|cigars|pledge|padron|davidoff|montecristo|partagas|oliva|foundation|perdomo|plasen)/i.test(title + ' ' + url)) continue;
         seen.add(url);
