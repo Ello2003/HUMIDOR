@@ -491,6 +491,45 @@ async function directWebSearch(query: string): Promise<any[]> {
   return results.slice(0, MAX_SEARCH_RESULTS);
 }
 
+async function directSearchEngine(query: string): Promise<any[]> {
+  const results: any[] = [];
+  const seen = new Set<string>();
+  // This is deliberately a second-stage fallback: retailer catalogues are
+  // preferred, and only the first eight UK retailers are queried here when
+  // catalogue/page verification found nothing.
+  for (const domain of RETAILER_DOMAINS.slice(0, 8)) {
+    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(`site:${domain} ${query}`)}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)', Accept: 'text/html' },
+    }).catch(() => undefined);
+    if (!response?.ok) continue;
+    const html = await response.text();
+    const patterns = [
+      /<a\\b[^>]*href=[\"']([^\"']+)[\"'][^>]*class=[\"'][^\"']*\\bresult__a\\b[^\"']*[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi,
+      /<a\\b[^>]*class=[\"'][^\"']*\\bresult__a\\b[^\"']*[\"'][^>]*href=[\"']([^\"']+)[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi,
+    ];
+    for (const pattern of patterns) {
+      for (const match of html.matchAll(pattern)) {
+        let url = String(match[1] || '');
+        try {
+          const parsed = new URL(url, 'https://html.duckduckgo.com');
+          const target = parsed.searchParams.get('uddg');
+          url = target ? decodeURIComponent(target) : parsed.toString();
+          const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+          if (!(host === domain || host.endsWith(`.${domain}`))) continue;
+        } catch { continue; }
+        if (!url.startsWith('https://') || seen.has(url)) continue;
+        seen.add(url);
+        results.push({
+          url,
+          title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()),
+          description: '',
+        });
+      }
+    }
+  }
+  return results.slice(0, MAX_SEARCH_RESULTS);
+}
+
 async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; product?: any }> {
   const response = await fetch(url, {
     headers: {
@@ -594,6 +633,14 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
     try {
       rawResults = await directWebSearch(query);
       quotes = await collectQuotes('', cigar, rawResults, true);
+      if (!quotes.length) {
+        const searchEngineResults = await directSearchEngine(query);
+        const searchEngineQuotes = await collectQuotes('', cigar, searchEngineResults, true);
+        if (searchEngineQuotes.length) {
+          rawResults = [...rawResults, ...searchEngineResults];
+          quotes = searchEngineQuotes;
+        }
+      }
       provider = 'direct-web';
       console.log(`[price-scan] ${label}: direct search results=${rawResults.length}, verified quotes=${quotes.length}`);
       if (!quotes.length && rawResults.length) {
