@@ -297,7 +297,7 @@ function extractPoundsFromText(text: string, productLabel?: string): number | un
   const labelIndex = label ? normalized.indexOf(label) : -1;
 
   const matches = [
-    ...normalized.matchAll(/(?:£|gbp\\s*)([0-9]{1,4}(?:\\.[0-9]{1,2})?)/gi),
+    ...normalized.matchAll(/(?:£|gbp\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi),
   ]
     .map((match) => ({
       price: Number(match[1]),
@@ -332,130 +332,76 @@ async function firecrawlRetailerPriceSearch(params: {
     .join(" ")
     .trim();
 
-  const requested = params.retailers.length > 0
-    ? params.retailers
-    : DEFAULT_UK_RETAILERS;
+  const requested = params.retailers.length > 0 ? params.retailers : DEFAULT_UK_RETAILERS;
+  const domains = Array.from(new Set(requested.map((name) => UK_RETAILER_CATALOG[name]?.domain).filter((d): d is string => Boolean(d))));
 
-  const domains = Array.from(
-    new Set(
-      requested
-        .map((retailerName) => UK_RETAILER_CATALOG[retailerName]?.domain)
-        .filter((domain): domain is string => Boolean(domain)),
-    ),
-  );
+  // Search small domain groups so the search engine is not overwhelmed by a large restriction.
+  const domainGroups: string[][] = [];
+  for (let i = 0; i < domains.length; i += 8) domainGroups.push(domains.slice(i, i + 8));
 
-  // One multi-domain search is much more reliable and dramatically cheaper than
-  // firing one Firecrawl request per retailer. If it finds nothing, a second
-  // unrestricted UK search catches merchants that are not yet in our catalogue.
-  const searchPlans: Array<{ query: string; includeDomains?: string[] }> = [
-    {
-      query: `"${label}" cigar price GBP UK`,
-      includeDomains: domains.length > 0 ? domains : undefined,
-    },
-    {
-      query: `"${label}" UK cigar price GBP retailer`,
-    },
-  ];
+  const searchPlans: Array<{ query: string; includeDomains?: string[] }> = domainGroups.map((group) => ({
+    query: `"${params.brand}" "${params.name}" cigar price UK GBP`,
+    includeDomains: group,
+  }));
+  // Always search broadly too, so newly discovered UK merchants can be used immediately.
+  searchPlans.push({ query: `"${label}" cigar UK price GBP retailer` });
 
   const sources: Array<{ title: string; uri: string }> = [];
   const quotes: any[] = [];
   const seen = new Set<string>();
 
-  for (let planIndex = 0; planIndex < searchPlans.length; planIndex++) {
-    if (quotes.length > 0 && planIndex > 0) break;
-
-    const plan = searchPlans[planIndex];
+  for (const plan of searchPlans) {
     const response = await fetch("https://api.firecrawl.dev/v2/search", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         query: plan.query,
-        includeDomains: plan.includeDomains,
+        ...(plan.includeDomains ? { includeDomains: plan.includeDomains } : {}),
         limit: 20,
         sources: ["web"],
-        scrapeOptions: {
-          formats: ["markdown", "product"],
-          onlyMainContent: true,
-        },
+        scrapeOptions: { formats: ["markdown", "product"], onlyMainContent: true },
       }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Firecrawl search failed (${response.status})`);
-    }
+    if (!response.ok) throw new Error(`Firecrawl search failed (${response.status})`);
 
     const payload: any = await response.json();
-    const rawResults = Array.isArray(payload?.data?.web)
-      ? payload.data.web
-      : Array.isArray(payload?.data)
-        ? payload.data
-        : [];
+    const rawResults = Array.isArray(payload?.data?.web) ? payload.data.web : Array.isArray(payload?.data) ? payload.data : [];
 
     for (const result of rawResults) {
       const url = typeof result?.url === "string" ? result.url : "";
       if (!url.startsWith("https://") || seen.has(url)) continue;
 
       let parsedUrl: URL;
-      try {
-        parsedUrl = new URL(url);
-      } catch {
-        continue;
-      }
+      try { parsedUrl = new URL(url); } catch { continue; }
 
-      const vendor = retailerForHost(parsedUrl.hostname);
-      if (!vendor) continue;
-
+      const knownVendor = retailerForHost(parsedUrl.hostname);
       const title = String(result?.title || result?.metadata?.title || url);
-      const markdown = String(
-        result?.markdown ||
-        result?.metadata?.description ||
-        result?.description ||
-        "",
-      );
+      const markdown = String(result?.markdown || result?.metadata?.description || result?.description || "");
+      const host = parsedUrl.hostname.toLowerCase().replace(/^www\./, "");
+      const looksLikeUkMerchant = host.endsWith(".co.uk") || host.endsWith(".uk") || /cigar|cigars|tobacco|tobacconist|smoke|humidor/i.test(`${host} ${title}`);
 
-      if (!exactProductMatch(title, markdown, params.brand, params.name)) {
-        continue;
-      }
+      if (!knownVendor && !looksLikeUkMerchant) continue;
+      if (!exactProductMatch(title, markdown, params.brand, params.name)) continue;
 
       const product = result?.product || result?.data?.product;
       const structuredPrice = Number(product?.price);
-      const priceFromProduct =
-        Number.isFinite(structuredPrice) &&
-        structuredPrice >= 3 &&
-        structuredPrice < 2000
-          ? structuredPrice
-          : undefined;
-
-      const price =
-        priceFromProduct ??
-        extractPoundsFromText(
-          `${title} ${markdown}`,
-          `${params.brand} ${params.name}`,
-        );
-
+      const priceFromProduct = Number.isFinite(structuredPrice) && structuredPrice >= 3 && structuredPrice < 2000 ? structuredPrice : undefined;
+      const price = priceFromProduct ?? extractPoundsFromText(`${title} ${markdown}`, `${params.brand} ${params.name}`);
       if (!price) continue;
 
+      const vendor = knownVendor || String(result?.metadata?.siteName || result?.metadata?.source || title.split("|")[0] || host).trim();
       seen.add(url);
       sources.push({ title, uri: url });
-
       quotes.push({
         vendor,
         price: Math.round(price * 100) / 100,
         currency: "£",
-        inStock: product?.availability
-          ? !/out of stock|unavailable|sold out/i.test(
-              String(product.availability),
-            )
-          : !/out of stock|unavailable|sold out/i.test(markdown),
+        inStock: product?.availability ? !/out of stock|unavailable|sold out/i.test(String(product.availability)) : !/out of stock|unavailable|sold out/i.test(markdown),
         url,
         lastUpdated: new Date().toISOString().split("T")[0],
       });
     }
   }
-
   return { quotes, sources };
 }
 /**
