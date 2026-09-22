@@ -421,14 +421,14 @@ async function directScrape(url: string): Promise<{ metadata?: Record<string, an
   if (!response.ok) throw new Error(`Direct page fetch failed (${response.status})`);
   const html = await response.text();
   return {
-    metadata: { title: html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)?.[1] || '' },
+    metadata: { title: html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '' },
     markdown: html
-      .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')
-      .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
       .replace(/<[^>]+>/g, ' ')
       .replace(/&nbsp;/gi, ' ')
       .replace(/&amp;/gi, '&')
-      .replace(/\\s+/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim(),
   };
 }
