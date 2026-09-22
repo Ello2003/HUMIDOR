@@ -558,7 +558,10 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
       /cigar|cigars|tobacco|tobacconist|smoke|humidor/i.test(`${host} ${title}`);
 
     if (!knownRetailer && !looksLikeRetailer) continue;
-    if (!exactProductMatch(title, url, cigar.brand, cigar.name, cigar.vitola, cigar.line, cigar.variant, cigar.packageType, cigar.boxCount, markdown)) continue;
+    // Search results often omit the vitola or package in their title. Use a
+    // broad identity gate here, then verify the full variant/vitola/package after
+    // fetching the actual retailer page.
+    if (!retailerListingMatches(title, url, cigar.brand, cigar.name, undefined, cigar.line, cigar.variant, undefined, undefined, markdown)) continue;
 
     candidates.push({ result, title, markdown, product: result?.product || result?.data?.product });
     seen.add(url);
