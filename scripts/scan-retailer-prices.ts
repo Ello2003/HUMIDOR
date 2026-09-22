@@ -27,15 +27,15 @@ const byId = new Map<string, any>();
 for (const cigar of [...researchCigars, ...wishlistCigars]) byId.set(cigar.id, cigar);
 const cigars = [...byId.values()];
 
-console.log(`Preparing a direct Firecrawl scan for ${cigars.length} cigars...`);
+console.log(`Preparing a UK retailer price scan for ${cigars.length} cigars (Firecrawl with zero-cost web fallback)...`);
 
 const results = await scanRetailerPrices(cigars, {
-  concurrency: Number(process.env.PRICE_SCAN_CONCURRENCY) || 4,
+  concurrency: Number(process.env.PRICE_SCAN_CONCURRENCY) || 2,
 });
 
 const payload = {
   generatedAt: new Date().toISOString(),
-  source: 'github-actions-firecrawl',
+  source: 'github-actions-retailer-scan',
   scannedCount: cigars.length,
   groundedCount: results.filter((result) => result.grounded && result.quotes.length > 0).length,
   results,
