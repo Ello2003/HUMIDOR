@@ -549,7 +549,7 @@ async function directBingSearch(query: string): Promise<any[]> {
       const url = decodeXml(String(match[1] || '').trim());
       try {
         const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-        if (!(host === domain || host.endsWith(\`.\${domain}\`))) continue;
+        if (!(host === domain || host.endsWith(`.${domain}`))) continue;
       } catch { continue; }
       if (!url.startsWith('https://') || seen.has(url)) continue;
       seen.add(url);
