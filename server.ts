@@ -361,7 +361,11 @@ function parseLengthMm(value: string): number | undefined {
     if (!denominator) return undefined;
     inches = numerator / denominator;
   } else {
-    inches = Number(normalized);
+    const numeric = Number(normalized);
+    if (!Number.isFinite(numeric)) return undefined;
+    // Cigar catalogues commonly publish either inches (5 x 50) or millimetres
+    // (127 x 50). A length over 20 is unambiguously a millimetre value here.
+    return numeric > 20 ? numeric : numeric * 25.4;
   }
   return Number.isFinite(inches) ? inches * 25.4 : undefined;
 }
