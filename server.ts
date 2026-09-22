@@ -350,49 +350,53 @@ const COMMON_VITOLA_NAMES = [
 
 function parseLengthMm(value: string): number | undefined {
   const normalized = value.trim().replace(/\u00a0/g, " ");
-  const parts = normalized.split(/\\s+/);
+  const parts = normalized.split(/\s+/);
   let inches: number;
-  if (parts.length === 2 && /^\\d+$/.test(parts[0]) && /^\\d+\\/\\d+$/.test(parts[1])) {
+
+  if (parts.length === 2 && /^\d+$/.test(parts[0]) && /^\d+\/\d+$/.test(parts[1])) {
     const [numerator, denominator] = parts[1].split("/").map(Number);
     if (!denominator) return undefined;
     inches = Number(parts[0]) + numerator / denominator;
-  } else if (/^\\d+\\/\\d+$/.test(normalized)) {
+  } else if (/^\d+\/\d+$/.test(normalized)) {
     const [numerator, denominator] = normalized.split("/").map(Number);
     if (!denominator) return undefined;
     inches = numerator / denominator;
   } else {
     const numeric = Number(normalized);
     if (!Number.isFinite(numeric)) return undefined;
-    // Cigar catalogues commonly publish either inches (5 x 50) or millimetres
-    // (127 x 50). A length over 20 is unambiguously a millimetre value here.
+
+    // Cigar catalogues commonly publish either inches (5 x 50)
+    // or millimetres (127 x 50).
     return numeric > 20 ? numeric : numeric * 25.4;
   }
+
   return Number.isFinite(inches) ? inches * 25.4 : undefined;
 }
 
 function parseVitolaDimensions(text: string): { lengthMm?: number; ringGauge?: number } {
   const normalized = normalizeSearchText(text)
     .replace(/[×✕]/g, "x")
-    .replace(/\\b(inches?|inch|in)\\b/g, '"')
-    .replace(/\\s+/g, " ");
+    .replace(/\b(inches?|inch|in)\b/g, '"')
+    .replace(/\s+/g, " ");
 
   const patterns = [
-    /(d+(?:\\s+\\d+\\/\\d+)?(?:\\.\\d+)?)\\s*(?:"|')?\\s*x\\s*(\\d{2})\\b/i,
-    /(\\d+(?:\\.\\d+)?)\\s*mm\\s*x\\s*(\\d{2})\\b/i,
-    /(\\d{2,3})\\s*mm\\s*(?:x|by)\\s*(\\d{2})\\b/i,
+    /(\d+(?:\s+\d+\/\d+)?(?:\.\d+)?)\s*("|')?\s*x\s*(\d{2})\b/i,
+    /(\d+(?:\.\d+)?)\s*mm\s*x\s*(\d{2})\b/i,
+    /(\d{2,3})\s*mm\s*(?:x|by)\s*(\d{2})\b/i,
   ];
 
   for (const pattern of patterns) {
     const match = normalized.match(pattern);
     if (!match) continue;
+
     const first = parseLengthMm(match[1]);
     const ringGauge = Number(match[2]);
-    if (!first || !Number.isFinite(ringGauge) || ringGauge < 20 || ringGauge > 80) continue;
 
-    // A first dimension above 20 is overwhelmingly a millimetre length;
-    // ordinary cigar notation such as 5 x 50 is inches x ring gauge.
-    const lengthMm = first > 20 ? first : first;
-    return { lengthMm, ringGauge };
+    if (!first || !Number.isFinite(ringGauge) || ringGauge < 20 || ringGauge > 80) {
+      continue;
+    }
+
+    return { lengthMm: first, ringGauge };
   }
 
   return {};
@@ -400,9 +404,11 @@ function parseVitolaDimensions(text: string): { lengthMm?: number; ringGauge?: n
 
 function extractVitolaName(text: string): string | undefined {
   const normalized = normalizeSearchText(text).replace(/[–—/|,()[\]{}:+]/g, " ");
+
   const found = COMMON_VITOLA_NAMES
-    .filter((name) => new RegExp(`\\b${name.replace(/ /g, "\\\\s+")}\\b`, "i").test(normalized))
+    .filter((name) => new RegExp(`\\b${name.replace(/ /g, "\\s+")}\\b`, "i").test(normalized))
     .sort((a, b) => b.length - a.length);
+
   return found[0];
 }
 
@@ -2728,10 +2734,6 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
                     vendor: { type: Type.STRING },
                     price: { type: Type.NUMBER },
                     inStock: { type: Type.BOOLEAN },
-                    productTitle: { type: Type.STRING },
-                    sourceUrl: { type: Type.STRING },
-                    packageType: { type: Type.STRING },
-                    boxCount: { type: Type.INTEGER },
                     productTitle: { type: Type.STRING },
                     sourceUrl: { type: Type.STRING },
                     packageType: { type: Type.STRING },

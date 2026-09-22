@@ -783,8 +783,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
         name: item.name,
         vitola: item.vitola,
       });
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.error || data?.message || `Scanner request failed (${response.status})`);
+      if (!data?.success) {
+        throw new Error(data?.error || data?.message || 'Scanner request failed.');
       }
       const scannedPrices: VendorPriceEntry[] = (data?.data?.retailerQuotes || data?.data?.quotes || [])
         .filter((quote: VendorPriceEntry) => quote && Number.isFinite(Number(quote.price)) && Number(quote.price) > 0);
@@ -867,8 +867,8 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
           vitola: w.vitola,
         })),
       });
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.error || data?.message || `Batch scanner request failed (${response.status})`);
+      if (!data?.success) {
+        throw new Error(data?.error || data?.message || 'Batch scanner request failed.');
       }
       const results: Array<{ id: string; brand: string; name: string; quotes?: VendorPriceEntry[] }> = data?.data?.results || [];
       if (!Array.isArray(results)) throw new Error('The batch scanner returned an invalid result format.');

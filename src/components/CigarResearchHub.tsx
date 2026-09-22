@@ -803,8 +803,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         countryOrigin: cigar.countryOrigin,
         isCuban: cigar.isCuban,
       });
-      if (!res.ok || !data?.success) {
-        throw new Error(data?.error || data?.message || `Retailer scan failed (${res.status})`);
+      if (!data?.success) {
+        throw new Error(data?.error || data?.message || 'Retailer scan failed.');
       }
       if (Array.isArray(data.data?.retailerQuotes) && data.data.retailerQuotes.length > 0) {
         const quotes: VendorPriceEntry[] = data.data.retailerQuotes
@@ -877,8 +877,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           isCuban: c.isCuban,
         })),
       });
-      if (!res.ok || !data?.success || !Array.isArray(data.data?.results)) {
-        throw new Error(data?.error || data?.message || `Batch retailer scan failed (${res.status})`);
+      if (!data?.success || !Array.isArray(data.data?.results)) {
+        throw new Error(data?.error || data?.message || 'Batch retailer scan failed.');
       }
       if (requestId !== retailerBatchRequestRef.current) return;
       if (data.data.results) {
