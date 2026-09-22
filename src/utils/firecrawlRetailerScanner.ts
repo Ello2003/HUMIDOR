@@ -602,6 +602,28 @@ async function directNativeSearch(query: string): Promise<any[]> {
   return results.slice(0, MAX_SEARCH_RESULTS);
 }
 async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; product?: any }> {
+  let hostname = '';
+  try { hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, ''); } catch { /* use direct fetch */ }
+  const preferReader = hostname === 'turmeaus.co.uk' || hostname.endsWith('.turmeaus.co.uk') ||
+    hostname === 'cgarsltd.co.uk' || hostname.endsWith('.cgarsltd.co.uk');
+
+  const readWithJina = async () => {
+    const reader = await fetch('https://r.jina.ai/' + url, {
+      headers: { 'User-Agent': 'HUMIDOR price scanner' },
+    }).catch(() => undefined);
+    if (!reader?.ok) return undefined;
+    const markdown = await reader.text();
+    return {
+      metadata: { title: markdown.match(/^#\s+(.+)$/m)?.[1] || '' },
+      markdown,
+    };
+  };
+
+  if (preferReader) {
+    const mirrored = await readWithJina();
+    if (mirrored) return mirrored;
+  }
+
   const response = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
@@ -624,17 +646,9 @@ async function directScrape(url: string): Promise<{ metadata?: Record<string, an
     };
   }
 
-  // Some retailer sites reject GitHub's direct HTTP client. Jina Reader is a
-  // free last-mile retrieval fallback; the source URL remains the retailer URL.
-  const reader = await fetch(`https://r.jina.ai/${url}`, {
-    headers: { 'User-Agent': 'HUMIDOR price scanner' },
-  }).catch(() => undefined);
-  if (!reader?.ok) throw new Error(`Direct page fetch failed${response ? ` (${response.status})` : ''}`);
-  const markdown = await reader.text();
-  return {
-    metadata: { title: markdown.match(/^#\s+(.+)$/m)?.[1] || '' },
-    markdown,
-  };
+  const mirrored = await readWithJina();
+  if (mirrored) return mirrored;
+  throw new Error('Direct page fetch failed');
 }
 
 async function firecrawlScrape(apiKey: string, url: string): Promise<any> {
