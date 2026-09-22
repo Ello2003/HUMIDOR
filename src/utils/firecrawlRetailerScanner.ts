@@ -384,7 +384,7 @@ function sitemapLocs(xml: string): string[] {
 }
 
 function sitemapUrlLooksRelevant(url: string, query: string): boolean {
-  const urlText = normalize(decodeURIComponent(url));
+  let decodedUrl = url;\n  try { decodedUrl = decodeURIComponent(url); } catch { /* keep the raw sitemap URL */ }\n  const urlText = normalize(decodedUrl);
   const tokens = meaningfulTokens(query)
     .filter((token) => token.length >= 4)
     .filter((token) => !/^(cigar|price|prices|pounds|gbp|uk)$/.test(token));
