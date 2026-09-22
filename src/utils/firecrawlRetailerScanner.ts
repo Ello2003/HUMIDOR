@@ -562,6 +562,45 @@ async function directBingSearch(query: string): Promise<any[]> {
   return results.slice(0, MAX_SEARCH_RESULTS);
 }
 
+async function directNativeSearch(query: string): Promise<any[]> {
+  const results: any[] = [];
+  const seen = new Set<string>();
+  const paths = [
+    (encoded: string) => \`/advanced_search_result.php?keywords=\${encoded}\`,
+    (encoded: string) => \`/search.php?keywords=\${encoded}\`,
+    (encoded: string) => \`/search?q=\${encoded}\`,
+  ];
+
+  for (const domain of RETAILER_DOMAINS.slice(0, 8)) {
+    for (const makePath of paths) {
+      const response = await fetch(\`https://\${domain}\${makePath(encodeURIComponent(query))}\`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)', Accept: 'text/html' },
+      }).catch(() => undefined);
+      if (!response?.ok) continue;
+      const html = await response.text();
+      const pattern = /<a\\b[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+      let added = 0;
+      for (const match of html.matchAll(pattern)) {
+        let url = String(match[1] || '');
+        try { url = new URL(url, \`https://\${domain}\`).toString(); } catch { continue; }
+        try {
+          const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+          if (!(host === domain || host.endsWith(\`.\${domain}\`))) continue;
+        } catch { continue; }
+        if (seen.has(url)) continue;
+        const title = decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim());
+        if (!title || title.length < 4) continue;
+        if (!/(cigar|cigars|pledge|padron|davidoff|montecristo|partagas|oliva|foundation|perdomo|plasen)/i.test(title + ' ' + url)) continue;
+        seen.add(url);
+        results.push({ url, title, description: '' });
+        added++;
+      }
+      if (added) break;
+    }
+  }
+  return results.slice(0, MAX_SEARCH_RESULTS);
+}
+
 async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; product?: any }> {
   const response = await fetch(url, {
     headers: {
@@ -686,6 +725,11 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
           const bingResults = await directBingSearch(query);
           searchEngineQuotes = await collectQuotes('', cigar, bingResults, true);
           if (searchEngineQuotes.length) rawResults = [...rawResults, ...bingResults];
+          if (!searchEngineQuotes.length) {
+            const nativeResults = await directNativeSearch(query);
+            searchEngineQuotes = await collectQuotes('', cigar, nativeResults, true);
+            if (searchEngineQuotes.length) rawResults = [...rawResults, ...nativeResults];
+          }
         } else {
           rawResults = [...rawResults, ...searchEngineResults];
         }
