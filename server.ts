@@ -238,23 +238,33 @@ async function groundedWebResearch(query: string, systemInstruction?: string): P
   };
 }
 
-/** Optional Firecrawl-backed price retrieval. Kept server-side; the browser never sees the API key. */
+/** Live Firecrawl-backed UK price retrieval. Kept server-side; the browser never sees the API key. */
 function normalizeSearchText(value: unknown): string {
-  return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/\\s+/g, " ")
+    .trim();
 }
+
 function retailerForHost(hostname: string): string | undefined {
-  const host = hostname.toLowerCase().replace(/^www\./, '');
+  const host = hostname.toLowerCase().replace(/^www\\./, "");
   return Object.entries(UK_RETAILER_CATALOG).find(([, meta]) => {
-    const domain = meta.domain.toLowerCase().replace(/^www\./, '');
-    return host === domain || host.endsWith('.' + domain);
+    const domain = meta.domain.toLowerCase().replace(/^www\\./, "");
+    return host === domain || host.endsWith("." + domain);
   })?.[0];
 }
-function extractPoundsFromText(text: string): number | undefined {
-  const matches = [...text.matchAll(/(?:£|GBP\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi)]
-    .map((m) => Number(m[1]))
-    .filter((n) => Number.isFinite(n) && n >= 3 && n < 2000);
 
-  return matches[0];
+function meaningfulProductTokens(value: string): string[] {
+  const generic = new Set([
+    "cigar", "cigars", "single", "stick", "box", "pack", "of", "the",
+    "new", "world", "cuban", "cuba", "habano", "habanos",
+  ]);
+  return normalizeSearchText(value)
+    .replace(/[–—/|,()[\]{}:+]/g, " ")
+    .split(/\\s+/)
+    .filter((token) => token.length >= 2 && !generic.has(token));
 }
 
 function exactProductMatch(
@@ -262,35 +272,50 @@ function exactProductMatch(
   markdown: string,
   brand: string,
   name: string,
-  vitola?: string,
 ): boolean {
   const haystack = normalizeSearchText(`${title} ${markdown}`);
   const brandNeedle = normalizeSearchText(brand);
-  const nameTokens = normalizeSearchText(name)
-    .split(' ')
-    .filter((token) => token.length >= 3);
-
   if (!brandNeedle || !haystack.includes(brandNeedle)) return false;
 
-  if (
-    nameTokens.length > 0 &&
-    !nameTokens.every((token) => haystack.includes(token))
-  ) {
-    return false;
-  }
+  const normalizedName = normalizeSearchText(name);
+  if (!normalizedName) return true;
 
-  const vitolaTokens = normalizeSearchText(vitola || '')
-    .split(' ')
-    .filter((token) => token.length >= 3);
+  // Prefer the exact product name, but tolerate retailer punctuation differences
+  // such as "No.4" vs "No 4" and "Serie D" vs "Serie-D".
+  if (haystack.includes(normalizedName)) return true;
 
-  if (
-    vitolaTokens.length > 0 &&
-    !vitolaTokens.every((token) => haystack.includes(token))
-  ) {
-    return false;
-  }
+  const tokens = meaningfulProductTokens(name);
+  if (tokens.length === 0) return true;
 
-  return true;
+  const matched = tokens.filter((token) => haystack.includes(token)).length;
+  return matched === tokens.length || (tokens.length >= 4 && matched >= tokens.length - 1);
+}
+
+function extractPoundsFromText(text: string, productLabel?: string): number | undefined {
+  const normalized = normalizeSearchText(text);
+  const label = normalizeSearchText(productLabel || "");
+  const labelIndex = label ? normalized.indexOf(label) : -1;
+
+  const matches = [
+    ...normalized.matchAll(/(?:£|gbp\\s*)([0-9]{1,4}(?:\\.[0-9]{1,2})?)/gi),
+  ]
+    .map((match) => ({
+      price: Number(match[1]),
+      index: match.index ?? 0,
+    }))
+    .filter(
+      ({ price }) =>
+        Number.isFinite(price) && price >= 3 && price < 2000,
+    );
+
+  if (matches.length === 0) return undefined;
+  if (labelIndex < 0) return matches[0].price;
+
+  matches.sort(
+    (a, b) =>
+      Math.abs(a.index - labelIndex) - Math.abs(b.index - labelIndex),
+  );
+  return matches[0].price;
 }
 
 async function firecrawlRetailerPriceSearch(params: {
@@ -304,75 +329,76 @@ async function firecrawlRetailerPriceSearch(params: {
 
   const label = [params.brand, params.name, params.vitola]
     .filter(Boolean)
-    .join(' ')
+    .join(" ")
     .trim();
 
-  const retailerEntries = params.retailers
-    .map((retailerName) => {
-      const meta = UK_RETAILER_CATALOG[retailerName];
-      return meta
-        ? { name: retailerName, domain: meta.domain }
-        : undefined;
-    })
-    .filter(
-      (entry): entry is { name: string; domain: string } =>
-        Boolean(entry),
-    );
+  const requested = params.retailers.length > 0
+    ? params.retailers
+    : DEFAULT_UK_RETAILERS;
 
-  const queries =
-    retailerEntries.length > 0
-      ? retailerEntries.map(
-          ({ domain }) => `site:${domain} "${label}" cigar price GBP`,
-        )
-      : [`"${label}" UK price GBP cigar`];
+  const domains = Array.from(
+    new Set(
+      requested
+        .map((retailerName) => UK_RETAILER_CATALOG[retailerName]?.domain)
+        .filter((domain): domain is string => Boolean(domain)),
+    ),
+  );
+
+  // One multi-domain search is much more reliable and dramatically cheaper than
+  // firing one Firecrawl request per retailer. If it finds nothing, a second
+  // unrestricted UK search catches merchants that are not yet in our catalogue.
+  const searchPlans: Array<{ query: string; includeDomains?: string[] }> = [
+    {
+      query: `"${label}" cigar price GBP UK`,
+      includeDomains: domains.length > 0 ? domains : undefined,
+    },
+    {
+      query: `"${label}" UK cigar price GBP retailer`,
+    },
+  ];
 
   const sources: Array<{ title: string; uri: string }> = [];
   const quotes: any[] = [];
   const seen = new Set<string>();
 
-  for (const query of queries) {
-    const response = await fetch(
-      'https://api.firecrawl.dev/v2/search',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query,
-          limit: 8,
-          sources: ['web'],
-          scrapeOptions: {
-            formats: ['markdown', 'product'],
-            onlyMainContent: true,
-          },
-        }),
+  for (let planIndex = 0; planIndex < searchPlans.length; planIndex++) {
+    if (quotes.length > 0 && planIndex > 0) break;
+
+    const plan = searchPlans[planIndex];
+    const response = await fetch("https://api.firecrawl.dev/v2/search", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        query: plan.query,
+        includeDomains: plan.includeDomains,
+        limit: 20,
+        sources: ["web"],
+        scrapeOptions: {
+          formats: ["markdown", "product"],
+          onlyMainContent: true,
+        },
+      }),
+    });
 
     if (!response.ok) {
       throw new Error(`Firecrawl search failed (${response.status})`);
     }
 
     const payload: any = await response.json();
-
-    const rawResults = Array.isArray(payload?.data)
-      ? payload.data
-      : Array.isArray(payload?.data?.web)
-        ? payload.data.web
+    const rawResults = Array.isArray(payload?.data?.web)
+      ? payload.data.web
+      : Array.isArray(payload?.data)
+        ? payload.data
         : [];
 
     for (const result of rawResults) {
-      const url =
-        typeof result?.url === 'string'
-          ? result.url
-          : '';
-
-      if (!url.startsWith('https://') || seen.has(url)) continue;
+      const url = typeof result?.url === "string" ? result.url : "";
+      if (!url.startsWith("https://") || seen.has(url)) continue;
 
       let parsedUrl: URL;
-
       try {
         parsedUrl = new URL(url);
       } catch {
@@ -382,37 +408,20 @@ async function firecrawlRetailerPriceSearch(params: {
       const vendor = retailerForHost(parsedUrl.hostname);
       if (!vendor) continue;
 
-      const title = String(
-        result?.title ||
-        result?.metadata?.title ||
-        url,
-      );
-
+      const title = String(result?.title || result?.metadata?.title || url);
       const markdown = String(
         result?.markdown ||
         result?.metadata?.description ||
         result?.description ||
-        '',
+        "",
       );
 
-      if (
-        !exactProductMatch(
-          title,
-          markdown,
-          params.brand,
-          params.name,
-          params.vitola,
-        )
-      ) {
+      if (!exactProductMatch(title, markdown, params.brand, params.name)) {
         continue;
       }
 
-      const product =
-        result?.product ||
-        result?.data?.product;
-
+      const product = result?.product || result?.data?.product;
       const structuredPrice = Number(product?.price);
-
       const priceFromProduct =
         Number.isFinite(structuredPrice) &&
         structuredPrice >= 3 &&
@@ -422,36 +431,33 @@ async function firecrawlRetailerPriceSearch(params: {
 
       const price =
         priceFromProduct ??
-        extractPoundsFromText(markdown);
+        extractPoundsFromText(
+          `${title} ${markdown}`,
+          `${params.brand} ${params.name}`,
+        );
 
       if (!price) continue;
 
       seen.add(url);
-
-      sources.push({
-        title,
-        uri: url,
-      });
+      sources.push({ title, uri: url });
 
       quotes.push({
         vendor,
         price: Math.round(price * 100) / 100,
-        currency: '£',
+        currency: "£",
         inStock: product?.availability
           ? !/out of stock|unavailable|sold out/i.test(
               String(product.availability),
             )
-          : true,
+          : !/out of stock|unavailable|sold out/i.test(markdown),
         url,
-        lastUpdated:
-          new Date().toISOString().split('T')[0],
+        lastUpdated: new Date().toISOString().split("T")[0],
       });
     }
   }
 
   return { quotes, sources };
 }
-
 /**
  * Takes free-text (typically the output of `groundedWebResearch`) and
  * reshapes it into a specific JSON schema via a second, ungrounded call.
@@ -2110,28 +2116,34 @@ app.post("/api/import/basket-from-url", async (req, res) => {
   }
 });
 
-// UK retailer catalogue used to guide grounded searches and to create retailer search links.
-// Keep domains here rather than relying on fuzzy vendor-name matching: several UK shops
-// publish prices under domains that do not contain the shop's display name.
+// UK retailer catalogue used to guide grounded searches and live price validation.
+// Domains are restricted to genuine UK cigar merchants so broad web searches cannot
+// accidentally turn marketplace listings, review sites, or overseas shops into quotes.
 const UK_RETAILER_CATALOG: Record<string, { domain: string; multiplier: number }> = {
   "C.Gars Ltd": { domain: "cgarsltd.co.uk", multiplier: 1.0 },
-  "Cuban Cigar Club": { domain: "cubancigarclub.co.uk", multiplier: 0.98 },
-  "Havana House": { domain: "havanahouse.co.uk", multiplier: 1.02 },
-  "Smoke King": { domain: "smoke-king.co.uk", multiplier: 0.96 },
-  "Davidoff of London": { domain: "davidoffoflondon.com", multiplier: 1.05 },
-  "James J. Fox (London)": { domain: "jjfox.co.uk", multiplier: 1.04 },
-  "Sautter Cigars (London)": { domain: "sauttercigars.com", multiplier: 1.03 },
-  "Turmeaus Tobacconist": { domain: "turmeaus.co.uk", multiplier: 0.99 },
-  "Robert Graham 1874": { domain: "robertgraham1874.com", multiplier: 1.01 },
-  "GQ Tobaccos": { domain: "gqtobaccos.com", multiplier: 0.97 },
-  "Aston's of Manchester": { domain: "astonsofmanchester.co.uk", multiplier: 1.02 },
-  "Arthur Fletcher": { domain: "arthurfletcher.co.uk", multiplier: 1.01 },
+  "Cuban Cigar Club": { domain: "cubancigarclub.co.uk", multiplier: 1.0 },
+  "Havana House": { domain: "havanahouse.co.uk", multiplier: 1.0 },
+  "Smoke King": { domain: "smoke-king.co.uk", multiplier: 1.0 },
+  "Davidoff of London": { domain: "davidoffoflondon.com", multiplier: 1.0 },
+  "James J. Fox (London)": { domain: "jjfox.co.uk", multiplier: 1.0 },
+  "Sautter Cigars (London)": { domain: "sauttercigars.com", multiplier: 1.0 },
+  "Turmeaus Tobacconist": { domain: "turmeaus.co.uk", multiplier: 1.0 },
+  "Robert Graham 1874": { domain: "robertgraham1874.com", multiplier: 1.0 },
+  "GQ Tobaccos": { domain: "gqtobaccos.com", multiplier: 1.0 },
+  "Aston's of Manchester": { domain: "astonsofmanchester.co.uk", multiplier: 1.0 },
+  "Arthur Fletcher": { domain: "arthurfletcher.co.uk", multiplier: 1.0 },
   "James Barber Tobacconist": { domain: "jamesbarber.co.uk", multiplier: 1.0 },
-  "Gauntleys": { domain: "gauntleys.com", multiplier: 1.02 },
-  "Fox Cigar": { domain: "foxcigar.com", multiplier: 1.04 },
-  "Simply Cigars": { domain: "simplycigars.co.uk", multiplier: 0.98 },
+  "Gauntleys": { domain: "gauntleyscigars.com", multiplier: 1.0 },
+  "Simply Cigars": { domain: "simplycigars.co.uk", multiplier: 1.0 },
+  "Fine Cigars Club": { domain: "finecigarsclub.com", multiplier: 1.0 },
+  "Cigar Nights": { domain: "cigarnights.co.uk", multiplier: 1.0 },
+  "No.6 Cavendish": { domain: "no6cavendish.com", multiplier: 1.0 },
+  "Hava Havana": { domain: "havahavana.com", multiplier: 1.0 },
+  "The House of Cigars": { domain: "thehouseofcigars.co.uk", multiplier: 1.0 },
+  "The Smoking Jacket": { domain: "thesmokingjacket.co.uk", multiplier: 1.0 },
+  "Toro Puro": { domain: "toropuro.com", multiplier: 1.0 },
+  "Rebellion Cigars": { domain: "rebellioncigars.com", multiplier: 1.0 },
 };
-
 const DEFAULT_UK_RETAILERS = Object.keys(UK_RETAILER_CATALOG);
 
 function retailerSearchBrief(retailers: string[]): string {
