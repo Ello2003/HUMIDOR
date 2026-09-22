@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-22T22:14:48.603Z",
+  "generatedAt": "2026-09-22T22:23:53.656Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 0,
+  "groundedCount": 2,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
@@ -44,13 +44,27 @@
       "id": "res-arturo-fuente-don-carlos-no2",
       "brand": "Arturo Fuente",
       "name": "Don Carlos",
-      "quotes": [],
-      "bestPrice": null,
-      "bestVendor": null,
-      "grounded": false,
+      "quotes": [
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.smoke-king.co.uk/products/arturo-fuente-don-carlos-no-2-cigar-single",
+          "lastUpdated": "2026-09-22"
+        }
+      ],
+      "bestPrice": 19.95,
+      "bestVendor": "Smoke King",
+      "grounded": true,
       "provider": "direct-web",
-      "groundedSources": [],
-      "scanStatus": "no_verified_results"
+      "groundedSources": [
+        {
+          "title": "Arturo Fuente Don Carlos",
+          "uri": "https://www.smoke-king.co.uk/products/arturo-fuente-don-carlos-no-2-cigar-single"
+        }
+      ],
+      "scanStatus": "verified"
     },
     {
       "id": "res-davidoff-late-hour-churchill",
@@ -80,13 +94,51 @@
       "id": "res-cohiba-behike-bhk52",
       "brand": "Cohiba",
       "name": "Behike",
-      "quotes": [],
-      "bestPrice": null,
-      "bestVendor": null,
-      "grounded": false,
+      "quotes": [
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.smoke-king.co.uk/products/cohiba-behike-56-cuban-cigar-single",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.smoke-king.co.uk/products/cohiba-behike-54-cuban-cigar-single",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.smoke-king.co.uk/products/cohiba-behike-52-cuban-cigar-single",
+          "lastUpdated": "2026-09-22"
+        }
+      ],
+      "bestPrice": 19.95,
+      "bestVendor": "Smoke King",
+      "grounded": true,
       "provider": "direct-web",
-      "groundedSources": [],
-      "scanStatus": "no_verified_results"
+      "groundedSources": [
+        {
+          "title": "Cohiba Behike",
+          "uri": "https://www.smoke-king.co.uk/products/cohiba-behike-56-cuban-cigar-single"
+        },
+        {
+          "title": "Cohiba Behike",
+          "uri": "https://www.smoke-king.co.uk/products/cohiba-behike-54-cuban-cigar-single"
+        },
+        {
+          "title": "Cohiba Behike",
+          "uri": "https://www.smoke-king.co.uk/products/cohiba-behike-52-cuban-cigar-single"
+        }
+      ],
+      "scanStatus": "verified"
     },
     {
       "id": "res-montecristo-no2-cuban",
