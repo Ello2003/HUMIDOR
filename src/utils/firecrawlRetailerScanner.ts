@@ -49,8 +49,8 @@ export const UK_RETAILER_CATALOG: Record<string, { domain: string }> = {
 };
 
 const RETAILER_DOMAINS = Object.values(UK_RETAILER_CATALOG).map(({ domain }) => domain);
-const MAX_SEARCH_RESULTS = 10;
-const MAX_PAGE_SCRAPES = 4;
+const MAX_SEARCH_RESULTS = 20;
+const MAX_PAGE_SCRAPES = 12;
 
 function normalize(value: unknown): string {
   return String(value || '')
@@ -92,17 +92,20 @@ function packageKind(packageType?: string, boxCount?: number): 'single' | 'box' 
 }
 
 function packageMatches(title: string, url: string, packageType?: string, boxCount?: number): boolean {
-  const text = normalize(`${title} ${url}`);
+  const titleText = normalize(title);
+  const urlText = normalize(url);
   const target = packageKind(packageType, boxCount);
-  const explicitBox = /box(?:-|\s+of)?|carton|case|bundle|pack(?:-|\s+of)?|\b[0-9]{1,3}\s+cigars?\b/.test(text);
-  const explicitSingle = /single|loose|1[-\s]*(?:single|cigar|stick)|single[-\s]*cigar/.test(text);
+  const explicitBox = /box(?:-|\s+of)?|carton|case|bundle|pack(?:-|\s+of)?|\b[0-9]{1,3}\s+cigars?\b/.test(titleText) ||
+    /box(?:-|\s+of)?|carton|case|bundle|pack(?:-|\s+of)?/.test(urlText);
+  const explicitSingle = /single|loose|1[-\s]*(?:single|cigar|stick)|single[-\s]*cigar/.test(titleText);
 
   if (target === 'single') {
-    return !explicitBox || (explicitSingle && !/box|carton|case|bundle/.test(text));
+    if (explicitSingle) return true;
+    return !explicitBox;
   }
 
   if (!explicitBox) return false;
-  if (boxCount && !new RegExp(`(?:box|pack|carton|case|bundle)[^0-9]{0,8}${boxCount}\\s*(?:cigars?|sticks?)?\\b`).test(text)) {
+  if (boxCount && !new RegExp(`(?:box|pack|carton|case|bundle)[^0-9]{0,12}${boxCount}\\s*(?:cigars?|sticks?)?\\b`).test(`${titleText} ${urlText}`)) {
     return false;
   }
   return true;
@@ -183,6 +186,69 @@ function vitolaMatches(requestedVitola: string | undefined, identityText: string
   return true;
 }
 
+function significantVariantTokens(vitola?: string): string[] {
+  const generic = new Set([
+    'box', 'pressed', 'press', 'double', 'petit', 'short', 'long', 'extra',
+    'corona', 'gorda', 'robusto', 'rothschild', 'churchill', 'toro', 'gordo',
+    'gigante', 'lancero', 'panetela', 'belicoso', 'torpedo', 'pyramid',
+    'perfecto', 'salomon', 'diadema', 'vitola', 'size', 'format',
+  ]);
+  return meaningfulTokens(vitola || '')
+    .filter((token) => token.length >= 4 && !generic.has(token) && !/^\d+$/.test(token))
+    .filter((token) => token !== 'no');
+}
+
+function tokenCompatible(requested: string, foundText: string): boolean {
+  if (foundText.includes(requested)) return true;
+  if (requested.length >= 6 && foundText.split(/\s+/).some((token) => token.startsWith(requested.slice(0, 6)))) return true;
+  return false;
+}
+
+export function retailerListingMatches(
+  title: string,
+  url: string,
+  brand: string,
+  name: string,
+  vitola?: string,
+  line?: string,
+  variant?: string,
+  packageType?: string,
+  boxCount?: number,
+  extraText = '',
+): boolean {
+  const identity = normalize(`${title} ${url} ${extraText}`);
+  const brandTokens = meaningfulTokens(brand);
+  const requestedName = identityName({ id: '', brand, name, line, variant });
+  const nameAliases = new Set<string>([
+    requestedName, name, line || '', variant || '',
+  ].filter(Boolean).map(normalize));
+  if (!brandTokens.length) return false;
+
+  const identityCompact = compact(identity);
+  const brandCompact = compact(brand);
+  const brandCoreTokens = brandTokens.filter((token) => token.length >= 3);
+  const brandMatched =
+    (brandCompact.length >= 4 && identityCompact.includes(brandCompact)) ||
+    (brandCoreTokens.length > 0 && brandCoreTokens.every((token) => identity.includes(token))) ||
+    (normalize(brand).includes('e.p. carrillo') && /\bcarrillo\b/i.test(identity));
+  if (!brandMatched) return false;
+
+  const nameMatched = [...nameAliases].some((alias) => {
+    const aliasCompact = compact(alias);
+    const aliasTokens = meaningfulTokens(alias);
+    return (aliasCompact.length >= 3 && identityCompact.includes(aliasCompact)) ||
+      (aliasTokens.length > 0 && aliasTokens.every((token) => identity.includes(token)));
+  });
+  if (!nameMatched) return false;
+
+  if (!vitolaMatches(vitola, identity)) return false;
+
+  const variantTokens = significantVariantTokens(vitola);
+  if (variantTokens.length && !variantTokens.every((token) => tokenCompatible(token, identity))) return false;
+
+  return packageMatches(title, url, packageType, boxCount);
+}
+
 function exactProductMatch(
   title: string,
   url: string,
@@ -193,39 +259,11 @@ function exactProductMatch(
   variant?: string,
   packageType?: string,
   boxCount?: number,
+  extraText = '',
 ): boolean {
-  const identity = normalize(`${title} ${url}`);
-  const brandTokens = meaningfulTokens(brand);
-  const requestedName = identityName({ id: '', brand, name, line, variant });
-  const nameTokens = meaningfulTokens(requestedName);
-  const nameAliases = new Set<string>([
-    requestedName,
-    name,
-    line || '',
-    variant || '',
-  ].filter(Boolean).map(normalize));
-  if (!brandTokens.length || !nameTokens.length) return false;
-
-  const brandCompact = compact(brand);
-  const nameCompact = compact(requestedName);
-  const identityCompact = compact(identity);
-  const brandCoreTokens = brandTokens.filter((token) => token.length >= 3);
-  const brandMatched =
-    (brandCompact.length >= 4 && identityCompact.includes(brandCompact)) ||
-    (brandCoreTokens.length > 0 && brandCoreTokens.every((token) => identity.includes(token))) ||
-    (normalize(brand).includes('e.p. carrillo') && /\\bcarrillo\\b/i.test(identity));
-  const nameMatched =
-    [...nameAliases].some((alias) => {
-      const aliasCompact = compact(alias);
-      const aliasTokens = meaningfulTokens(alias);
-      return (aliasCompact.length >= 3 && identityCompact.includes(aliasCompact)) ||
-        (aliasTokens.length > 0 && aliasTokens.every((token) => identity.includes(token)));
-    }) ||
-    (nameCompact.length >= 3 && identityCompact.includes(nameCompact)) ||
-    nameTokens.every((token) => identity.includes(token));
-
-  return brandMatched && nameMatched && vitolaMatches(vitola, identity) &&
-    packageMatches(title, url, packageType, boxCount);
+  return retailerListingMatches(
+    title, url, brand, name, vitola, line, variant, packageType, boxCount, extraText,
+  );
 }
 
 function extractPounds(text: string, label: string): number | undefined {
@@ -332,32 +370,44 @@ async function firecrawlSearch(
 }
 
 async function directWebSearch(query: string): Promise<any[]> {
-  const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
-      Accept: 'text/html',
-    },
-  });
-  if (!response.ok) throw new Error(`Direct web search failed (${response.status})`);
-  const html = await response.text();
+  const queries = [
+    query,
+    query.replace(/"/g, ''),
+    query.replace(/cigar UK price GBP/i, 'UK cigar price'),
+  ];
   const results: any[] = [];
-  const anchorPattern = /<a\\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\\bresult__a\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
-  const alternateAnchorPattern = /<a\\b[^>]*class=["'][^"']*\\bresult__a\\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
-  const matches = [...html.matchAll(anchorPattern), ...html.matchAll(alternateAnchorPattern)];
-  for (const match of matches) {
-    let url = String(match[1] || '');
-    try {
-      const parsed = new URL(url, 'https://html.duckduckgo.com');
-      const target = parsed.searchParams.get('uddg');
-      url = target ? decodeURIComponent(target) : parsed.toString();
-    } catch {
-      continue;
+  const seen = new Set<string>();
+
+  for (const searchQuery of queries) {
+    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
+        Accept: 'text/html',
+      },
+    });
+    if (!response.ok) throw new Error(`Direct web search failed (${response.status})`);
+    const html = await response.text();
+    const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
+    const alternateAnchorPattern = /<a\b[^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    const matches = [...html.matchAll(anchorPattern), ...html.matchAll(alternateAnchorPattern)];
+
+    for (const match of matches) {
+      let url = String(match[1] || '');
+      try {
+        const parsed = new URL(url, 'https://html.duckduckgo.com');
+        const target = parsed.searchParams.get('uddg');
+        url = target ? decodeURIComponent(target) : parsed.toString();
+      } catch {
+        continue;
+      }
+      if (!url.startsWith('https://') || seen.has(url)) continue;
+      const title = String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+      results.push({ url, title, description: '' });
+      seen.add(url);
+      if (results.length >= MAX_SEARCH_RESULTS) return results;
     }
-    if (!url.startsWith('https://')) continue;
-    const title = String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&');
-    results.push({ url, title, description: '' });
-    if (results.length >= MAX_SEARCH_RESULTS) break;
   }
+
   return results;
 }
 
@@ -420,7 +470,7 @@ function buildQuote(
     return undefined;
   }
 
-  if (!exactProductMatch(title, url, requested.brand, requested.name, requested.vitola, requested.line, requested.variant, requested.packageType, requested.boxCount)) {
+  if (!exactProductMatch(title, url, requested.brand, requested.name, requested.vitola, requested.line, requested.variant, requested.packageType, requested.boxCount, markdown)) {
     return undefined;
   }
 
@@ -444,19 +494,19 @@ function buildQuote(
 
 async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<RetailerScanResult> {
   const label = `${cigar.brand} ${identityName(cigar)} ${cigar.vitola || ''}`.trim();
-  const query = `"${cigar.brand}" "${identityName(cigar)}" ${cigar.vitola ? `"${cigar.vitola}" ` : ''}cigar UK price GBP`;
+  const query = `${cigar.brand} ${identityName(cigar)} ${cigar.vitola || ''} cigar UK price GBP`.replace(/\s+/g, ' ').trim();
 
-  // One focused search across the known UK specialist catalog first.
-  // Only run the broader web search if the catalog produces no verified quote.
   let rawResults: any[] = [];
   let quotes: Record<string, any>[] = [];
+  let provider: 'firecrawl' | 'direct-web' = 'direct-web';
 
   if (apiKey) {
     try {
       rawResults = await firecrawlSearch(apiKey, query, RETAILER_DOMAINS);
       quotes = await collectQuotes(apiKey, cigar, rawResults);
+      provider = 'firecrawl';
     } catch (error: any) {
-      console.warn(`Firecrawl unavailable for ${label}: ${String(error?.message || error)}`);
+      console.warn(`Firecrawl unavailable for ${label}: ${String(error?.message || error)}; using direct web search.`);
     }
   }
 
@@ -464,17 +514,9 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
     try {
       rawResults = await directWebSearch(query);
       quotes = await collectQuotes('', cigar, rawResults, true);
+      provider = 'direct-web';
     } catch (error: any) {
       console.warn(`Direct web fallback unavailable for ${label}: ${String(error?.message || error)}`);
-    }
-  }
-
-  if (!quotes.length && apiKey && rawResults.length === 0) {
-    try {
-      rawResults = await firecrawlSearch(apiKey, query);
-      quotes = await collectQuotes(apiKey, cigar, rawResults);
-    } catch (error: any) {
-      console.warn(`Broad Firecrawl unavailable for ${label}: ${String(error?.message || error)}`);
     }
   }
 
@@ -492,7 +534,7 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
     bestPrice: best?.price ?? null,
     bestVendor: best?.vendor ?? null,
     grounded: deduped.length > 0,
-    provider: deduped.some((quote) => quote.provider === 'firecrawl') ? 'firecrawl' : 'direct-web',
+    provider,
     groundedSources: deduped.map((quote) => ({ title: `${cigar.brand} ${cigar.name}`, uri: quote.url })),
     scanStatus: deduped.length ? 'verified' : 'no_verified_results',
   };
@@ -516,7 +558,7 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
       /cigar|cigars|tobacco|tobacconist|smoke|humidor/i.test(`${host} ${title}`);
 
     if (!knownRetailer && !looksLikeRetailer) continue;
-    if (!exactProductMatch(title, url, cigar.brand, cigar.name, cigar.vitola, cigar.line, cigar.variant, cigar.packageType, cigar.boxCount)) continue;
+    if (!exactProductMatch(title, url, cigar.brand, cigar.name, cigar.vitola, cigar.line, cigar.variant, cigar.packageType, cigar.boxCount, markdown)) continue;
 
     candidates.push({ result, title, markdown, product: result?.product || result?.data?.product });
     seen.add(url);
@@ -545,7 +587,7 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
       }
     }
 
-    if (!exactProductMatch(title, String(candidate.result.url), cigar.brand, cigar.name, cigar.vitola, cigar.line, cigar.variant, cigar.packageType, cigar.boxCount)) continue;
+    if (!exactProductMatch(title, String(candidate.result.url), cigar.brand, cigar.name, cigar.vitola, cigar.line, cigar.variant, cigar.packageType, cigar.boxCount, markdown)) continue;
 
     const quote = buildQuote(candidate.result, cigar, productData, title, markdown);
     if (quote) quotes.push(quote);
