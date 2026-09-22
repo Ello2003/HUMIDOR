@@ -504,8 +504,8 @@ async function directSearchEngine(query: string): Promise<any[]> {
     if (!response?.ok) continue;
     const html = await response.text();
     const patterns = [
-      /<a\\b[^>]*href=[\"']([^\"']+)[\"'][^>]*class=[\"'][^\"']*\\bresult__a\\b[^\"']*[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi,
-      /<a\\b[^>]*class=[\"'][^\"']*\\bresult__a\\b[^\"']*[\"'][^>]*href=[\"']([^\"']+)[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi,
+      /<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*class=[\"'][^\"']*\bresult__a\b[^\"']*[\"'][^>]*>([\s\S]*?)<\/a>/gi,
+      /<a\b[^>]*class=[\"'][^\"']*\bresult__a\b[^\"']*[\"'][^>]*href=[\"']([^\"']+)[\"'][^>]*>([\s\S]*?)<\/a>/gi,
     ];
     for (const pattern of patterns) {
       for (const match of html.matchAll(pattern)) {
@@ -514,14 +514,14 @@ async function directSearchEngine(query: string): Promise<any[]> {
           const parsed = new URL(url, 'https://html.duckduckgo.com');
           const target = parsed.searchParams.get('uddg');
           url = target ? decodeURIComponent(target) : parsed.toString();
-          const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+          const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
           if (!(host === domain || host.endsWith(`.${domain}`))) continue;
         } catch { continue; }
         if (!url.startsWith('https://') || seen.has(url)) continue;
         seen.add(url);
         results.push({
           url,
-          title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()),
+          title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()),
           description: '',
         });
       }
