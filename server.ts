@@ -355,7 +355,7 @@ function extractStructuredProductPrice(product: any): {
 
   const variant =
     usableVariants.find((candidate: any) => {
-      const title = normalizeSearchText(candidate?.title || candidate?.values ? JSON.stringify(candidate.values || {}) : "");
+      const title = normalizeSearchText(candidate?.title || JSON.stringify(candidate?.values || {}));
       return /single|1\\s*single|1\\s*stick/.test(title);
     }) ||
     usableVariants.find((candidate: any) => candidate?.availability?.inStock !== false) ||
