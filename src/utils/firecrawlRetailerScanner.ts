@@ -565,15 +565,16 @@ async function directBingSearch(query: string): Promise<any[]> {
 async function directNativeSearch(query: string): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
+  const encoded = encodeURIComponent(query);
   const paths = [
-    (encoded: string) => \`/advanced_search_result.php?keywords=\${encoded}\`,
-    (encoded: string) => \`/search.php?keywords=\${encoded}\`,
-    (encoded: string) => \`/search?q=\${encoded}\`,
+    '/advanced_search_result.php?keywords=' + encoded,
+    '/search.php?keywords=' + encoded,
+    '/search?q=' + encoded,
   ];
 
   for (const domain of RETAILER_DOMAINS.slice(0, 8)) {
-    for (const makePath of paths) {
-      const response = await fetch(\`https://\${domain}\${makePath(encodeURIComponent(query))}\`, {
+    for (const path of paths) {
+      const response = await fetch('https://' + domain + path, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)', Accept: 'text/html' },
       }).catch(() => undefined);
       if (!response?.ok) continue;
@@ -582,10 +583,10 @@ async function directNativeSearch(query: string): Promise<any[]> {
       let added = 0;
       for (const match of html.matchAll(pattern)) {
         let url = String(match[1] || '');
-        try { url = new URL(url, \`https://\${domain}\`).toString(); } catch { continue; }
+        try { url = new URL(url, 'https://' + domain).toString(); } catch { continue; }
         try {
           const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-          if (!(host === domain || host.endsWith(\`.\${domain}\`))) continue;
+          if (!(host === domain || host.endsWith('.' + domain))) continue;
         } catch { continue; }
         if (seen.has(url)) continue;
         const title = decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
@@ -600,7 +601,6 @@ async function directNativeSearch(query: string): Promise<any[]> {
   }
   return results.slice(0, MAX_SEARCH_RESULTS);
 }
-
 async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; product?: any }> {
   const response = await fetch(url, {
     headers: {
