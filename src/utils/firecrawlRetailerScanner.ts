@@ -193,7 +193,7 @@ function significantVariantTokens(vitola?: string): string[] {
     'box', 'pressed', 'press', 'double', 'petit', 'short', 'long', 'extra',
     'corona', 'gorda', 'robusto', 'rothschild', 'churchill', 'toro', 'gordo',
     'gigante', 'lancero', 'panetela', 'belicoso', 'torpedo', 'pyramid',
-    'perfecto', 'salomon', 'diadema', 'vitola', 'size', 'format',
+    'perfecto', 'salomon', 'diadema', 'box-pressed', 'boxpress', 'vitola', 'size', 'format',
   ]);
   return meaningfulTokens(vitola || '')
     .filter((token) => token.length >= 4 && !generic.has(token) && !/^\d+$/.test(token))
