@@ -71,6 +71,7 @@ import {
 } from '../utils/researchUtils';
 import { PersonalReviewModal } from './PersonalReviewModal';
 import { apiUrl } from '../utils/api';
+import { batchScanRetailerPrices, scanRetailerPrices } from '../utils/retailerPrices';
 
 // Clean and format error messages to avoid raw JSON dumps
 function cleanErrorMessage(raw: any, fallback = 'Unable to complete request.'): string {
@@ -795,18 +796,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   const handleScanRetailerPricesForCigar = async (cigar: CigarResearchItem) => {
     setScanningPriceCigarId(cigar.id);
     try {
-      const res = await fetch(apiUrl('/api/research/retailer-prices'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brand: cigar.brand,
-          name: cigar.line,
-          vitola: cigar.vitola,
-          countryOrigin: cigar.countryOrigin,
-          isCuban: cigar.isCuban,
-        }),
+      const data = await scanRetailerPrices({
+        brand: cigar.brand,
+        name: cigar.line,
+        vitola: cigar.vitola,
+        countryOrigin: cigar.countryOrigin,
+        isCuban: cigar.isCuban,
       });
-      const data = await res.json();
       if (!res.ok || !data?.success) {
         throw new Error(data?.error || data?.message || `Retailer scan failed (${res.status})`);
       }
@@ -871,21 +867,16 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     const requestId = ++retailerBatchRequestRef.current;
     setIsBatchScanningPrices(true);
     try {
-      const res = await fetch(apiUrl('/api/research/batch-retailer-prices'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cigars: researchDatabase.slice(0, 25).map((c) => ({
-            id: c.id,
-            brand: c.brand,
-            name: c.line,
-            vitola: c.vitola,
-            countryOrigin: c.countryOrigin,
-            isCuban: c.isCuban,
-          })),
-        }),
+      const data = await batchScanRetailerPrices({
+        cigars: researchDatabase.slice(0, 25).map((c) => ({
+          id: c.id,
+          brand: c.brand,
+          name: c.line,
+          vitola: c.vitola,
+          countryOrigin: c.countryOrigin,
+          isCuban: c.isCuban,
+        })),
       });
-      const data = await res.json();
       if (!res.ok || !data?.success || !Array.isArray(data.data?.results)) {
         throw new Error(data?.error || data?.message || `Batch retailer scan failed (${res.status})`);
       }
