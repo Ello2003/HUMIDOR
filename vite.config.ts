@@ -7,10 +7,7 @@ import {defineConfig} from 'vite';
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
-  plugins: [react()],
-  base: process.env.VERCEL ? '/' : '/HUMIDOR/',
-})
+
 
 export default defineConfig(({ command }) => {
   return {
@@ -19,6 +16,7 @@ export default defineConfig(({ command }) => {
     // https://ello2003.github.io/HUMIDOR/). Leaving it unset during `vite
     // dev`/AI Studio's own preview keeps local development at the domain
     // root, where it's expected to run.
+      base: process.env.VERCEL ? '/' : '/HUMIDOR/',
     base: command === 'build' ? '/HUMIDOR/' : '/',
     plugins: [react(), tailwindcss()],
     resolve: {
