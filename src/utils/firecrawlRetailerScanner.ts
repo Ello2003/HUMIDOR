@@ -27,7 +27,7 @@ export const UK_RETAILER_CATALOG: Record<string, { domain: string }> = {
   'Cuban Cigar Club': { domain: 'cubancigarclub.co.uk' },
   'Havana House': { domain: 'havanahouse.co.uk' },
   'Smoke King': { domain: 'smoke-king.co.uk' },
-  'Davidoff of London': { domain: 'davidoffoflondon.com' },
+  'Davidoff of London': { domain: 'davidofflondon.com' },
   'James J. Fox (London)': { domain: 'jjfox.co.uk' },
   'Sautter Cigars (London)': { domain: 'sauttercigars.com' },
   'Turmeaus Tobacconist': { domain: 'turmeaus.co.uk' },
@@ -46,6 +46,8 @@ export const UK_RETAILER_CATALOG: Record<string, { domain: string }> = {
   'The Smoking Jacket': { domain: 'thesmokingjacket.co.uk' },
   'Toro Puro': { domain: 'toropuro.com' },
   'Rebellion Cigars': { domain: 'rebellioncigars.com' },
+  'Surrey Cigars': { domain: 'surreycigars.com' },
+  'UK Cigar Store': { domain: 'ukcigarstore.co.uk' },
 };
 
 const RETAILER_DOMAINS = Object.values(UK_RETAILER_CATALOG).map(({ domain }) => domain);
@@ -370,19 +372,6 @@ async function firecrawlSearch(
 }
 
 async function directWebSearch(query: string): Promise<any[]> {
-  const retailerGroups = [
-    RETAILER_DOMAINS.slice(0, 8),
-    RETAILER_DOMAINS.slice(8, 16),
-    RETAILER_DOMAINS.slice(16),
-  ].filter((group) => group.length);
-
-  const queries = [
-    query,
-    query.replace(/"/g, ''),
-    query.replace(/cigar UK price GBP/i, 'UK cigar price'),
-    ...retailerGroups.map((group) => `${group.map((domain) => `site:${domain}`).join(' OR ')} ${query}`),
-  ];
-
   const results: any[] = [];
   const seen = new Set<string>();
 
@@ -399,78 +388,46 @@ async function directWebSearch(query: string): Promise<any[]> {
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>');
 
-  const searchDuckDuckGo = async (searchQuery: string) => {
-    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
-        Accept: 'text/html',
-      },
-    });
-    if (!response.ok) return;
-    const html = await response.text();
-    const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
-    const alternateAnchorPattern = /<a\b[^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-    const matches = [...html.matchAll(anchorPattern), ...html.matchAll(alternateAnchorPattern)];
-    for (const match of matches) {
-      let url = String(match[1] || '');
-      try {
-        const parsed = new URL(url, 'https://html.duckduckgo.com');
-        const target = parsed.searchParams.get('uddg');
-        url = target ? decodeURIComponent(target) : parsed.toString();
-      } catch {
-        continue;
-      }
-      addResult(decodeHtml(String(match[1] || '')), decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()));
-      if (results.length >= MAX_SEARCH_RESULTS) return;
-    }
-  };
+  for (const domain of RETAILER_DOMAINS) {
+    const queries = [
+      `site:${domain} ${query}`,
+      `site:${domain} ${query.replace(/ UK cigar price GBP/i, '')}`,
+    ];
 
-  const searchBing = async (searchQuery: string) => {
-    const response = await fetch(`https://www.bing.com/search?setlang=en-GB&count=20&q=${encodeURIComponent(searchQuery)}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
-        Accept: 'text/html',
-      },
-    });
-    if (!response.ok) return;
-    const html = await response.text();
-    const resultPattern = /<li[^>]*class=["'][^"']*\bb_algo\b[^"']*["'][^>]*>[\s\S]*?<h2[^>]*>\s*<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-    for (const match of html.matchAll(resultPattern)) {
-      addResult(decodeHtml(String(match[1] || '')), decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()));
-      if (results.length >= MAX_SEARCH_RESULTS) return;
-    }
-  };
-
-  for (const searchQuery of queries) {
-    await searchDuckDuckGo(searchQuery);
-    if (results.length >= MAX_SEARCH_RESULTS) break;
-  }
-
-  if (results.length < 5) {
     for (const searchQuery of queries) {
-      await searchBing(searchQuery);
-      if (results.length >= MAX_SEARCH_RESULTS) break;
-    }
-  }
-
-  if (results.length < 5) {
-    for (const searchQuery of queries) {
-      const response = await fetch(`https://www.google.co.uk/search?hl=en-GB&num=20&q=${encodeURIComponent(searchQuery)}`, {
+      const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
           Accept: 'text/html',
         },
       }).catch(() => undefined);
-
       if (!response?.ok) continue;
+
       const html = await response.text();
-      const resultPattern = /<a[^>]+href=["'](https?:\/\/[^"']+)["'][^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/gi;
-      for (const match of html.matchAll(resultPattern)) {
+      const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
+      const alternateAnchorPattern = /<a\b[^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+
+      for (const match of [...html.matchAll(anchorPattern), ...html.matchAll(alternateAnchorPattern)]) {
+        let url = String(match[1] || '');
+        try {
+          const parsed = new URL(url, 'https://html.duckduckgo.com');
+          const target = parsed.searchParams.get('uddg');
+          url = target ? decodeURIComponent(target) : parsed.toString();
+        } catch {
+          continue;
+        }
+
+        if (!url.startsWith('https://')) continue;
+        const hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+        if (!(hostname === domain || hostname.endsWith(`.${domain}`))) continue;
+
         const title = decodeHtml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
-        addResult(decodeHtml(String(match[1] || '')), title);
-        if (results.length >= MAX_SEARCH_RESULTS) break;
+        addResult(url, title);
+        if (results.length >= MAX_SEARCH_RESULTS) return results;
       }
-      if (results.length >= MAX_SEARCH_RESULTS) break;
+
+      // A single good retailer query is enough to move to the next retailer.
+      if (results.some((item) => new URL(item.url).hostname.replace(/^www\./, '') === domain)) break;
     }
   }
 
