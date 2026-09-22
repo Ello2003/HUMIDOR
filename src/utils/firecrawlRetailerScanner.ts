@@ -17,7 +17,7 @@ export type RetailerScanResult = {
   bestPrice: number | null;
   bestVendor: string | null;
   grounded: boolean;
-  provider: 'firecrawl';
+  provider: 'firecrawl' | 'direct-web';
   groundedSources?: Array<{ title: string; uri: string }>;
   scanStatus?: string;
 };
@@ -316,6 +316,56 @@ async function firecrawlSearch(
     : Array.isArray(payload?.data) ? payload.data : [];
 }
 
+async function directWebSearch(query: string): Promise<any[]> {
+  const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
+      Accept: 'text/html',
+    },
+  });
+  if (!response.ok) throw new Error(`Direct web search failed (${response.status})`);
+  const html = await response.text();
+  const results: any[] = [];
+  const pattern = /<a[^>]+class=["']result__a["'][^>]+href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+  for (const match of html.matchAll(pattern)) {
+    let url = String(match[1] || '');
+    try {
+      const parsed = new URL(url, 'https://html.duckduckgo.com');
+      const target = parsed.searchParams.get('uddg');
+      url = target ? decodeURIComponent(target) : parsed.toString();
+    } catch {
+      continue;
+    }
+    if (!url.startsWith('https://')) continue;
+    const title = String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&');
+    results.push({ url, title, description: '' });
+    if (results.length >= MAX_SEARCH_RESULTS) break;
+  }
+  return results;
+}
+
+async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; product?: any }> {
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
+      Accept: 'text/html,application/xhtml+xml',
+    },
+  });
+  if (!response.ok) throw new Error(`Direct page fetch failed (${response.status})`);
+  const html = await response.text();
+  return {
+    metadata: { title: html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)?.[1] || '' },
+    markdown: html
+      .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')
+      .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/\\s+/g, ' ')
+      .trim(),
+  };
+}
+
 async function firecrawlScrape(apiKey: string, url: string): Promise<any> {
   const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
     method: 'POST',
@@ -381,12 +431,34 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
 
   // One focused search across the known UK specialist catalog first.
   // Only run the broader web search if the catalog produces no verified quote.
-  let rawResults = await firecrawlSearch(apiKey, query, RETAILER_DOMAINS);
-  let quotes = await collectQuotes(apiKey, cigar, rawResults);
+  let rawResults: any[] = [];
+  let quotes: Record<string, any>[] = [];
+
+  if (apiKey) {
+    try {
+      rawResults = await firecrawlSearch(apiKey, query, RETAILER_DOMAINS);
+      quotes = await collectQuotes(apiKey, cigar, rawResults);
+    } catch (error: any) {
+      console.warn(`Firecrawl unavailable for ${label}: ${String(error?.message || error)}`);
+    }
+  }
 
   if (!quotes.length) {
-    rawResults = await firecrawlSearch(apiKey, query);
-    quotes = await collectQuotes(apiKey, cigar, rawResults);
+    try {
+      rawResults = await directWebSearch(query);
+      quotes = await collectQuotes('', cigar, rawResults, true);
+    } catch (error: any) {
+      console.warn(`Direct web fallback unavailable for ${label}: ${String(error?.message || error)}`);
+    }
+  }
+
+  if (!quotes.length && apiKey && rawResults.length === 0) {
+    try {
+      rawResults = await firecrawlSearch(apiKey, query);
+      quotes = await collectQuotes(apiKey, cigar, rawResults);
+    } catch (error: any) {
+      console.warn(`Broad Firecrawl unavailable for ${label}: ${String(error?.message || error)}`);
+    }
   }
 
   const deduped = Array.from(new Map(quotes.map((quote) => [quote.url, quote])).values());
@@ -403,13 +475,13 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
     bestPrice: best?.price ?? null,
     bestVendor: best?.vendor ?? null,
     grounded: deduped.length > 0,
-    provider: 'firecrawl',
+    provider: deduped.some((quote) => quote.provider === 'firecrawl') ? 'firecrawl' : 'direct-web',
     groundedSources: deduped.map((quote) => ({ title: `${cigar.brand} ${cigar.name}`, uri: quote.url })),
     scanStatus: deduped.length ? 'verified' : 'no_verified_results',
   };
 }
 
-async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: any[]): Promise<Record<string, any>[]> {
+async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: any[], allowDirectScrape = false): Promise<Record<string, any>[]> {
   const candidates: Array<{ result: any; title: string; markdown: string; product: any }> = [];
   const seen = new Set<string>();
 
@@ -436,16 +508,19 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
   const quotes: Record<string, any>[] = [];
   for (const candidate of candidates.slice(0, MAX_PAGE_SCRAPES)) {
     let productData: {
-  product: any;
-  metadata?: Record<string, any>;
-  markdown?: string;
-} = { product: candidate.product };
+      product: any;
+      metadata?: Record<string, any>;
+      markdown?: string;
+      provider?: string;
+    } = { product: candidate.product, provider: allowDirectScrape ? 'direct-web' : 'firecrawl' };
     let title = candidate.title;
     let markdown = candidate.markdown;
 
     if (!structuredPrice(candidate.product, cigar).price) {
       try {
-        productData = await firecrawlScrape(apiKey, String(candidate.result.url));
+        productData = allowDirectScrape
+          ? { ...(await directScrape(String(candidate.result.url))), provider: 'direct-web' }
+          : { ...(await firecrawlScrape(apiKey, String(candidate.result.url))), provider: 'firecrawl' };
         title = String(productData?.metadata?.title || productData?.product?.title || title);
         markdown = String(productData?.markdown || markdown);
       } catch {
@@ -463,7 +538,6 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
 }
 
 export async function scanRetailerPrice(cigar: RetailerScanCigar, apiKey = process.env.FIRECRAWL_API_KEY || ''): Promise<RetailerScanResult> {
-  if (!apiKey) throw new Error('FIRECRAWL_API_KEY is required for scheduled price scanning.');
   return scanOnce(apiKey, cigar);
 }
 
@@ -472,7 +546,6 @@ export async function scanRetailerPrices(
   options: { concurrency?: number; apiKey?: string } = {},
 ): Promise<RetailerScanResult[]> {
   const apiKey = options.apiKey || process.env.FIRECRAWL_API_KEY || '';
-  if (!apiKey) throw new Error('FIRECRAWL_API_KEY is required for scheduled price scanning.');
 
   const unique = Array.from(
     new Map(
@@ -485,7 +558,7 @@ export async function scanRetailerPrices(
 
   const results: RetailerScanResult[] = new Array(unique.length);
   let nextIndex = 0;
-  const concurrency = Math.max(1, Math.min(options.concurrency ?? 4, 6));
+  const concurrency = Math.max(1, Math.min(options.concurrency ?? 2, 2));
 
   async function worker() {
     while (true) {
@@ -502,7 +575,7 @@ export async function scanRetailerPrices(
           bestPrice: null,
           bestVendor: null,
           grounded: false,
-          provider: 'firecrawl',
+          provider: 'direct-web',
           scanStatus: `scan_error: ${String(error?.message || error).slice(0, 180)}`,
         };
       }
