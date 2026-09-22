@@ -466,7 +466,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   const handleScanReviewScoresForCigar = async (cigar: CigarResearchItem) => {
     setScanningReviewCigarId(cigar.id);
     try {
-      const res = await fetch('/api/research/review-scores', {
+      const res = await fetch(apiUrl('/api/research/review-scores'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -516,7 +516,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   const handleBatchScanAllReviewScores = async () => {
     setIsBatchScanningReviews(true);
     try {
-      const res = await fetch('/api/research/batch-review-scores', {
+      const res = await fetch(apiUrl('/api/research/batch-review-scores'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -951,7 +951,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   const handleBatchScanUkSpecs = async () => {
     setIsBatchScanningSpecs(true);
     try {
-      const res = await fetch('/api/research/batch-uk-specs', {
+      const res = await fetch(apiUrl('/api/research/batch-uk-specs'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1402,7 +1402,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     setDossierError(null);
 
     try {
-      const res = await fetch('/api/research/cigar', {
+      const res = await fetch(apiUrl('/api/research/cigar'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cigarName: q }),
@@ -1426,7 +1426,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     setSommelierError(null);
 
     try {
-      const res = await fetch('/api/research/sommelier', {
+      const res = await fetch(apiUrl('/api/research/sommelier'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1458,7 +1458,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
     setIdentifyError(null);
 
     try {
-      const res = await fetch('/api/research/identify', {
+      const res = await fetch(apiUrl('/api/research/identify'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

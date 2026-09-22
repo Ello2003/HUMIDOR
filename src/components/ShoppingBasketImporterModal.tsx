@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { apiUrl } from '../utils/api';
 import {
   ShoppingCart,
   Sparkles,
@@ -422,7 +423,7 @@ export const ShoppingBasketImporterModal: React.FC<ShoppingBasketImporterModalPr
           throw new Error('Please enter a valid http(s) retailer webpage link, for example https://www.simplycigars.co.uk/...');
         }
         res = await fetchWithTimeout(
-          '/api/import/basket-from-url',
+          apiUrl('/api/import/basket-from-url'),
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

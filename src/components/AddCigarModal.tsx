@@ -17,6 +17,7 @@ import { FLAVOR_CATEGORIES } from '../data/initialData';
 import { DEFAULT_CURRENCY } from '../utils/currencyUtils';
 import { suggestVitolaDimensions, areCigarsMatching } from '../utils/researchUtils';
 import { fetchWithTimeout } from '../utils/fetchUtils';
+import { apiUrl } from '../utils/api';
 
 interface AddCigarModalProps {
   isOpen: boolean;
@@ -115,7 +116,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
       // for -- if it's taking too long, better to fail fast and let them
       // fill the fields in manually than block for a long time.
       const res = await fetchWithTimeout(
-        '/api/research/quick-lookup',
+        apiUrl('/api/research/quick-lookup'),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
