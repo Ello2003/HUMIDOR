@@ -1,46 +1,20 @@
 {
-  "generatedAt": "2026-09-22T22:43:49.781Z",
+  "generatedAt": "2026-09-22T22:56:46.155Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 7,
+  "groundedCount": 6,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
       "brand": "Padrón",
       "name": "1964 Anniversary Series",
-      "quotes": [
-        {
-          "vendor": "C.Gars Ltd",
-          "price": 10,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.cgarsltd.co.uk/padron-a-726.html",
-          "lastUpdated": "2026-09-22"
-        },
-        {
-          "vendor": "C.Gars Ltd",
-          "price": 26.5,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.cgarsltd.co.uk/advanced_search_result.php?keywords=padron&sort=2a&page=1",
-          "lastUpdated": "2026-09-22"
-        }
-      ],
-      "bestPrice": 10,
-      "bestVendor": "C.Gars Ltd",
-      "grounded": true,
+      "quotes": [],
+      "bestPrice": null,
+      "bestVendor": null,
+      "grounded": false,
       "provider": "direct-web",
-      "groundedSources": [
-        {
-          "title": "Padrón 1964 Anniversary Series",
-          "uri": "https://www.cgarsltd.co.uk/padron-a-726.html"
-        },
-        {
-          "title": "Padrón 1964 Anniversary Series",
-          "uri": "https://www.cgarsltd.co.uk/advanced_search_result.php?keywords=padron&sort=2a&page=1"
-        }
-      ],
-      "scanStatus": "verified"
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-padron-1926-no9",
@@ -62,14 +36,6 @@
           "inStock": true,
           "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-2-single-cigar/",
           "lastUpdated": "2026-09-22"
-        },
-        {
-          "vendor": "GQ Tobaccos",
-          "price": 50.99,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-maduro-no-2-single-cigar/",
-          "lastUpdated": "2026-09-22"
         }
       ],
       "bestPrice": 37.59,
@@ -84,10 +50,6 @@
         {
           "title": "Padrón 1926 Serie",
           "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-2-single-cigar/"
-        },
-        {
-          "title": "Padrón 1926 Serie",
-          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-maduro-no-2-single-cigar/"
         }
       ],
       "scanStatus": "verified"
@@ -152,7 +114,23 @@
           "price": 19.95,
           "currency": "£",
           "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-robusto-handmade-cigar",
+          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.smoke-king.co.uk/products/tin-of-4-davidoff-winston-churchill-the-late-hour-belicosos-cigars",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-belicosos-cigar",
           "lastUpdated": "2026-09-22"
         },
         {
@@ -170,22 +148,6 @@
           "inStock": true,
           "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar",
           "lastUpdated": "2026-09-22"
-        },
-        {
-          "vendor": "Smoke King",
-          "price": 19.95,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
-          "lastUpdated": "2026-09-22"
-        },
-        {
-          "vendor": "Smoke King",
-          "price": 19.95,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://www.smoke-king.co.uk/products/tin-of-4-davidoff-winston-churchill-the-late-hour-belicosos-cigars",
-          "lastUpdated": "2026-09-22"
         }
       ],
       "bestPrice": 19.95,
@@ -195,7 +157,15 @@
       "groundedSources": [
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-robusto-handmade-cigar"
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar"
+        },
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.smoke-king.co.uk/products/tin-of-4-davidoff-winston-churchill-the-late-hour-belicosos-cigars"
+        },
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-belicosos-cigar"
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
@@ -204,14 +174,6 @@
         {
           "title": "Davidoff Winston Churchill Late Hour",
           "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar"
-        },
-        {
-          "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar"
-        },
-        {
-          "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/tin-of-4-davidoff-winston-churchill-the-late-hour-belicosos-cigars"
         }
       ],
       "scanStatus": "verified"
@@ -382,19 +344,19 @@
       "name": "Le Bijou 1922",
       "quotes": [
         {
-          "vendor": "Simply Cigars",
-          "price": 49.78,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html",
-          "lastUpdated": "2026-09-22"
-        },
-        {
           "vendor": "Hava Havana",
           "price": 575,
           "currency": "£",
           "inStock": false,
           "url": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Simply Cigars",
+          "price": 49.78,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html",
           "lastUpdated": "2026-09-22"
         }
       ],
@@ -405,11 +367,11 @@
       "groundedSources": [
         {
           "title": "My Father Cigars Le Bijou 1922",
-          "uri": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html"
+          "uri": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp"
         },
         {
           "title": "My Father Cigars Le Bijou 1922",
-          "uri": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp"
+          "uri": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html"
         }
       ],
       "scanStatus": "verified"
