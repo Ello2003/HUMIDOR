@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T22:56:46.155Z",
+  "generatedAt": "2026-09-22T23:02:00.524Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
   "groundedCount": 6,
@@ -22,34 +22,22 @@
       "name": "1926 Serie",
       "quotes": [
         {
-          "vendor": "GQ Tobaccos",
-          "price": 37.59,
+          "vendor": "James J. Fox (London)",
+          "price": 150,
           "currency": "£",
-          "inStock": true,
-          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-35-single-cigar/",
-          "lastUpdated": "2026-09-22"
-        },
-        {
-          "vendor": "GQ Tobaccos",
-          "price": 50.99,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-2-single-cigar/",
+          "inStock": false,
+          "url": "https://www.jjfox.co.uk/padron-1926-series-no-35-maduro.html",
           "lastUpdated": "2026-09-22"
         }
       ],
-      "bestPrice": 37.59,
-      "bestVendor": "GQ Tobaccos",
+      "bestPrice": 150,
+      "bestVendor": "James J. Fox (London)",
       "grounded": true,
       "provider": "direct-web",
       "groundedSources": [
         {
           "title": "Padrón 1926 Serie",
-          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-35-single-cigar/"
-        },
-        {
-          "title": "Padrón 1926 Serie",
-          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-2-single-cigar/"
+          "uri": "https://www.jjfox.co.uk/padron-1926-series-no-35-maduro.html"
         }
       ],
       "scanStatus": "verified"
@@ -114,6 +102,22 @@
           "price": 19.95,
           "currency": "£",
           "inStock": true,
+          "url": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar",
+          "lastUpdated": "2026-09-22"
+        },
+        {
+          "vendor": "Smoke King",
+          "price": 19.95,
+          "currency": "£",
+          "inStock": true,
           "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
           "lastUpdated": "2026-09-22"
         },
@@ -132,22 +136,6 @@
           "inStock": false,
           "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-belicosos-cigar",
           "lastUpdated": "2026-09-22"
-        },
-        {
-          "vendor": "Smoke King",
-          "price": 19.95,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single",
-          "lastUpdated": "2026-09-22"
-        },
-        {
-          "vendor": "Smoke King",
-          "price": 19.95,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar",
-          "lastUpdated": "2026-09-22"
         }
       ],
       "bestPrice": 19.95,
@@ -155,6 +143,14 @@
       "grounded": true,
       "provider": "direct-web",
       "groundedSources": [
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single"
+        },
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar"
+        },
         {
           "title": "Davidoff Winston Churchill Late Hour",
           "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar"
@@ -166,14 +162,6 @@
         {
           "title": "Davidoff Winston Churchill Late Hour",
           "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-belicosos-cigar"
-        },
-        {
-          "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single"
-        },
-        {
-          "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar"
         }
       ],
       "scanStatus": "verified"
