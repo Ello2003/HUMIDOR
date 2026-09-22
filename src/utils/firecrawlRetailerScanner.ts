@@ -651,6 +651,25 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
     seen.add(url);
   }
 
+  const priorityTokens = meaningfulTokens(
+    `${cigar.brand} ${cigar.name} ${cigar.line || ''} ${cigar.variant || ''} ${cigar.vitola || ''}`,
+  ).filter((token) => token.length >= 4);
+
+  const candidateScore = (candidate: { result: any; title: string; markdown: string; product: any }): number => {
+    const text = compact(`${candidate.title} ${candidate.result?.url || ''} ${candidate.markdown}`);
+    return priorityTokens.reduce((score, token) => {
+      const compactToken = compact(token);
+      if (!compactToken) return score;
+      if (text.includes(compactToken)) return score + 3;
+      if (text.split(/[^a-z0-9]+/).some((part: string) => part.startsWith(compactToken.slice(0, Math.min(6, compactToken.length))))) {
+        return score + 1;
+      }
+      return score;
+    }, 0);
+  };
+
+  candidates.sort((a, b) => candidateScore(b) - candidateScore(a));
+
   const quotes: Record<string, any>[] = [];
   const selectedCandidates = candidates.slice(0, MAX_PAGE_SCRAPES);
   const scrapeConcurrency = Math.min(6, selectedCandidates.length);
