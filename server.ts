@@ -269,32 +269,30 @@ function meaningfulProductTokens(value: string): string[] {
 
 function exactProductMatch(
   title: string,
+  url: string,
   markdown: string,
   brand: string,
   name: string,
 ): boolean {
-  const haystack = normalizeSearchText(`${title} ${markdown}`);
+  // Do not identify a cigar from the whole page body: retailer pages often
+  // contain recommendations, reviews, navigation and unrelated prices.
+  // The product identity must appear in the result title or URL.
+  const identity = normalizeSearchText(`${title} ${url}`);
   const brandNeedle = normalizeSearchText(brand);
-  if (!brandNeedle || !haystack.includes(brandNeedle)) return false;
-
   const normalizedName = normalizeSearchText(name);
-  if (!normalizedName) return true;
 
-  // Prefer the exact product name, but tolerate retailer punctuation differences
-  // such as "No.4" vs "No 4" and "Serie D" vs "Serie-D".
-  if (haystack.includes(normalizedName)) return true;
+  if (!brandNeedle || !normalizedName) return false;
+  if (!identity.includes(brandNeedle)) return false;
+  if (identity.includes(normalizedName)) return true;
 
   const tokens = meaningfulProductTokens(name);
-  if (tokens.length === 0) return true;
-
-  const matched = tokens.filter((token) => haystack.includes(token)).length;
-  return matched === tokens.length || (tokens.length >= 4 && matched >= tokens.length - 1);
+  if (tokens.length === 0) return false;
+  return tokens.every((token) => identity.includes(token));
 }
 
 function extractPoundsFromText(text: string, productLabel?: string): number | undefined {
   const normalized = normalizeSearchText(text);
   const label = normalizeSearchText(productLabel || "");
-  const labelIndex = label ? normalized.indexOf(label) : -1;
 
   const matches = [
     ...normalized.matchAll(/(?:£|gbp\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi),
@@ -303,19 +301,32 @@ function extractPoundsFromText(text: string, productLabel?: string): number | un
       price: Number(match[1]),
       index: match.index ?? 0,
     }))
-    .filter(
-      ({ price }) =>
-        Number.isFinite(price) && price >= 3 && price < 2000,
-    );
+    .filter(({ price }) => Number.isFinite(price) && price >= 3 && price < 2000);
 
   if (matches.length === 0) return undefined;
-  if (labelIndex < 0) return matches[0].price;
+  if (!label) return matches[0].price;
 
-  matches.sort(
-    (a, b) =>
-      Math.abs(a.index - labelIndex) - Math.abs(b.index - labelIndex),
-  );
-  return matches[0].price;
+  const labelIndexes: number[] = [];
+  let from = 0;
+  while (true) {
+    const idx = normalized.indexOf(label, from);
+    if (idx < 0) break;
+    labelIndexes.push(idx);
+    from = idx + Math.max(label.length, 1);
+  }
+
+  if (labelIndexes.length === 0) return undefined;
+
+  const nearby = matches
+    .map((match) => ({
+      ...match,
+      distance: Math.min(...labelIndexes.map((idx) => Math.abs(match.index - idx))),
+    }))
+    .filter((match) => match.distance <= 600)
+    .sort((a, b) => a.distance - b.distance);
+
+  // Never use a distant page-wide price as the cigar price.
+  return nearby[0]?.price;
 }
 
 async function firecrawlRetailerPriceSearch(params: {
@@ -381,7 +392,7 @@ async function firecrawlRetailerPriceSearch(params: {
       const looksLikeUkMerchant = host.endsWith(".co.uk") || host.endsWith(".uk") || /cigar|cigars|tobacco|tobacconist|smoke|humidor/i.test(`${host} ${title}`);
 
       if (!knownVendor && !looksLikeUkMerchant) continue;
-      if (!exactProductMatch(title, markdown, params.brand, params.name)) continue;
+      if (!exactProductMatch(title, url, markdown, params.brand, params.name)) continue;
 
       const product = result?.product || result?.data?.product;
       const structuredPrice = Number(product?.price);
