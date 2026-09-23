@@ -748,7 +748,7 @@ function jsonLdProductMatches(product: any, cigar: RetailerScanCigar): boolean {
   );
 }
 
-function priceFromJsonLd(product: any, cigar: RetailerScanCigar): { price?: number; inStock?: boolean; title?: string } {
+function priceFromJsonLd(product: any, cigar: RetailerScanCigar): { price?: number; inStock?: boolean; title?: string; sourceProductId?: string; sourceUpdatedAt?: string } {
   if (!jsonLdProductMatches(product, cigar)) return {};
   const offers = Array.isArray(product.offers) ? product.offers : product.offers ? [product.offers] : [];
   for (const offer of offers) {
@@ -815,7 +815,7 @@ export function buildQuote(
   if (isGenericRetailerPage(url)) return undefined;
 
   const products = Array.isArray(productData?.products) ? productData.products : [];
-  let structured: { price?: number; inStock?: boolean; title?: string } = {};
+  let structured: { price?: number; inStock?: boolean; title?: string; sourceProductId?: string; sourceUpdatedAt?: string } = {};
   for (const product of products) {
     const candidate = priceFromJsonLd(product, requested);
     if (candidate.price !== undefined) { structured = candidate; break; }
@@ -845,9 +845,10 @@ export function buildQuote(
   const matchedTitle = structured.title || pageTitle || title;
   const combined = matchedTitle;
   const dims = dimensions(combined);
-  const smokeTimeMinutes = extractSmokeTimeMinutes(markdown);
-  const strength = extractStrength(markdown);
-  const rating = extractRetailerRating(markdown);
+  const productContext = markdown.slice(0, 5000);
+  const smokeTimeMinutes = extractSmokeTimeMinutes(productContext);
+  const strength = extractStrength(productContext);
+  const rating = extractRetailerRating(productContext);
   const retailerVitola = vitolaName(combined);
 
   return {
