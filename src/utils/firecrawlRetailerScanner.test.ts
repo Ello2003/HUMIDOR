@@ -42,3 +42,33 @@ describe('retailerListingMatches', () => {
     )).toBe(true);
   });
 });
+
+  it('does not merge Davidoff Toro into the Churchill canonical record', () => {
+    expect(retailerListingMatches(
+      'Davidoff Winston Churchill The Late Hour Toro Cigar - Single',
+      'https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-toro-cigar-single',
+      'Davidoff',
+      'Winston Churchill Late Hour',
+      'Churchill',
+    )).toBe(false);
+  });
+
+  it('does not merge Cohiba Behike 54 into the BHK 52 canonical record', () => {
+    expect(retailerListingMatches(
+      'Cohiba Behike 54 Cuban Cigar Single',
+      'https://www.smoke-king.co.uk/products/cohiba-behike-54-cuban-cigar-single',
+      'Cohiba',
+      'Behike',
+      'BHK 52 (Petit Robusto)',
+    )).toBe(false);
+  });
+
+  it('matches the Behike 52 listing to the BHK 52 canonical record', () => {
+    expect(retailerListingMatches(
+      'Cohiba Behike 52 Cuban Cigar Single',
+      'https://www.smoke-king.co.uk/products/cohiba-behike-52-cuban-cigar-single',
+      'Cohiba',
+      'Behike',
+      'BHK 52 (Petit Robusto)',
+    )).toBe(true);
+  });
