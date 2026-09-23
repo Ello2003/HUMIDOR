@@ -177,8 +177,17 @@ function vitolaMatches(requestedVitola: string | undefined, identityText: string
   const requested = dimensions(requestedVitola);
   const found = dimensions(identityText);
   if (requested.lengthMm && requested.ringGauge && found.lengthMm && found.ringGauge) {
-    return Math.abs(requested.lengthMm - found.lengthMm) <= 5 &&
+    const dimensionsMatch = Math.abs(requested.lengthMm - found.lengthMm) <= 5 &&
       Math.abs(requested.ringGauge - found.ringGauge) <= 1;
+    if (dimensionsMatch) return true;
+
+    // Retailer catalogues can publish a slightly different ring gauge for the
+    // same named vitola. Prefer the explicit vitola name over a conflicting
+    // catalogue dimension, but never use this fallback when named vitolas differ.
+    const requestedName = vitolaName(requestedVitola);
+    const foundName = vitolaName(identityText);
+    if (requestedName && foundName) return requestedName === foundName;
+    return false;
   }
 
   const requestedName = vitolaName(requestedVitola);
