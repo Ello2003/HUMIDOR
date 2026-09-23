@@ -27,7 +27,7 @@ export type RetailerScanResult = {
 const RETAILER_DOMAINS = ENABLED_UK_RETAILER_SOURCES.map((source) => new URL(source.baseUrl).hostname.replace(/^www\./, ''));
 
 const MAX_SEARCH_RESULTS = 200;
-const MAX_PAGE_SCRAPES = 12;
+const MAX_PAGE_SCRAPES = 36;
 
 function extractSmokeTimeMinutes(text: string): number | undefined {
   const normalized = normalize(text);
@@ -331,6 +331,8 @@ function structuredPrice(product: any, requested: RetailerScanCigar): {
   price?: number;
   inStock?: boolean;
   title?: string;
+  sourceProductId?: string;
+  sourceUpdatedAt?: string;
 } {
   if (!product || typeof product !== 'object') return {};
   const title = String(product.title || '');
@@ -380,6 +382,8 @@ function structuredPrice(product: any, requested: RetailerScanCigar): {
       ? Boolean(variant.availability.inStock)
       : undefined,
     title: String(variant?.title || product.title || ''),
+    sourceProductId: String(variant?.sku || variant?.id || product.sku || product.id || product.mpn || '') || undefined,
+    sourceUpdatedAt: typeof product.updatedAt === 'string' ? product.updatedAt : undefined,
   };
 }
 
@@ -534,7 +538,7 @@ async function fetchText(url: string, delayMs = 0): Promise<string | undefined> 
   return response.text().catch(() => undefined);
 }
 
-async function retailerSitemapUrls(domain: string): Promise<string[]> {
+async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]> {
   const source = ENABLED_UK_RETAILER_SOURCES.find((candidate) =>
     new URL(candidate.baseUrl).hostname.replace(/^www\./, '') === domain
   );
@@ -578,10 +582,35 @@ async function retailerSitemapUrls(domain: string): Promise<string[]> {
       if (!(host === domain || host.endsWith(`.${domain}`))) return false;
       return source.productUrlPatterns.length === 0 || source.productUrlPatterns.some((pattern) => pattern.test(new URL(url).pathname));
     } catch { return false; }
-  }).slice(0, source.maxPagesPerScan);
+  });
 
-  sitemapCache.set(domain, urls);
-  return urls;
+  // Some approved retailers expose a product catalogue through HTML pages
+  // but do not publish a useful product sitemap. Only configured discovery
+  // paths on the approved retailer domain are visited.
+  for (const path of source.discoveryPaths) {
+    if (urls.length >= source.maxPagesPerScan) break;
+    const discoveryUrl = new URL(path, source.baseUrl).toString();
+    const html = await fetchText(discoveryUrl, source.requestDelayMs);
+    if (!html) continue;
+    for (const match of html.matchAll(/<a\\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi)) {
+      let href = String(match[1] || '');
+      try { href = canonicalizeUrl(new URL(href, source.baseUrl).toString()); } catch { continue; }
+      try {
+        const parsed = new URL(href);
+        const host = parsed.hostname.toLowerCase().replace(/^www\\./, '');
+        if (!(host === domain || host.endsWith(`.${domain}`))) continue;
+        if (source.productUrlPatterns.length && !source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname))) continue;
+      } catch { continue; }
+      const anchorText = normalize(String(match[2] || '').replace(/<[^>]+>/g, ' '));
+      if (query && !sitemapUrlLooksRelevant(href + ' ' + anchorText, query)) continue;
+      if (!urls.includes(href)) urls.push(href);
+      if (urls.length >= source.maxPagesPerScan) break;
+    }
+  }
+
+  const capped = urls.slice(0, source.maxPagesPerScan);
+  sitemapCache.set(domain, capped);
+  return capped;
 }
 
 async function directWebSearch(query: string): Promise<any[]>(query: string): Promise<any[]> {
@@ -590,7 +619,7 @@ async function directWebSearch(query: string): Promise<any[]>(query: string): Pr
 
   // Retailer-owned catalogues are free and avoid search-engine throttling.
   await Promise.all(RETAILER_DOMAINS.map(async (domain) => {
-    const urls = await retailerSitemapUrls(domain);
+    const urls = await retailerSitemapUrls(domain, _query);
     for (const url of urls) {
       if (!sitemapUrlLooksRelevant(url, query) || seen.has(url)) continue;
       seen.add(url);
@@ -859,6 +888,8 @@ function priceFromJsonLd(product: any, cigar: RetailerScanCigar): { price?: numb
         ? !/outofstock|soldout|unavailable/i.test(offer.availability)
         : undefined,
       title: String(product.name || ''),
+      sourceProductId: String(product.sku || product.mpn || product.productID || '') || undefined,
+      sourceUpdatedAt: typeof product.dateModified === 'string' ? product.dateModified : undefined,
     };
   }
   return {};
@@ -882,7 +913,7 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<any> {
   return payload?.data || {};
 }
 
-function metaPrice(page: any, requested: RetailerScanCigar): { price?: number; inStock?: boolean; title?: string } {
+function metaPrice(page: any, requested: RetailerScanCigar): { price?: number; inStock?: boolean; title?: string; sourceProductId?: string } {
   const meta = page?.metadata?.meta || {};
   const title = String(meta['og:title'] || meta['twitter:title'] || meta['product:name'] || meta['itemprop:name'] || '');
   if (!title || !exactProductMatch(title, '', requested.brand, requested.name, requested.vitola, requested.line, requested.variant, requested.packageType, requested.boxCount)) return {};
@@ -892,10 +923,10 @@ function metaPrice(page: any, requested: RetailerScanCigar): { price?: number; i
   if (!Number.isFinite(price) || price < 3 || price >= 2000) return {};
   if (currency && currency !== 'GBP' && currency !== '£') return {};
   const availability = String(meta['product:availability'] || meta['availability'] || '').toLowerCase();
-  return { price, inStock: availability ? !/outofstock|soldout|unavailable/.test(availability) : undefined, title };
+  return { price, inStock: availability ? !/outofstock|soldout|unavailable/.test(availability) : undefined, title, sourceProductId: meta['product:id'] || meta['product:sku'] || meta['sku'] || undefined };
 }
 
-function buildQuote(
+export function buildQuote(
   result: any,
   requested: RetailerScanCigar,
   productData: any,
@@ -952,11 +983,19 @@ function buildQuote(
     inStock: structured.inStock ?? !/out of stock|unavailable|sold out/i.test(markdown),
     url: canonicalizeUrl(url),
     lastUpdated: new Date().toISOString().split('T')[0],
-    sourceUpdatedAt: new Date().toISOString(),
-    sourceProductId: undefined,
+    sourceUpdatedAt: structured.sourceUpdatedAt || null,
+    sourceProductId: structured.sourceProductId || null,
     productUrl: canonicalizeUrl(url),
     matchingStatus: 'matched',
     confidenceScore: products.length ? 0.99 : 0.94,
+    rawData: {
+      evidenceType: products.length ? 'json-ld-product' : productData?.metadata?.meta ? 'product-meta-or-visible' : 'visible-product-context',
+      title: matchedTitle,
+      sourceProductId: structured.sourceProductId || null,
+      price: Math.round(structured.price * 100) / 100,
+      currency: 'GBP',
+      inStock: structured.inStock ?? null,
+    },
     ...(retailerVitola ? { vitola: retailerVitola } : {}),
     ...(dims.lengthMm ? { lengthMm: Math.round(dims.lengthMm) } : {}),
     ...(dims.ringGauge ? { ringGauge: dims.ringGauge } : {}),
