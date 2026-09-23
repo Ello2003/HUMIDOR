@@ -27,7 +27,7 @@ const byId = new Map<string, any>();
 for (const cigar of [...researchCigars, ...wishlistCigars]) byId.set(cigar.id, cigar);
 const cigars = [...byId.values()];
 
-console.log(`Preparing a UK retailer price scan for ${cigars.length} cigars (Firecrawl with zero-cost web fallback)...`);
+console.log(`Preparing a compliant UK retailer product scan for ${cigars.length} cigars (retailer sitemaps/catalogues; optional Firecrawl discovery)...`);
 
 const results = await scanRetailerPrices(cigars, {
   concurrency: Number(process.env.PRICE_SCAN_CONCURRENCY) || 2,
