@@ -326,18 +326,30 @@ function exactProductMatch(
   );
 }
 
-function extractPounds(text: string, label: string): number | undefined {
+export function extractPounds(text: string, label: string): number | undefined {
   const normalized = normalize(text);
-  const matches = [...normalized.matchAll(/(?:£|gbp\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi)]
+  const normalizedLabel = normalize(label);
+  if (!normalizedLabel) return undefined;
+
+  const labelIndex = normalized.indexOf(normalizedLabel);
+  if (labelIndex < 0) return undefined;
+
+  // A price is only valid when it is tightly associated with the exact
+  // matched product label. Never fall back to the first £ amount on a page:
+  // retailer pages commonly contain prices for related cigars, bundles and
+  // recommendations.
+  const contextStart = Math.max(0, labelIndex - 160);
+  const contextEnd = Math.min(normalized.length, labelIndex + normalizedLabel.length + 220);
+  const context = normalized.slice(contextStart, contextEnd);
+  const matches = [...context.matchAll(/(?:£|gbp\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi)]
     .map((match) => ({ price: Number(match[1]), index: match.index ?? 0 }))
     .filter(({ price }) => Number.isFinite(price) && price >= 3 && price < 2000);
+
   if (!matches.length) return undefined;
 
-  const labelIndex = normalized.indexOf(normalize(label));
-  if (labelIndex < 0) return matches[0].price;
+  const labelOffset = labelIndex - contextStart;
   return matches
-    .map((match) => ({ ...match, distance: Math.abs(match.index - labelIndex) }))
-    .filter((match) => match.distance <= 300)
+    .map((match) => ({ ...match, distance: Math.abs(match.index - labelOffset) }))
     .sort((a, b) => a.distance - b.distance)[0]?.price;
 }
 
@@ -734,8 +746,10 @@ function buildQuote(
   title: string,
   markdown: string,
 ): Record<string, any> | undefined {
-  const price = structuredPrice(productData?.product, requested).price ??
-    extractPounds(`${title} ${markdown}`, `${requested.brand} ${requested.name}`);
+  const structured = structuredPrice(productData?.product, requested);
+  const price = structured.price ??
+    extractPounds(markdown, title) ??
+    extractPounds(markdown, `${requested.brand} ${requested.name}`);
   if (!price) return undefined;
 
   let url = String(result?.url || '');
@@ -895,7 +909,9 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
   candidates.sort((a, b) => candidateScore(b) - candidateScore(a));
 
   const quotes: Record<string, any>[] = [];
-  const selectedCandidates = candidates.slice(0, MAX_PAGE_SCRAPES);
+  // Verify substantially more candidates so one retailer's high-ranked result
+  // cannot crowd out valid listings from other configured retailers.
+  const selectedCandidates = candidates.slice(0, Math.max(MAX_PAGE_SCRAPES, RETAILER_DOMAINS.length));
   const scrapeConcurrency = Math.min(6, selectedCandidates.length);
   let nextCandidate = 0;
 
@@ -920,7 +936,10 @@ async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: 
         title = String(productData?.metadata?.title || productData?.product?.title || title);
         markdown = String(productData?.markdown || markdown);
       } catch {
-        // Search result data is still usable if it contained a price.
+        // A search-result snippet is discovery evidence only. Do not turn a
+        // snippet price into a quote because it can belong to a neighbouring
+        // product or recommendation.
+        continue;
       }
     }
 
