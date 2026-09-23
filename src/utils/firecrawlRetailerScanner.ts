@@ -671,28 +671,6 @@ async function directNativeSearch(query: string): Promise<any[]> {
   return results.slice(0, MAX_SEARCH_RESULTS);
 }
 async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; product?: any }> {
-  let hostname = '';
-  try { hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, ''); } catch { /* use direct fetch */ }
-  const preferReader = hostname === 'turmeaus.co.uk' || hostname.endsWith('.turmeaus.co.uk') ||
-    hostname === 'cgarsltd.co.uk' || hostname.endsWith('.cgarsltd.co.uk');
-
-  const readWithJina = async () => {
-    const reader = await fetch('https://r.jina.ai/' + url, {
-      headers: { 'User-Agent': 'HUMIDOR price scanner' },
-    }).catch(() => undefined);
-    if (!reader?.ok) return undefined;
-    const markdown = await reader.text();
-    return {
-      metadata: { title: markdown.match(/^#\s+(.+)$/m)?.[1] || '' },
-      markdown,
-    };
-  };
-
-  if (preferReader) {
-    const mirrored = await readWithJina();
-    if (mirrored) return mirrored;
-  }
-
   const response = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
@@ -700,26 +678,93 @@ async function directScrape(url: string): Promise<{ metadata?: Record<string, an
     },
   }).catch(() => undefined);
 
-  if (response?.ok) {
-    const html = await response.text();
-    return {
-      metadata: { title: html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '' },
-      markdown: html
-        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&amp;/gi, '&')
-        .replace(/\s+/g, ' ')
-        .trim(),
-    };
+  if (!response?.ok) throw new Error('Direct page fetch failed');
+
+  const html = await response.text();
+  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '';
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&#39;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const products: any[] = [];
+  for (const match of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      const parsed = JSON.parse(match[1].trim());
+      const roots = Array.isArray(parsed) ? parsed : [parsed];
+      const values = [...roots];
+      for (const value of roots) {
+        if (value?.['@graph']) {
+          values.push(...(Array.isArray(value['@graph']) ? value['@graph'] : [value['@graph']]));
+        }
+      }
+      for (const value of values) {
+        if (value?.['@type'] === 'Product' ||
+            (Array.isArray(value?.['@type']) && value['@type'].includes('Product'))) {
+          products.push(value);
+        }
+      }
+    } catch {
+      // Invalid retailer JSON-LD is ignored.
+    }
   }
 
-  const mirrored = await readWithJina();
-  if (mirrored) return mirrored;
-  throw new Error('Direct page fetch failed');
+  return {
+    metadata: { title: decodeXml(title.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()) },
+    markdown: text,
+    product: products[0],
+  };
 }
 
+function isGenericRetailerPage(url: string): boolean {
+  try {
+    const path = normalize(new URL(url).pathname);
+    return /\/(?:category|categories|collection|collections|brand|brands|search|advanced_search|search_result|catalog|shop)(?:\/|$)/i.test(path);
+  } catch {
+    return true;
+  }
+}
+
+function jsonLdProductMatches(product: any, cigar: RetailerScanCigar): boolean {
+  if (!product || typeof product !== 'object') return false;
+  return retailerListingMatches(
+    String(product.name || ''),
+    '',
+    cigar.brand,
+    cigar.name,
+    cigar.vitola,
+    cigar.line,
+    cigar.variant,
+    cigar.packageType,
+    cigar.boxCount,
+    [product.description, product.sku, product.mpn].filter(Boolean).join(' '),
+  );
+}
+
+function priceFromJsonLd(product: any, cigar: RetailerScanCigar): { price?: number; inStock?: boolean; title?: string } {
+  if (!jsonLdProductMatches(product, cigar)) return {};
+  const offers = Array.isArray(product.offers) ? product.offers : product.offers ? [product.offers] : [];
+  for (const offer of offers) {
+    const price = Number(offer?.price ?? offer?.priceSpecification?.price);
+    const currency = String(offer?.priceCurrency ?? offer?.priceSpecification?.priceCurrency ?? '').toUpperCase();
+    if (!Number.isFinite(price) || price < 3 || price >= 2000) continue;
+    if (currency && currency !== 'GBP' && currency !== '£') continue;
+    return {
+      price,
+      inStock: typeof offer?.availability === 'string'
+        ? !/outofstock|soldout|unavailable/i.test(offer.availability)
+        : undefined,
+      title: String(product.name || ''),
+    };
+  }
+  return {};
+}
 async function firecrawlScrape(apiKey: string, url: string): Promise<any> {
   const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
     method: 'POST',
