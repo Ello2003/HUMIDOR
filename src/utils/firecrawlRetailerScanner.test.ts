@@ -149,6 +149,25 @@ describe('buildQuote', () => {
     expect(quote).toBeUndefined();
   });
 
+  it('rejects a generic brand or series page even when it contains a matching-series price', () => {
+    const quote = buildQuote(
+      { url: 'https://www.cgarsltd.co.uk/padron-a-726.html' },
+      requested,
+      {
+        metadata: {
+          title: 'Padrón 1964 Anniversary Series',
+          h1: 'Padrón 1964 Anniversary Series',
+          meta: {},
+        },
+        markdown: 'Padrón 1964 Anniversary Series £10.00 Padrón Torpedo Maduro £47.50',
+        products: [],
+      },
+      'Padrón 1964 Anniversary Series',
+      'Padrón 1964 Anniversary Series £10.00 Padrón Torpedo Maduro £47.50',
+    );
+    expect(quote).toBeUndefined();
+  });
+
   it('accepts exact visible product context when structured data is unavailable', () => {
     const quote = buildQuote(
       { url: 'https://ukcigarstore.co.uk/products/padron-1964-anniversary-series-torpedo-maduro' },
