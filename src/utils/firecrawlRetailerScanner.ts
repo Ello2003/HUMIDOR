@@ -684,8 +684,16 @@ async function directScrape(url: string): Promise<{ metadata?: Record<string, an
   const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '';
   const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || '';
   const meta: Record<string, string> = {};
-  for (const match of html.matchAll(/<meta\b[^>]*(?:name|property|itemprop)=["']([^"']+)["'][^>]*content=["']([^"']*)["'][^>]*>/gi)) {
-    meta[String(match[1]).toLowerCase()] = decodeXml(String(match[2] || '').trim());
+  const metaPatterns = [
+    /<meta\b[^>]*(?:name|property|itemprop)=["']([^"']+)["'][^>]*content=["']([^"']*)["'][^>]*>/gi,
+    /<meta\b[^>]*content=["']([^"']*)["'][^>]*(?:name|property|itemprop)=["']([^"']+)["'][^>]*>/gi,
+  ];
+  for (const [index, pattern] of metaPatterns.entries()) {
+    for (const match of html.matchAll(pattern)) {
+      const key = index === 0 ? match[1] : match[2];
+      const value = index === 0 ? match[2] : match[1];
+      meta[String(key || '').toLowerCase()] = decodeXml(String(value || '').trim());
+    }
   }
 
   const text = html
