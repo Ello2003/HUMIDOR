@@ -592,7 +592,7 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     const discoveryUrl = new URL(path, source.baseUrl).toString();
     const html = await fetchText(discoveryUrl, source.requestDelayMs);
     if (!html) continue;
-    for (const match of html.matchAll(/<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\s\S]*?)</a>/gi)) {
+    for (const match of html.matchAll(/<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\s\S]*?)<\\/a>/gi)) {
       let href = String(match[1] || '');
       try { href = canonicalizeUrl(new URL(href, source.baseUrl).toString()); } catch { continue; }
       try {
