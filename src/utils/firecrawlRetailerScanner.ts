@@ -578,7 +578,7 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
 
   const urls = Array.from(productUrls).filter((url) => {
     try {
-      const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+      const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
       if (!(host === domain || host.endsWith(`.${domain}`))) return false;
       return source.productUrlPatterns.length === 0 || source.productUrlPatterns.some((pattern) => pattern.test(new URL(url).pathname));
     } catch { return false; }
@@ -592,12 +592,12 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     const discoveryUrl = new URL(path, source.baseUrl).toString();
     const html = await fetchText(discoveryUrl, source.requestDelayMs);
     if (!html) continue;
-    for (const match of html.matchAll(/<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\s\S]*?)<\\/a>/gi)) {
+    for (const match of html.matchAll(/<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\s\S]*?)<\/a>/gi)) {
       let href = String(match[1] || '');
       try { href = canonicalizeUrl(new URL(href, source.baseUrl).toString()); } catch { continue; }
       try {
         const parsed = new URL(href);
-        const host = parsed.hostname.toLowerCase().replace(/^www\\./, '');
+        const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
         if (!(host === domain || host.endsWith(`.${domain}`))) continue;
         if (source.productUrlPatterns.length && !source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname))) continue;
       } catch { continue; }
@@ -662,26 +662,26 @@ async function directScrape(url: string): Promise<{ metadata?: Record<string, an
   if (!response?.ok) throw new Error(`Direct page fetch failed (${response?.status || 'network'})`);
 
   const html = await response.text();
-  const title = html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)?.[1] || '';
-  const h1 = html.match(/<h1[^>]*>([\\s\\S]*?)<\\/h1>/i)?.[1] || '';
+  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '';
+  const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || '';
   const meta: Record<string, string> = {};
-  for (const match of html.matchAll(/<meta\\b[^>]*(?:name|property|itemprop)=["']([^"']+)["'][^>]*content=["']([^"']*)["'][^>]*>/gi)) {
+  for (const match of html.matchAll(/<meta\b[^>]*(?:name|property|itemprop)=["']([^"']+)["'][^>]*content=["']([^"']*)["'][^>]*>/gi)) {
     meta[String(match[1]).toLowerCase()] = decodeXml(String(match[2] || '').trim());
   }
 
   const text = html
-    .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')
-    .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&amp;/gi, '&')
     .replace(/&#39;/gi, "'")
     .replace(/&quot;/gi, '"')
-    .replace(/\\s+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 
   const products: any[] = [];
-  for (const match of html.matchAll(/<script[^>]+type=["']application\\/ld\\+json["'][^>]*>([\\s\\S]*?)<\\/script>/gi)) {
+  for (const match of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
     try {
       const parsed = JSON.parse(match[1].trim());
       const roots = Array.isArray(parsed) ? parsed : [parsed];
@@ -699,8 +699,8 @@ async function directScrape(url: string): Promise<{ metadata?: Record<string, an
 
   return {
     metadata: {
-      title: decodeXml(title.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()),
-      h1: decodeXml(h1.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()),
+      title: decodeXml(title.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()),
+      h1: decodeXml(h1.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()),
       meta,
     },
     markdown: text,
