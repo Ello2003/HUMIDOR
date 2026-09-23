@@ -463,7 +463,7 @@ function canonicalizeUrl(rawUrl: string): string {
 function parseRobotsRules(text: string): Array<{ userAgent: string; path: string; allow: boolean }> {
   const rules: Array<{ userAgent: string; path: string; allow: boolean }> = [];
   let agents: string[] = [];
-  for (const rawLine of text.split(/\\r?\\n/)) {
+  for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.split('#', 1)[0].trim();
     if (!line) continue;
     const [rawKey, ...rest] = line.split(':');
@@ -555,7 +555,7 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
   const robots = await getRobots(domain);
   const robotsText = robots || '';
 
-  for (const match of robotsText.matchAll(/^\\s*sitemap:\\s*(https?:\\/\\/\\S+)/gim)) {
+  for (const match of robotsText.matchAll(/^\s*sitemap:\s*(https?:\/\/\S+)/gim)) {
     sitemapCandidates.add(String(match[1]).trim());
   }
 
@@ -566,7 +566,7 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     const xml = await fetchText(sitemap, source.requestDelayMs);
     if (!xml) continue;
     const locs = sitemapLocs(xml);
-    if (/<sitemap(?:index)?[\\s>]/i.test(xml.slice(0, 1200))) locs.forEach((loc) => childSitemaps.add(loc));
+    if (/<sitemap(?:index)?[\s>]/i.test(xml.slice(0, 1200))) locs.forEach((loc) => childSitemaps.add(loc));
     else locs.forEach((loc) => productUrls.add(canonicalizeUrl(loc)));
   }
 
@@ -592,7 +592,7 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     const discoveryUrl = new URL(path, source.baseUrl).toString();
     const html = await fetchText(discoveryUrl, source.requestDelayMs);
     if (!html) continue;
-    for (const match of html.matchAll(/<a\\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi)) {
+    for (const match of html.matchAll(/<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\s\S]*?)</a>/gi)) {
       let href = String(match[1] || '');
       try { href = canonicalizeUrl(new URL(href, source.baseUrl).toString()); } catch { continue; }
       try {
@@ -613,161 +613,35 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
   return capped;
 }
 
-async function directWebSearch(query: string): Promise<any[]>(query: string): Promise<any[]> {
+async function directWebSearch(query: string): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
 
-  // Retailer-owned catalogues are free and avoid search-engine throttling.
   await Promise.all(RETAILER_DOMAINS.map(async (domain) => {
-    const urls = await retailerSitemapUrls(domain, _query);
+    const urls = await retailerSitemapUrls(domain, query);
     for (const url of urls) {
-      if (!sitemapUrlLooksRelevant(url, query) || seen.has(url)) continue;
-      seen.add(url);
-      let pathname = url;
-      try { pathname = decodeURIComponent(new URL(url).pathname); } catch { /* keep URL */ }
-      const title = pathname.replace(/^\/+|\/+$/g, '').replace(/[-_]+/g, ' ').replace(/\/+/g, ' > ').trim();
-      results.push({ url, title, description: '' });
-      if (results.length >= MAX_SEARCH_RESULTS) break;
+      const canonical = canonicalizeUrl(url);
+      if (seen.has(canonical)) continue;
+      seen.add(canonical);
+      let pathname = canonical;
+      try { pathname = decodeURIComponent(new URL(canonical).pathname); } catch {}
+      const title = pathname.replace(/^\/+|^\/+$/g, '').replace(/[-_]+/g, ' ').replace(/\+/g, ' > ').trim();
+      results.push({ url: canonical, title, description: '', discoverySource: 'retailer-sitemap-or-catalogue' });
     }
   }));
 
-  // Sitemap hits are discovery candidates, not verified matches. Search-engine fallback remains available when page verification finds nothing.
-  const fallbackDomains = RETAILER_DOMAINS.slice(0, 8);
-  await Promise.all(fallbackDomains.map(async (domain) => {
-    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(`site:${domain} ${query}`)}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)', Accept: 'text/html' },
-    }).catch(() => undefined);
-    if (!response?.ok) return;
-    const html = await response.text();
-    const pattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*class=["'][^"']*\bresult__a\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
-    for (const match of html.matchAll(pattern)) {
-      let url = String(match[1] || '');
-      try {
-        const parsed = new URL(url, 'https://html.duckduckgo.com');
-        const target = parsed.searchParams.get('uddg');
-        url = target ? decodeURIComponent(target) : parsed.toString();
-        const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-        if (!(host === domain || host.endsWith(`.${domain}`))) continue;
-      } catch { continue; }
-      if (seen.has(url)) continue;
-      seen.add(url);
-      results.push({ url, title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()), description: '' });
-    }
-  }));
+  const queryTokens = meaningfulTokens(query).filter((token) => token.length >= 4);
+  results.sort((a, b) => {
+    const score = (value: any) => {
+      const text = normalize(String(value?.url || '') + ' ' + String(value?.title || ''));
+      return queryTokens.reduce((total, token) => total + (text.includes(token) ? 1 : 0), 0);
+    };
+    return score(b) - score(a);
+  });
+
   return results.slice(0, MAX_SEARCH_RESULTS);
 }
 
-async function directSearchEngine(query: string): Promise<any[]> {
-  const results: any[] = [];
-  const seen = new Set<string>();
-  // This is deliberately a second-stage fallback: retailer catalogues are
-  // preferred, and only the first eight UK retailers are queried here when
-  // catalogue/page verification found nothing.
-  for (const domain of RETAILER_DOMAINS.slice(0, 8)) {
-    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(`site:${domain} ${query}`)}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)', Accept: 'text/html' },
-    }).catch(() => undefined);
-    if (!response?.ok) continue;
-    const html = await response.text();
-    const patterns = [
-      /<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*class=[\"'][^\"']*\bresult__a\b[^\"']*[\"'][^>]*>([\s\S]*?)<\/a>/gi,
-      /<a\b[^>]*class=[\"'][^\"']*\bresult__a\b[^\"']*[\"'][^>]*href=[\"']([^\"']+)[\"'][^>]*>([\s\S]*?)<\/a>/gi,
-    ];
-    for (const pattern of patterns) {
-      for (const match of html.matchAll(pattern)) {
-        let url = String(match[1] || '');
-        try {
-          const parsed = new URL(url, 'https://html.duckduckgo.com');
-          const target = parsed.searchParams.get('uddg');
-          url = target ? decodeURIComponent(target) : parsed.toString();
-          const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-          if (!(host === domain || host.endsWith(`.${domain}`))) continue;
-        } catch { continue; }
-        if (!url.startsWith('https://') || seen.has(url)) continue;
-        seen.add(url);
-        const resultWindow = html.slice(match.index ?? 0, (match.index ?? 0) + 2200);
-        const snippetMatch = resultWindow.match(/class=["'][^"']*\bresult__snippet\b[^"']*["'][^>]*>([\s\S]*?)<\/a?>/i);
-        const description = snippetMatch
-          ? decodeXml(String(snippetMatch[1] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
-          : '';
-        results.push({
-          url,
-          title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()),
-          description,
-        });
-      }
-    }
-  }
-  return results.slice(0, MAX_SEARCH_RESULTS);
-}
-
-async function directBingSearch(query: string): Promise<any[]> {
-  const results: any[] = [];
-  const seen = new Set<string>();
-  for (const domain of RETAILER_DOMAINS.slice(0, 8)) {
-    const response = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(`site:${domain} ${query}`)}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)', Accept: 'text/html' },
-    }).catch(() => undefined);
-    if (!response?.ok) continue;
-    const html = await response.text();
-    const pattern = /<li[^>]*class=["'][^"']*b_algo[^"']*["'][^>]*>[\s\S]*?<h2[^>]*><a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>[\s\S]*?<\/li>/gi;
-    for (const match of html.matchAll(pattern)) {
-      const url = decodeXml(String(match[1] || '').trim());
-      try {
-        const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-        if (!(host === domain || host.endsWith(`.${domain}`))) continue;
-      } catch { continue; }
-      if (!url.startsWith('https://') || seen.has(url)) continue;
-      seen.add(url);
-      results.push({
-        url,
-        title: decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()),
-        description: '',
-      });
-    }
-  }
-  return results.slice(0, MAX_SEARCH_RESULTS);
-}
-
-async function directNativeSearch(query: string): Promise<any[]> {
-  const results: any[] = [];
-  const seen = new Set<string>();
-  const encoded = encodeURIComponent(query);
-  const paths = [
-    '/advanced_search_result.php?keywords=' + encoded,
-    '/search.php?keywords=' + encoded,
-    '/search?q=' + encoded,
-  ];
-
-  for (const domain of RETAILER_DOMAINS.slice(0, 8)) {
-    for (const path of paths) {
-      const response = await fetch('https://' + domain + path, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)', Accept: 'text/html' },
-      }).catch(() => undefined);
-      if (!response?.ok) continue;
-      const html = await response.text();
-      const pattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-      let added = 0;
-      for (const match of html.matchAll(pattern)) {
-        let url = String(match[1] || '');
-        try { url = new URL(url, 'https://' + domain).toString(); } catch { continue; }
-        try {
-          const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-          if (!(host === domain || host.endsWith('.' + domain))) continue;
-        } catch { continue; }
-        if (seen.has(url)) continue;
-        const title = decodeXml(String(match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
-        if (!title || title.length < 4) continue;
-        if (!/(cigar|cigars|pledge|padron|davidoff|montecristo|partagas|oliva|foundation|perdomo|plasen)/i.test(title + ' ' + url)) continue;
-        seen.add(url);
-        results.push({ url, title, description: '' });
-        added++;
-      }
-      if (added) break;
-    }
-  }
-  return results.slice(0, MAX_SEARCH_RESULTS);
-}
 async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; products?: any[]; rawHtml?: string }> {
   let domain = '';
   try { domain = new URL(url).hostname.toLowerCase().replace(/^www\./, ''); } catch { throw new Error('Invalid retailer URL'); }
