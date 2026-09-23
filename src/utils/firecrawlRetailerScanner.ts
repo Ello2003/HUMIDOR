@@ -51,8 +51,38 @@ export const UK_RETAILER_CATALOG: Record<string, { domain: string }> = {
 };
 
 const RETAILER_DOMAINS = Object.values(UK_RETAILER_CATALOG).map(({ domain }) => domain);
+
 const MAX_SEARCH_RESULTS = 200;
 const MAX_PAGE_SCRAPES = 12;
+
+function extractSmokeTimeMinutes(text: string): number | undefined {
+  const normalized = normalize(text);
+  const range = normalized.match(/(?:enjoyment|smoke|smoking|burn)[^\d]{0,40}(\d{1,3})\s*(?:-|to|–|—)\s*(\d{1,3})\s*(?:min|mins|minutes)\b/i);
+  if (range) return Math.round((Number(range[1]) + Number(range[2])) / 2);
+  const single = normalized.match(/(?:enjoyment|smoke|smoking|burn)[^\d]{0,40}(\d{1,3})\s*(?:min|mins|minutes)\b/i);
+  return single ? Number(single[1]) : undefined;
+}
+
+function extractStrength(text: string): string | undefined {
+  const match = text.match(/\bstrength\s*[:|-]?\s*(\d\s*\/\s*5|(?:mild|medium|full|strong|mild to medium|medium to full|full bodied))\b/i);
+  return match ? match[1].replace(/\s+/g, ' ').trim() : undefined;
+}
+
+function extractRetailerRating(text: string): { rating?: number; scale?: number } {
+  for (const pattern of [
+    /(?:rating|rated|score|review score)\s*[:|-]?\s*(\d{1,3})(?:\s*\/\s*(\d{1,3}))?/i,
+    /\b(\d{1,3})\s*\/\s*(\d{1,3})\s*(?:rating|score)\b/i,
+  ]) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    const rating = Number(match[1]);
+    const scale = match[2] ? Number(match[2]) : undefined;
+    if (!Number.isFinite(rating) || rating <= 0 || rating > 100) continue;
+    return { rating, scale };
+  }
+  return {};
+}
+
 
 function normalize(value: unknown): string {
   return String(value || '')
@@ -491,8 +521,7 @@ async function directWebSearch(query: string): Promise<any[]> {
     }
   }));
 
-  // Low-volume fallback only if no retailer sitemap exposed a candidate.
-  if (results.length) return results;
+  // Sitemap hits are discovery candidates, not verified matches. Search-engine fallback remains available when page verification finds nothing.
   const fallbackDomains = RETAILER_DOMAINS.slice(0, 8);
   await Promise.all(fallbackDomains.map(async (domain) => {
     const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(`site:${domain} ${query}`)}`, {
@@ -726,6 +755,11 @@ function buildQuote(
 
   if (!vendor || /amazon|ebay|facebook|reddit|youtube|wikipedia/i.test(vendor + ' ' + url)) return undefined;
 
+  const dims = dimensions(title + ' ' + markdown);
+  const smokeTimeMinutes = extractSmokeTimeMinutes(title + ' ' + markdown);
+  const strength = extractStrength(title + ' ' + markdown);
+  const rating = extractRetailerRating(title + ' ' + markdown);
+  const retailerVitola = vitolaName(title + ' ' + markdown);
   return {
     vendor,
     price: Math.round(price * 100) / 100,
@@ -735,6 +769,13 @@ function buildQuote(
       : !/out of stock|unavailable|sold out/i.test(markdown),
     url,
     lastUpdated: new Date().toISOString().split('T')[0],
+    ...(retailerVitola ? { vitola: retailerVitola } : {}),
+    ...(dims.lengthMm ? { lengthMm: Math.round(dims.lengthMm) } : {}),
+    ...(dims.ringGauge ? { ringGauge: dims.ringGauge } : {}),
+    ...(smokeTimeMinutes ? { smokeTimeMinutes } : {}),
+    ...(strength ? { strength } : {}),
+    ...(rating.rating ? { retailerRating: rating.rating } : {}),
+    ...(rating.scale ? { retailerRatingScale: rating.scale } : {}),
   };
 }
 
