@@ -483,9 +483,9 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
   if (cached) return selectRelevant([...cached]);
 
   const sitemapCandidates = new Set<string>([
-    source.sitemapUrl || \`https://\${domain}/sitemap.xml\`,
-    \`https://\${domain}/sitemap_index.xml\`,
-    \`https://\${domain}/wp-sitemap.xml\`,
+    source.sitemapUrl || `https://${domain}/sitemap.xml`,
+    `https://${domain}/sitemap_index.xml`,
+    `https://${domain}/wp-sitemap.xml`,
   ]);
 
   const robots = await getRobots(domain);
@@ -518,7 +518,7 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
       try {
         const parsed = new URL(loc);
         const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
-        if (host === domain || host.endsWith(\`.\${domain}\`)) {
+        if (host === domain || host.endsWith(`.${domain}`)) {
           productUrls.add(canonicalizeUrl(loc));
         }
       } catch {}
@@ -529,7 +529,7 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     try {
       const parsed = new URL(url);
       const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
-      if (!(host === domain || host.endsWith(\`.\${domain}\`))) return false;
+      if (!(host === domain || host.endsWith(`.${domain}`))) return false;
       return source.productUrlPatterns.length === 0 ||
         source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname));
     } catch {
@@ -553,7 +553,7 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
       try {
         const parsed = new URL(href);
         const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
-        if (!(host === domain || host.endsWith(\`.\${domain}\`))) continue;
+        if (!(host === domain || host.endsWith(`.${domain}`))) continue;
         if (source.productUrlPatterns.length &&
             !source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname))) continue;
       } catch {
