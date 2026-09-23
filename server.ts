@@ -2498,6 +2498,7 @@ app.post("/api/research/retailer-prices", async (req, res) => {
     const result = await scanRetailerPrice(
       cigarValidation.cigar,
       process.env.FIRECRAWL_API_KEY || "",
+      requestedRetailers,
     );
 
     const quotes = result.quotes;
@@ -2572,6 +2573,7 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
           const result = await scanRetailerPrice(
             cigar,
             process.env.FIRECRAWL_API_KEY || "",
+            requestedRetailers,
           );
           results[index] = result;
         } catch (error: any) {
