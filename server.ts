@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { validateGroundedQuotes } from "./src/utils/groundedQuoteUtils";
+import { scanRetailerPrice } from "./src/utils/firecrawlRetailerScanner";
 
 dotenv.config();
 
@@ -677,110 +678,31 @@ async function firecrawlRetailerPriceSearch(params: {
   boxCount?: number;
   retailers: string[];
 }) {
-  const apiKey = process.env.FIRECRAWL_API_KEY;
-  if (!apiKey) return { quotes: [], sources: [] };
+  // The local API uses the same verified scanner as GitHub Actions. It never
+  // scrapes Google/Bing/DuckDuckGo HTML and never falls back to a page-wide £
+  // value. Firecrawl is optional discovery only.
+  const result = await scanRetailerPrice(
+    {
+      id: `local-${Date.now()}`,
+      brand: params.brand,
+      name: params.name,
+      line: params.line,
+      variant: params.variant,
+      vitola: params.vitola,
+      packageType: params.packageType,
+      boxCount: params.boxCount,
+    },
+    process.env.FIRECRAWL_API_KEY || '',
+  );
 
-  const label = [params.brand, requestedIdentityName(params.name, params.line, params.variant), params.vitola]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  const requested = params.retailers.length > 0 ? params.retailers : DEFAULT_UK_RETAILERS;
-  const domains = Array.from(new Set(requested.map((name) => UK_RETAILER_CATALOG[name]?.domain).filter((d): d is string => Boolean(d))));
-
-  // Search small domain groups so the search engine is not overwhelmed by a large restriction.
-  const domainGroups: string[][] = [];
-  for (let i = 0; i < domains.length; i += 8) domainGroups.push(domains.slice(i, i + 8));
-
-  const searchPlans: Array<{ query: string; includeDomains?: string[] }> = domainGroups.map((group) => ({
-    query: `"${params.brand}" "${requestedIdentityName(params.name, params.line, params.variant)}" cigar price UK GBP`,
-    includeDomains: group,
-  }));
-  // Always search broadly too, so newly discovered UK merchants can be used immediately.
-  searchPlans.push({ query: `"${label}" cigar UK price GBP retailer` });
-
-  const sources: Array<{ title: string; uri: string }> = [];
-  const quotes: any[] = [];
-  const seen = new Set<string>();
-
-  for (const plan of searchPlans) {
-    const response = await fetch("https://api.firecrawl.dev/v2/search", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: plan.query,
-        ...(plan.includeDomains ? { includeDomains: plan.includeDomains } : {}),
-        limit: 20,
-        sources: ["web"],
-        scrapeOptions: { formats: ["markdown", "product"], onlyMainContent: true },
-      }),
-    });
-    if (!response.ok) throw new Error(`Firecrawl search failed (${response.status})`);
-
-    const payload: any = await response.json();
-    const rawResults = Array.isArray(payload?.data?.web) ? payload.data.web : Array.isArray(payload?.data) ? payload.data : [];
-
-    for (const result of rawResults) {
-      const url = typeof result?.url === "string" ? result.url : "";
-      if (!url.startsWith("https://") || seen.has(url)) continue;
-
-      let parsedUrl: URL;
-      try { parsedUrl = new URL(url); } catch { continue; }
-
-      const knownVendor = retailerForHost(parsedUrl.hostname);
-      const title = String(result?.title || result?.metadata?.title || url);
-      const markdown = String(result?.markdown || result?.metadata?.description || result?.description || "");
-      const host = parsedUrl.hostname.toLowerCase().replace(/^www\./, "");
-      const looksLikeUkMerchant = host.endsWith(".co.uk") || host.endsWith(".uk") || /cigar|cigars|tobacco|tobacconist|smoke|humidor/i.test(`${host} ${title}`);
-
-      if (!knownVendor && !looksLikeUkMerchant) continue;
-      if (!exactProductMatch(title, url, markdown, params.brand, params.name, params.vitola, params.line, params.variant, params.packageType, params.boxCount)) continue;
-
-      let product = result?.product || result?.data?.product;
-      let verifiedTitle = title;
-      let verifiedMarkdown = markdown;
-      let structured = extractStructuredProductPrice(product, params);
-
-      // Search results are discovery only. If Firecrawl did not return a
-      // reliable product price, scrape the actual product page and extract
-      // its structured product data. This is what makes different retailer
-      // page structures work instead of relying on a page-wide first £ value.
-      if (!structured.price) {
-        try {
-          const scraped = await firecrawlScrapeProductPage(apiKey, url);
-          verifiedTitle = scraped.title || title;
-          verifiedMarkdown = scraped.markdown || markdown;
-          product = scraped.product || product;
-          structured = extractStructuredProductPrice(product, params);
-        } catch (scrapeError) {
-          console.warn(`[Price Scanner] Product-page scrape failed for ${url}:`, scrapeError);
-        }
-      }
-
-      if (!exactProductMatch(verifiedTitle, url, verifiedMarkdown, params.brand, params.name, params.vitola, params.line, params.variant, params.packageType, params.boxCount)) continue;
-
-      const priceFromProduct = structured.price;
-      const price = priceFromProduct ?? extractPoundsFromText(
-        `${verifiedTitle} ${verifiedMarkdown}`,
-        `${params.brand} ${params.name}`
-      );
-      if (!price) continue;
-
-      const vendor = knownVendor || String(result?.metadata?.siteName || result?.metadata?.source || title.split("|")[0] || host).trim();
-      seen.add(url);
-      sources.push({ title, uri: url });
-      quotes.push({
-        vendor,
-        price: Math.round(price * 100) / 100,
-        currency: "£",
-        inStock: product?.availability ? !/out of stock|unavailable|sold out/i.test(String(product.availability)) : !/out of stock|unavailable|sold out/i.test(markdown),
-        url,
-        lastUpdated: new Date().toISOString().split("T")[0],
-      });
-    }
-  }
-  return { quotes, sources };
+  return {
+    quotes: result.quotes,
+    sources: result.groundedSources || [],
+    grounded: result.grounded,
+    scanStatus: result.scanStatus,
+  };
 }
+
 /**
  * Takes free-text (typically the output of `groundedWebResearch`) and
  * reshapes it into a specific JSON schema via a second, ungrounded call.
