@@ -421,215 +421,182 @@ async function firecrawlSearch(
 const sitemapCache = new Map<string, string[]>();
 
 function decodeXml(value: string): string {
-  return value.replace(/&amp;/gi, '&').replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/&lt;/gi, '<').replace(/&gt;/gi, '>');
+  return value
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
 }
 
 function sitemapLocs(xml: string): string[] {
-  return [...xml.matchAll(/<loc\b[^>]*>([\s\S]*?)<\/loc>/gi)]
+  return [...xml.matchAll(/<loc\\b[^>]*>([\\s\\S]*?)<\\/loc>/gi)]
     .map((match) => decodeXml(String(match[1] || '').trim()))
-    .filter((url) => /^https?:\/\//i.test(url));
+    .filter((url) => /^https?:\\/\\//i.test(url));
+}
+
+function sitemapIsIndex(xml: string): boolean {
+  return /<sitemapindex\\b/i.test(xml) || /<sitemap\\b/i.test(xml.slice(0, 5000));
 }
 
 function sitemapUrlLooksRelevant(url: string, query: string): boolean {
   let decodedUrl = url;
-  try { decodedUrl = decodeURIComponent(url); } catch { /* keep the raw sitemap URL */ }
+  try {
+    decodedUrl = decodeURIComponent(url);
+  } catch {
+    // Keep the raw URL if it is not valid URI encoding.
+  }
+
   const urlText = normalize(decodedUrl);
   const tokens = meaningfulTokens(query)
     .filter((token) => token.length >= 4)
-    .filter((token) => !/^(cigar|price|prices|pounds|gbp|uk)$/.test(token));
+    .filter((token) => !/^(cigar|price|prices|pounds|gbp|uk)$/i.test(token));
+
   if (!tokens.length) return true;
+
   const hits = tokens.filter((token) => urlText.includes(token));
   return hits.length >= Math.min(2, tokens.length);
 }
 
-const robotsCache = new Map<string, string | null>();
-const hostNextRequestAt = new Map<string, number>();
+function relevantUrlScore(url: string, query: string): number {
+  if (!query) return 0;
 
-function canonicalizeUrl(rawUrl: string): string {
+  let decodedUrl = url;
   try {
-    const url = new URL(rawUrl);
-    url.hash = '';
-    for (const key of Array.from(url.searchParams.keys())) {
-      if (/^(utm_|fbclid|gclid|ref|source|campaign|mc_|_ga)/i.test(key)) {
-        url.searchParams.delete(key);
-      }
-    }
-    return url.toString();
+    decodedUrl = decodeURIComponent(url);
   } catch {
-    return rawUrl;
+    // Keep the raw URL.
   }
-}
 
-function parseRobotsRules(text: string): Array<{ userAgent: string; path: string; allow: boolean }> {
-  const rules: Array<{ userAgent: string; path: string; allow: boolean }> = [];
-  let agents: string[] = [];
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.split('#', 1)[0].trim();
-    if (!line) continue;
-    const [rawKey, ...rest] = line.split(':');
-    const key = String(rawKey || '').trim().toLowerCase();
-    const value = rest.join(':').trim();
-    if (key === 'user-agent') {
-      agents = value ? [value.toLowerCase()] : [];
-      continue;
-    }
-    if ((key === 'allow' || key === 'disallow') && agents.length) {
-      rules.push({ userAgent: agents[0], path: value || '/', allow: key === 'allow' });
-    }
-  }
-  return rules;
-}
-
-function robotsAllows(robots: string | null, url: string): boolean {
-  if (!robots) return true;
-  const rules = parseRobotsRules(robots);
-  const path = new URL(url).pathname || '/';
-  const applicable = rules.filter((rule) => rule.userAgent === '*' || rule.userAgent.includes('humidor'));
-  if (!applicable.length) return true;
-  const matches = applicable
-    .filter((rule) => rule.path && path.startsWith(rule.path))
-    .sort((a, b) => b.path.length - a.path.length);
-  return matches.length ? matches[0].allow : true;
-}
-
-async function getRobots(domain: string): Promise<string | null> {
-  if (robotsCache.has(domain)) return robotsCache.get(domain) ?? null;
-  const response = await fetch('https://' + domain + '/robots.txt', {
-    headers: { 'User-Agent': 'HUMIDOR-product-scanner/1.0 (+personal-use)' },
-  }).catch(() => undefined);
-  const text = response?.ok ? await response.text().catch(() => '') : '';
-  robotsCache.set(domain, text || null);
-  return text || null;
-}
-
-async function waitForHost(hostname: string, delayMs: number): Promise<void> {
-  const now = Date.now();
-  const nextAllowed = hostNextRequestAt.get(hostname) || 0;
-  if (nextAllowed > now) await new Promise((resolve) => setTimeout(resolve, nextAllowed - now));
-  hostNextRequestAt.set(hostname, Date.now() + Math.max(0, delayMs));
-}
-
-async function fetchWithRetry(url: string, init: RequestInit, delayMs = 0): Promise<Response | undefined> {
-  let hostname = '';
-  try { hostname = new URL(url).hostname; } catch { return undefined; }
-  await waitForHost(hostname, delayMs);
-
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const response = await fetch(url, init).catch(() => undefined);
-    if (response && response.ok) return response;
-    const status = response?.status || 0;
-    if (status === 403 || status === 404 || status === 410 || status === 429) return response;
-    if (attempt < 2) {
-      await new Promise((resolve) => setTimeout(resolve, 400 * Math.pow(2, attempt)));
-      await waitForHost(hostname, delayMs);
-    }
-  }
-  return undefined;
-}
-
-async function fetchText(url: string, delayMs = 0): Promise<string | undefined> {
-  const response = await fetchWithRetry(url, {
-    headers: {
-      'User-Agent': 'HUMIDOR-product-scanner/1.0 (+personal-use)',
-      Accept: 'text/xml,application/xml,text/plain,text/html;q=0.8',
-    },
-  }, delayMs);
-  if (!response?.ok) return undefined;
-  return response.text().catch(() => undefined);
+  const text = normalize(decodedUrl);
+  return meaningfulTokens(query)
+    .filter((token) => token.length >= 4)
+    .filter((token) => !/^(cigar|price|prices|pounds|gbp|uk)$/i.test(token))
+    .reduce((score, token) => score + (text.includes(token) ? 1 : 0), 0);
 }
 
 async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]> {
   const source = ENABLED_UK_RETAILER_SOURCES.find((candidate) =>
-    new URL(candidate.baseUrl).hostname.replace(/^www\./, '') === domain
+    new URL(candidate.baseUrl).hostname.replace(/^www\\./, '') === domain
   );
   if (!source) return [];
 
   const cached = sitemapCache.get(domain);
   const selectRelevant = (allUrls: string[]) => {
-    const relevant = query
+    const filtered = query
       ? allUrls.filter((url) => sitemapUrlLooksRelevant(url, query))
       : allUrls;
-    return relevant.slice(0, source.maxPagesPerScan);
+
+    return filtered
+      .sort((a, b) => relevantUrlScore(b, query) - relevantUrlScore(a, query))
+      .slice(0, source.maxPagesPerScan);
   };
-  if (cached) return selectRelevant(cached);
+
+  if (cached) return selectRelevant([...cached]);
 
   const sitemapCandidates = new Set<string>([
     source.sitemapUrl || `https://${domain}/sitemap.xml`,
     `https://${domain}/sitemap_index.xml`,
     `https://${domain}/wp-sitemap.xml`,
   ]);
-  const robots = await getRobots(domain);
-  const robotsText = robots || '';
 
-  for (const match of robotsText.matchAll(/^\s*sitemap:\s*(https?:\/\/\S+)/gim)) {
+  const robots = await getRobots(domain);
+  for (const match of (robots || '').matchAll(/^\\s*sitemap:\\s*(https?:\\/\\/\\S+)/gim)) {
     sitemapCandidates.add(String(match[1]).trim());
   }
 
   const productUrls = new Set<string>();
-  const childSitemaps = new Set<string>();
+  const pendingSitemaps = [...sitemapCandidates];
+  const visitedSitemaps = new Set<string>();
 
-  for (const sitemap of sitemapCandidates) {
+  // Follow sitemap indexes recursively. Many retailers expose several
+  // child sitemaps (products, categories, images, etc.), and the product
+  // sitemap is not necessarily one of the first few entries.
+  while (pendingSitemaps.length && visitedSitemaps.size < 60) {
+    const sitemap = canonicalizeUrl(pendingSitemaps.shift() || '');
+    if (!sitemap || visitedSitemaps.has(sitemap)) continue;
+    visitedSitemaps.add(sitemap);
+
     const xml = await fetchText(sitemap, source.requestDelayMs);
     if (!xml) continue;
+
     const locs = sitemapLocs(xml);
-    if (/<sitemap(?:index)?[\s>]/i.test(xml.slice(0, 1200))) {
-      locs.forEach((loc) => childSitemaps.add(loc));
-    } else {
-      locs.forEach((loc) => productUrls.add(canonicalizeUrl(loc)));
+    if (sitemapIsIndex(xml)) {
+      for (const loc of locs) {
+        if (visitedSitemaps.has(loc) || pendingSitemaps.includes(loc)) continue;
+        pendingSitemaps.push(loc);
+      }
+      continue;
+    }
+
+    for (const loc of locs) {
+      try {
+        const parsed = new URL(loc);
+        const host = parsed.hostname.toLowerCase().replace(/^www\\./, '');
+        if (host === domain || host.endsWith(`.${domain}`)) {
+          productUrls.add(canonicalizeUrl(loc));
+        }
+      } catch {
+        // Ignore malformed sitemap entries.
+      }
     }
   }
 
-  await Promise.all(Array.from(childSitemaps).slice(0, 12).map(async (sitemap) => {
-    const xml = await fetchText(sitemap, source.requestDelayMs);
-    if (!xml) return;
-    sitemapLocs(xml).forEach((loc) => productUrls.add(canonicalizeUrl(loc)));
-  }));
-
   const urls = Array.from(productUrls).filter((url) => {
     try {
-      const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase().replace(/^www\\./, '');
       if (!(host === domain || host.endsWith(`.${domain}`))) return false;
       return source.productUrlPatterns.length === 0 ||
-        source.productUrlPatterns.some((pattern) => pattern.test(new URL(url).pathname));
+        source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname));
     } catch {
       return false;
     }
   });
 
+  // Cache the complete product URL set. Query filtering happens only after
+  // the catalogue has been collected, so a sitemap filename or child-sitemap
+  // name can never prevent an exact product URL from being considered.
   sitemapCache.set(domain, urls);
 
-  // Category discovery is a fallback for retailers whose sitemap does not
-  // expose product URLs. It is restricted to configured paths on this domain.
+  // Category discovery remains a fallback for retailers whose sitemap does
+  // not expose usable product URLs. It is limited to configured paths.
   const discovered = [...urls];
   for (const path of source.discoveryPaths) {
     if (discovered.length >= source.maxPagesPerScan * 3) break;
+
     const discoveryUrl = new URL(path, source.baseUrl).toString();
     const html = await fetchText(discoveryUrl, source.requestDelayMs);
     if (!html) continue;
-    for (const match of html.matchAll(/<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\s\S]*?)<\/a>/gi)) {
+
+    for (const match of html.matchAll(/<a\\b[^>]*href=[\\"']([^\"']+)[\\"'][^>]*>([\\s\\S]*?)<\\/a>/gi)) {
       let href = String(match[1] || '');
       try {
         href = canonicalizeUrl(new URL(href, source.baseUrl).toString());
       } catch {
         continue;
       }
+
       try {
         const parsed = new URL(href);
-        const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+        const host = parsed.hostname.toLowerCase().replace(/^www\\./, '');
         if (!(host === domain || host.endsWith(`.${domain}`))) continue;
         if (source.productUrlPatterns.length &&
             !source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname))) continue;
       } catch {
         continue;
       }
-      const anchorText = normalize(String(match[2] || '').replace(/<[^>]+>/g, ' '));
-      if (query && !sitemapUrlLooksRelevant(href + ' ' + anchorText, query)) continue;
+
       if (!discovered.includes(href)) discovered.push(href);
       if (discovered.length >= source.maxPagesPerScan * 3) break;
     }
   }
 
-  return selectRelevant(discovered);
+  // Include fallback-discovered URLs in the cache as well, then rank/filter
+  // by product URL relevance for this particular cigar.
+  const uniqueDiscovered = Array.from(new Set(discovered));
+  sitemapCache.set(domain, uniqueDiscovered);
+  return selectRelevant(uniqueDiscovered);
 }
 
 async function directWebSearch(query: string, domains = RETAILER_DOMAINS): Promise<any[]> {
