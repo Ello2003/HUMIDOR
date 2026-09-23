@@ -632,11 +632,11 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
   return selectRelevant(discovered);
 }
 
-async function directWebSearch(query: string): Promise<any[]> {
+async function directWebSearch(query: string, domains = RETAILER_DOMAINS): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
 
-  await Promise.all(RETAILER_DOMAINS.map(async (domain) => {
+  await Promise.all(domains.map(async (domain) => {
     const urls = await retailerSitemapUrls(domain, query);
     for (const url of urls) {
       const canonical = canonicalizeUrl(url);
@@ -743,6 +743,27 @@ function isGenericRetailerPage(url: string): boolean {
   } catch {
     return true;
   }
+}
+
+function hasSpecificProductEvidence(title: string, cigar: RetailerScanCigar): boolean {
+  if (!title) return false;
+  if (cigar.vitola) {
+    const titleVitola = vitolaNames(title);
+    const titleDimensions = dimensions(title);
+    const requestedVitola = vitolaNames(cigar.vitola);
+    const requestedDimensions = dimensions(cigar.vitola);
+    const vitolaProvedByName = requestedVitola.length > 0 && titleVitola.includes(requestedVitola[0]);
+    const vitolaProvedByDimensions =
+      Boolean(requestedDimensions.lengthMm && requestedDimensions.ringGauge &&
+        titleDimensions.lengthMm && titleDimensions.ringGauge &&
+        Math.abs(requestedDimensions.lengthMm - titleDimensions.lengthMm) <= 5 &&
+        Math.abs(requestedDimensions.ringGauge - titleDimensions.ringGauge) <= 1);
+    if (!vitolaProvedByName && !vitolaProvedByDimensions) return false;
+  }
+  if (cigar.packageType || cigar.boxCount) {
+    if (!packageMatches(title, '', cigar.packageType, cigar.boxCount)) return false;
+  }
+  return true;
 }
 
 function exactPageTitleMatches(title: string, cigar: RetailerScanCigar): boolean {
@@ -858,7 +879,7 @@ export function buildQuote(
   if (!structured.price && exactProductMatch(
     pageTitle, '', requested.brand, requested.name, requested.vitola,
     requested.line, requested.variant, requested.packageType, requested.boxCount
-  )) {
+  ) && hasSpecificProductEvidence(pageTitle, requested)) {
     const visiblePrice = extractPounds(markdown, pageTitle);
     if (visiblePrice !== undefined) structured = { price: visiblePrice, title: pageTitle };
   }
@@ -956,7 +977,11 @@ async function collectQuotes(_apiKey: string, cigar: RetailerScanCigar, results:
   return quotes;
 }
 
-async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<RetailerScanResult> {
+async function scanOnce(apiKey: string, cigar: RetailerScanCigar, retailerNames?: string[]): Promise<RetailerScanResult> {
+  const selectedSources = retailerNames?.length
+    ? ENABLED_UK_RETAILER_SOURCES.filter((source) => retailerNames.some((name) => normalize(name) === normalize(source.retailer)))
+    : ENABLED_UK_RETAILER_SOURCES;
+  const selectedDomains = selectedSources.map((source) => new URL(source.baseUrl).hostname.replace(/^www\./, ''));
   const query = [
     '"' + cigar.brand + '"',
     '"' + cigar.name + '"',
@@ -973,7 +998,7 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
 
   if (apiKey) {
     try {
-      rawResults = await firecrawlSearch(apiKey, query, RETAILER_DOMAINS);
+      rawResults = await firecrawlSearch(apiKey, query, selectedDomains);
       quotes = await collectQuotes(apiKey, cigar, rawResults, true);
       if (quotes.length) provider = 'firecrawl';
     } catch (error: any) {
@@ -983,7 +1008,7 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
 
   if (!quotes.length) {
     try {
-      rawResults = await directWebSearch(query);
+      rawResults = await directWebSearch(query, selectedDomains);
       quotes = await collectQuotes('', cigar, rawResults, true);
     } catch (error: any) {
       console.warn('Direct retailer sitemap scan unavailable for ' + cigar.brand + ' ' + cigar.name + ': ' + String(error?.message || error));
@@ -1016,7 +1041,7 @@ export async function scanRetailerPrice(cigar: RetailerScanCigar, apiKey = proce
 
 export async function scanRetailerPrices(
   cigars: RetailerScanCigar[],
-  options: { concurrency?: number; apiKey?: string } = {},
+  options: { concurrency?: number; apiKey?: string; retailers?: string[] } = {},
 ): Promise<RetailerScanResult[]> {
   const apiKey = options.apiKey || process.env.FIRECRAWL_API_KEY || '';
 
@@ -1038,7 +1063,7 @@ export async function scanRetailerPrices(
       const index = nextIndex++;
       if (index >= unique.length) return;
       try {
-        results[index] = await scanOnce(apiKey, unique[index]);
+        results[index] = await scanOnce(apiKey, unique[index], options.retailers);
       } catch (error: any) {
         results[index] = {
           id: unique[index].id,
