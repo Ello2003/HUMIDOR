@@ -791,41 +791,37 @@ function buildQuote(
   title: string,
   markdown: string,
 ): Record<string, any> | undefined {
-  const structured = structuredPrice(productData?.product, requested);
-  const price = structured.price ??
-    extractPounds(markdown, title) ??
-    extractPounds(markdown, `${requested.brand} ${requested.name}`);
-  if (!price) return undefined;
-
-  let url = String(result?.url || '');
+  const url = String(result?.url || '');
   try {
     if (new URL(url).protocol !== 'https:') return undefined;
   } catch {
     return undefined;
   }
 
-  if (!exactProductMatch(title, url, requested.brand, requested.name, requested.vitola, requested.line, requested.variant, requested.packageType, requested.boxCount, markdown)) {
-    return undefined;
-  }
+  if (isGenericRetailerPage(url)) return undefined;
+
+  // Prefer structured Product/Offer data. This ties the price to the exact
+  // product object instead of a nearby price elsewhere on the page.
+  const structured = priceFromJsonLd(productData?.product, requested);
+  if (!structured.price) return undefined;
 
   const hostname = new URL(url).hostname;
-  const vendor = retailerForHost(hostname) ||
-    String(result?.metadata?.siteName || result?.metadata?.source || title.split('|')[0] || hostname).trim();
+  const vendor = retailerForHost(hostname);
+  if (!vendor) return undefined;
 
-  if (!vendor || /amazon|ebay|facebook|reddit|youtube|wikipedia/i.test(vendor + ' ' + url)) return undefined;
+  const matchedTitle = structured.title || title;
+  const combined = matchedTitle;
+  const dims = dimensions(combined);
+  const smokeTimeMinutes = extractSmokeTimeMinutes(combined);
+  const strength = extractStrength(combined);
+  const rating = extractRetailerRating(combined);
+  const retailerVitola = vitolaName(combined);
 
-  const dims = dimensions(title + ' ' + markdown);
-  const smokeTimeMinutes = extractSmokeTimeMinutes(title + ' ' + markdown);
-  const strength = extractStrength(title + ' ' + markdown);
-  const rating = extractRetailerRating(title + ' ' + markdown);
-  const retailerVitola = vitolaName(title + ' ' + markdown);
   return {
     vendor,
-    price: Math.round(price * 100) / 100,
+    price: Math.round(structured.price * 100) / 100,
     currency: '£',
-    inStock: productData?.product?.availability
-      ? !/out of stock|unavailable|sold out/i.test(String(productData.product.availability))
-      : !/out of stock|unavailable|sold out/i.test(markdown),
+    inStock: structured.inStock ?? !/out of stock|unavailable|sold out/i.test(markdown),
     url,
     lastUpdated: new Date().toISOString().split('T')[0],
     ...(retailerVitola ? { vitola: retailerVitola } : {}),
@@ -838,9 +834,64 @@ function buildQuote(
   };
 }
 
+async function collectQuotes(_apiKey: string, cigar: RetailerScanCigar, results: any[], allowDirectScrape = true): Promise<Record<string, any>[]> {
+  const candidates = results
+    .filter((result) => typeof result?.url === 'string' && result.url.startsWith('https://'))
+    .filter((result) => {
+      try { return Boolean(retailerForHost(new URL(result.url).hostname)); } catch { return false; }
+    })
+    // Search result title must itself identify the requested product. A page
+    // containing the name somewhere later is not enough.
+    .filter((result) => exactPageTitleMatches(String(result.title || ''), cigar))
+    .filter((result) => !isGenericRetailerPage(String(result.url)));
+
+  const quotes: Record<string, any>[] = [];
+  const seen = new Set<string>();
+  let next = 0;
+
+  async function worker() {
+    while (true) {
+      const index = next++;
+      if (index >= candidates.length) return;
+      const candidate = candidates[index];
+      if (!candidate || seen.has(candidate.url)) continue;
+      seen.add(candidate.url);
+
+      try {
+        const page = allowDirectScrape
+          ? await directScrape(candidate.url)
+          : candidate;
+
+        const pageTitle = String(page?.metadata?.title || candidate.title || '');
+        const markdown = String(page?.markdown || '');
+        const quote = buildQuote(
+          { url: candidate.url },
+          cigar,
+          page,
+          pageTitle,
+          markdown,
+        );
+        if (quote) quotes.push(quote);
+      } catch {
+        // No exact structured product evidence = no quote.
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(8, candidates.length) }, worker));
+  return quotes;
+}
+
 async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<RetailerScanResult> {
-  const label = `${cigar.brand} ${identityName(cigar)} ${cigar.vitola || ''}`.trim();
-  const query = `${cigar.brand} ${identityName(cigar)} ${cigar.vitola || ''} cigar UK price GBP`.replace(/\s+/g, ' ').trim();
+  const query = [
+    '"' + cigar.brand + '"',
+    '"' + cigar.name + '"',
+    cigar.line ? '"' + cigar.line + '"' : '',
+    cigar.variant ? '"' + cigar.variant + '"' : '',
+    cigar.vitola ? '"' + cigar.vitola + '"' : '',
+    cigar.packageType ? '"' + cigar.packageType + '"' : '',
+    'UK cigar price',
+  ].filter(Boolean).join(' ');
 
   let rawResults: any[] = [];
   let quotes: Record<string, any>[] = [];
@@ -849,41 +900,31 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
   if (apiKey) {
     try {
       rawResults = await firecrawlSearch(apiKey, query, RETAILER_DOMAINS);
-      quotes = await collectQuotes(apiKey, cigar, rawResults);
+      quotes = await collectQuotes(apiKey, cigar, rawResults, true);
       provider = 'firecrawl';
     } catch (error: any) {
-      console.warn(`Firecrawl unavailable for ${label}: ${String(error?.message || error)}; using direct web search.`);
+      console.warn('Firecrawl unavailable for ' + cigar.brand + ' ' + cigar.name + ': ' + String(error?.message || error));
     }
   }
 
   if (!quotes.length) {
     try {
-      rawResults = await directWebSearch(query);
+      rawResults = await directSearchEngine(query);
       quotes = await collectQuotes('', cigar, rawResults, true);
+
       if (!quotes.length) {
-        const searchEngineResults = await directSearchEngine(query);
-        let searchEngineQuotes = await collectQuotes('', cigar, searchEngineResults, true);
-        if (!searchEngineQuotes.length) {
-          const bingResults = await directBingSearch(query);
-          searchEngineQuotes = await collectQuotes('', cigar, bingResults, true);
-          if (searchEngineQuotes.length) rawResults = [...rawResults, ...bingResults];
-          if (!searchEngineQuotes.length) {
-            const nativeResults = await directNativeSearch(query);
-            searchEngineQuotes = await collectQuotes('', cigar, nativeResults, true);
-            if (searchEngineQuotes.length) rawResults = [...rawResults, ...nativeResults];
-          }
-        } else {
-          rawResults = [...rawResults, ...searchEngineResults];
-        }
-        if (searchEngineQuotes.length) quotes = searchEngineQuotes;
+        const bingResults = await directBingSearch(query);
+        rawResults = [...rawResults, ...bingResults];
+        quotes = await collectQuotes('', cigar, bingResults, true);
       }
-      provider = 'direct-web';
-      console.log(`[price-scan] ${label}: direct search results=${rawResults.length}, verified quotes=${quotes.length}`);
-      if (!quotes.length && rawResults.length) {
-        console.log(`[price-scan] ${label}: candidates=${rawResults.slice(0, 5).map((item: any) => String(item?.title || item?.url || '')).join(' | ')}`);
+
+      if (!quotes.length) {
+        const nativeResults = await directNativeSearch(query);
+        rawResults = [...rawResults, ...nativeResults];
+        quotes = await collectQuotes('', cigar, nativeResults, true);
       }
     } catch (error: any) {
-      console.warn(`Direct web fallback unavailable for ${label}: ${String(error?.message || error)}`);
+      console.warn('Direct retailer search unavailable for ' + cigar.brand + ' ' + cigar.name + ': ' + String(error?.message || error));
     }
   }
 
@@ -902,103 +943,9 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
     bestVendor: best?.vendor ?? null,
     grounded: deduped.length > 0,
     provider,
-    groundedSources: deduped.map((quote) => ({ title: `${cigar.brand} ${cigar.name}`, uri: quote.url })),
+    groundedSources: deduped.map((quote) => ({ title: cigar.brand + ' ' + cigar.name, uri: quote.url })),
     scanStatus: deduped.length ? 'verified' : 'no_verified_results',
   };
-}
-
-async function collectQuotes(apiKey: string, cigar: RetailerScanCigar, results: any[], allowDirectScrape = false): Promise<Record<string, any>[]> {
-  const candidates: Array<{ result: any; title: string; markdown: string; product: any }> = [];
-  const seen = new Set<string>();
-
-  for (const result of results) {
-    const url = typeof result?.url === 'string' ? result.url : '';
-    if (!url.startsWith('https://') || seen.has(url)) continue;
-    let parsed: URL;
-    try { parsed = new URL(url); } catch { continue; }
-
-    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
-    const title = String(result?.title || result?.metadata?.title || url);
-    const markdown = String(result?.markdown || result?.metadata?.description || result?.description || '');
-    const knownRetailer = Boolean(retailerForHost(host));
-    const looksLikeRetailer = host.endsWith('.co.uk') || host.endsWith('.uk') ||
-      /cigar|cigars|tobacco|tobacconist|smoke|humidor/i.test(`${host} ${title}`);
-
-    if (!knownRetailer && !looksLikeRetailer) continue;
-    // Search results often omit the vitola or package in their title. Use a
-    // broad identity gate here, then verify the full variant/vitola/package after
-    // fetching the actual retailer page.
-    if (!retailerListingMatches(title, url, cigar.brand, cigar.name, undefined, cigar.line, cigar.variant, undefined, undefined, markdown)) continue;
-
-    candidates.push({ result, title, markdown, product: result?.product || result?.data?.product });
-    seen.add(url);
-  }
-
-  const priorityTokens = meaningfulTokens(
-    `${cigar.brand} ${cigar.name} ${cigar.line || ''} ${cigar.variant || ''} ${cigar.vitola || ''}`,
-  ).filter((token) => token.length >= 4);
-
-  const candidateScore = (candidate: { result: any; title: string; markdown: string; product: any }): number => {
-    const text = compact(`${candidate.title} ${candidate.result?.url || ''} ${candidate.markdown}`);
-    return priorityTokens.reduce((score, token) => {
-      const compactToken = compact(token);
-      if (!compactToken) return score;
-      if (text.includes(compactToken)) return score + 3;
-      if (text.split(/[^a-z0-9]+/).some((part: string) => part.startsWith(compactToken.slice(0, Math.min(6, compactToken.length))))) {
-        return score + 1;
-      }
-      return score;
-    }, 0);
-  };
-
-  candidates.sort((a, b) => candidateScore(b) - candidateScore(a));
-
-  const quotes: Record<string, any>[] = [];
-  // Verify substantially more candidates so one retailer's high-ranked result
-  // cannot crowd out valid listings from other configured retailers.
-  const selectedCandidates = candidates.slice(0, Math.max(MAX_PAGE_SCRAPES, RETAILER_DOMAINS.length));
-  const scrapeConcurrency = Math.min(6, selectedCandidates.length);
-  let nextCandidate = 0;
-
-  async function processCandidate(): Promise<Record<string, any> | undefined> {
-    while (true) {
-      const candidate = selectedCandidates[nextCandidate++];
-      if (!candidate) return undefined;
-    let productData: {
-      product: any;
-      metadata?: Record<string, any>;
-      markdown?: string;
-      provider?: string;
-    } = { product: candidate.product, provider: allowDirectScrape ? 'direct-web' : 'firecrawl' };
-    let title = candidate.title;
-    let markdown = candidate.markdown;
-
-    if (!structuredPrice(candidate.product, cigar).price) {
-      try {
-        productData = allowDirectScrape
-          ? { ...(await directScrape(String(candidate.result.url))), provider: 'direct-web' }
-          : { ...(await firecrawlScrape(apiKey, String(candidate.result.url))), provider: 'firecrawl' };
-        title = String(productData?.metadata?.title || productData?.product?.title || title);
-        markdown = String(productData?.markdown || markdown);
-      } catch {
-        // A search-result snippet is discovery evidence only. Do not turn a
-        // snippet price into a quote because it can belong to a neighbouring
-        // product or recommendation.
-        continue;
-      }
-    }
-
-    if (!exactProductMatch(title, String(candidate.result.url), cigar.brand, cigar.name, cigar.vitola, cigar.line, cigar.variant, cigar.packageType, cigar.boxCount, markdown)) continue;
-
-    const quote = buildQuote(candidate.result, cigar, productData, title, markdown);
-    return quote;
-    }
-  }
-
-  const processed = await Promise.all(Array.from({ length: scrapeConcurrency }, () => processCandidate()));
-  quotes.push(...processed.filter((quote): quote is Record<string, any> => Boolean(quote)));
-
-  return quotes;
 }
 
 export async function scanRetailerPrice(cigar: RetailerScanCigar, apiKey = process.env.FIRECRAWL_API_KEY || ''): Promise<RetailerScanResult> {
