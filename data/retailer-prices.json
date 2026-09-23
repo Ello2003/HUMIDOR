@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-23T21:43:36.113Z",
+  "generatedAt": "2026-09-23T22:05:24.511Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 0,
+  "groundedCount": 1,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
@@ -56,13 +56,42 @@
       "id": "res-davidoff-late-hour-churchill",
       "brand": "Davidoff",
       "name": "Winston Churchill Late Hour",
-      "quotes": [],
-      "bestPrice": null,
-      "bestVendor": null,
-      "grounded": false,
+      "quotes": [
+        {
+          "vendor": "Robert Graham 1874",
+          "price": 59.35,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://robertgraham1874.com/product/davidoff-winston-churchill-late-hour-churchill-single-cigar/",
+          "lastUpdated": "2026-09-23",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://robertgraham1874.com/product/davidoff-winston-churchill-late-hour-churchill-single-cigar/",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Davidoff Winston Churchill Late Hour Churchill Cigar",
+            "sourceProductId": null,
+            "price": 59.35,
+            "currency": "GBP",
+            "inStock": true
+          },
+          "vitola": "churchill",
+          "strength": "medium"
+        }
+      ],
+      "bestPrice": 59.35,
+      "bestVendor": "Robert Graham 1874",
+      "grounded": true,
       "provider": "direct-web",
-      "groundedSources": [],
-      "scanStatus": "no_verified_results"
+      "groundedSources": [
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://robertgraham1874.com/product/davidoff-winston-churchill-late-hour-churchill-single-cigar/"
+        }
+      ],
+      "scanStatus": "verified"
     },
     {
       "id": "res-davidoff-millennium-robusto",
