@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { retailerListingMatches } from './firecrawlRetailerScanner';
+import { extractPounds, retailerListingMatches } from './firecrawlRetailerScanner';
 
 describe('retailerListingMatches', () => {
   it('matches retailer naming with Casa Carrillo prefix and Sojourn naming', () => {
@@ -79,6 +79,20 @@ describe('retailerListingMatches', () => {
       '1964 Anniversary Series',
       'Torpedo Maduro',
     )).toBe(false);
+  });
+
+  it('extracts the exact product price instead of a nearby related cigar price', () => {
+    expect(extractPounds(
+      'Padrón 1964 Anniversary Series Torpedo Maduro Cigar - 1 Single £47.50 Padron 2000 Robusto Cigar - 1 Single £10.00',
+      'Padrón 1964 Anniversary Series Torpedo Maduro Cigar - 1 Single',
+    )).toBe(47.5);
+  });
+
+  it('does not accept a page price when the exact product label is absent', () => {
+    expect(extractPounds(
+      'Padrón 1964 Anniversary Series Torpedo Natural Cigar - 1 Single £47.50 Related cigar £10.00',
+      'Padrón 1964 Anniversary Series Torpedo Maduro Cigar - 1 Single',
+    )).toBeUndefined();
   });
 
 });
