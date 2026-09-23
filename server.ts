@@ -733,9 +733,10 @@ app.get("/api/health", (_req, res) => {
     priceScanner: {
       gemini: geminiConfigured,
       firecrawl: firecrawlConfigured,
-      apiReady: geminiConfigured || firecrawlConfigured,
+      apiReady: true,
       firecrawlPrimary: firecrawlConfigured,
-      fallbackAvailable: geminiConfigured,
+      fallbackAvailable: true,
+      provider: firecrawlConfigured ? 'firecrawl-discovery-plus-direct-retailer' : 'direct-retailer',
     },
   });
 });
