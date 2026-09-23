@@ -418,6 +418,103 @@ async function firecrawlSearch(
     : Array.isArray(payload?.data) ? payload.data : [];
 }
 
+const robotsCache = new Map<string, string | null>();
+const hostNextRequestAt = new Map<string, number>();
+
+function canonicalizeUrl(rawUrl: string): string {
+  try {
+    const url = new URL(rawUrl);
+    url.hash = '';
+    for (const key of Array.from(url.searchParams.keys())) {
+      if (/^(utm_|fbclid|gclid|ref|source|campaign|mc_|_ga)/i.test(key)) {
+        url.searchParams.delete(key);
+      }
+    }
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
+function parseRobotsRules(text: string): Array<{ userAgent: string; path: string; allow: boolean }> {
+  const rules: Array<{ userAgent: string; path: string; allow: boolean }> = [];
+  let agents: string[] = [];
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.split('#', 1)[0].trim();
+    if (!line) continue;
+    const [rawKey, ...rest] = line.split(':');
+    const key = String(rawKey || '').trim().toLowerCase();
+    const value = rest.join(':').trim();
+    if (key === 'user-agent') {
+      agents = value ? [value.toLowerCase()] : [];
+      continue;
+    }
+    if ((key === 'allow' || key === 'disallow') && agents.length) {
+      rules.push({ userAgent: agents[0], path: value || '/', allow: key === 'allow' });
+    }
+  }
+  return rules;
+}
+
+function robotsAllows(robots: string | null, url: string): boolean {
+  if (!robots) return true;
+  const rules = parseRobotsRules(robots);
+  const path = new URL(url).pathname || '/';
+  const applicable = rules.filter((rule) => rule.userAgent === '*' || rule.userAgent.includes('humidor'));
+  if (!applicable.length) return true;
+  const matches = applicable
+    .filter((rule) => rule.path && path.startsWith(rule.path))
+    .sort((a, b) => b.path.length - a.path.length);
+  return matches.length ? matches[0].allow : true;
+}
+
+async function getRobots(domain: string): Promise<string | null> {
+  if (robotsCache.has(domain)) return robotsCache.get(domain) ?? null;
+  const response = await fetch('https://' + domain + '/robots.txt', {
+    headers: { 'User-Agent': 'HUMIDOR-product-scanner/1.0 (+personal-use)' },
+  }).catch(() => undefined);
+  const text = response?.ok ? await response.text().catch(() => '') : '';
+  robotsCache.set(domain, text || null);
+  return text || null;
+}
+
+async function waitForHost(hostname: string, delayMs: number): Promise<void> {
+  const now = Date.now();
+  const nextAllowed = hostNextRequestAt.get(hostname) || 0;
+  if (nextAllowed > now) await new Promise((resolve) => setTimeout(resolve, nextAllowed - now));
+  hostNextRequestAt.set(hostname, Date.now() + Math.max(0, delayMs));
+}
+
+async function fetchWithRetry(url: string, init: RequestInit, delayMs = 0): Promise<Response | undefined> {
+  let hostname = '';
+  try { hostname = new URL(url).hostname; } catch { return undefined; }
+  await waitForHost(hostname, delayMs);
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await fetch(url, init).catch(() => undefined);
+    if (response && response.ok) return response;
+    const status = response?.status || 0;
+    if (status === 403 || status === 404 || status === 410 || status === 429) return response;
+    if (attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 400 * Math.pow(2, attempt)));
+      await waitForHost(hostname, delayMs);
+    }
+  }
+  return undefined;
+}
+
+async function fetchText(url: string, delayMs = 0): Promise<string | undefined> {
+  const response = await fetchWithRetry(url, {
+    headers: {
+      'User-Agent': 'HUMIDOR-product-scanner/1.0 (+personal-use)',
+      Accept: 'text/xml,application/xml,text/plain,text/html;q=0.8',
+    },
+  }, delayMs);
+  if (!response?.ok) return undefined;
+  return response.text().catch(() => undefined);
+}
+
+
 const sitemapCache = new Map<string, string[]>();
 
 function decodeXml(value: string): string {
