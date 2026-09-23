@@ -540,6 +540,40 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
   sitemapCache.set(domain, urls);
 
   const discovered = [...urls];
+
+  // Some legacy commerce platforms expose a searchable catalogue but do not
+  // publish every product URL in a crawlable XML sitemap. Use a configured
+  // retailer search endpoint to discover exact product-page links.
+  if (query && source.searchUrlTemplate) {
+    const searchUrl = source.searchUrlTemplate.replace(
+      '{query}',
+      encodeURIComponent(query.replace(/\s+UK cigar price$/i, '')),
+    );
+    const html = await fetchText(searchUrl, source.requestDelayMs);
+    if (html) {
+      for (const match of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+        let href = String(match[1] || '');
+        try {
+          href = canonicalizeUrl(new URL(href, source.baseUrl).toString());
+        } catch {
+          continue;
+        }
+
+        try {
+          const parsed = new URL(href);
+          const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+          if (!(host === domain || host.endsWith(`.${domain}`))) continue;
+          if (source.productUrlPatterns.length &&
+              !source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname))) continue;
+        } catch {
+          continue;
+        }
+
+        if (!discovered.includes(href)) discovered.push(href);
+      }
+    }
+  }
+
   for (const path of source.discoveryPaths) {
     if (discovered.length >= source.maxPagesPerScan * 3) break;
     const discoveryUrl = new URL(path, source.baseUrl).toString();
