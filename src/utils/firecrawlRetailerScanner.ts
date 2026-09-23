@@ -1,3 +1,5 @@
+import { ENABLED_UK_RETAILER_SOURCES, UK_RETAILER_CATALOG } from './retailerSources';
+
 export type RetailerScanCigar = {
   id: string;
   brand: string;
@@ -22,35 +24,7 @@ export type RetailerScanResult = {
   scanStatus?: string;
 };
 
-export const UK_RETAILER_CATALOG: Record<string, { domain: string }> = {
-  'C.Gars Ltd': { domain: 'cgarsltd.co.uk' },
-  'Cuban Cigar Club': { domain: 'cubancigarclub.co.uk' },
-  'Havana House': { domain: 'havanahouse.co.uk' },
-  'Smoke King': { domain: 'smoke-king.co.uk' },
-  'Davidoff of London': { domain: 'davidofflondon.com' },
-  'James J. Fox (London)': { domain: 'jjfox.co.uk' },
-  'Sautter Cigars (London)': { domain: 'sauttercigars.com' },
-  'Turmeaus Tobacconist': { domain: 'turmeaus.co.uk' },
-  'Robert Graham 1874': { domain: 'robertgraham1874.com' },
-  'GQ Tobaccos': { domain: 'gqtobaccos.com' },
-  "Aston's of Manchester": { domain: 'astonsofmanchester.co.uk' },
-  'Arthur Fletcher': { domain: 'arthurfletcher.co.uk' },
-  'James Barber Tobacconist': { domain: 'jamesbarber.co.uk' },
-  'Gauntleys': { domain: 'gauntleyscigars.com' },
-  'Simply Cigars': { domain: 'simplycigars.co.uk' },
-  'Fine Cigars Club': { domain: 'finecigarsclub.com' },
-  'Cigar Nights': { domain: 'cigarnights.co.uk' },
-  'No.6 Cavendish': { domain: 'no6cavendish.com' },
-  'Hava Havana': { domain: 'havahavana.com' },
-  'The House of Cigars': { domain: 'thehouseofcigars.co.uk' },
-  'The Smoking Jacket': { domain: 'thesmokingjacket.co.uk' },
-  'Toro Puro': { domain: 'toropuro.com' },
-  'Rebellion Cigars': { domain: 'rebellioncigars.com' },
-  'Surrey Cigars': { domain: 'surreycigars.com' },
-  'UK Cigar Store': { domain: 'ukcigarstore.co.uk' },
-};
-
-const RETAILER_DOMAINS = Object.values(UK_RETAILER_CATALOG).map(({ domain }) => domain);
+const RETAILER_DOMAINS = ENABLED_UK_RETAILER_SOURCES.map((source) => new URL(source.baseUrl).hostname.replace(/^www\./, ''));
 
 const MAX_SEARCH_RESULTS = 200;
 const MAX_PAGE_SCRAPES = 12;
@@ -338,8 +312,8 @@ export function extractPounds(text: string, label: string): number | undefined {
   // matched product label. Never fall back to the first £ amount on a page:
   // retailer pages commonly contain prices for related cigars, bundles and
   // recommendations.
-  const contextStart = Math.max(0, labelIndex - 160);
-  const contextEnd = Math.min(normalized.length, labelIndex + normalizedLabel.length + 220);
+  const contextStart = Math.max(0, labelIndex - 90);
+  const contextEnd = Math.min(normalized.length, labelIndex + normalizedLabel.length + 150);
   const context = normalized.slice(contextStart, contextEnd);
   const matches = [...context.matchAll(/(?:£|gbp\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi)]
     .map((match) => ({ price: Number(match[1]), index: match.index ?? 0 }))
@@ -464,58 +438,153 @@ function sitemapUrlLooksRelevant(url: string, query: string): boolean {
   return hits.length >= Math.min(2, tokens.length);
 }
 
-async function fetchText(url: string): Promise<string | undefined> {
-  const response = await fetch(url, {
+const robotsCache = new Map<string, string | null>();
+const hostNextRequestAt = new Map<string, number>();
+
+function canonicalizeUrl(rawUrl: string): string {
+  try {
+    const url = new URL(rawUrl);
+    url.hash = '';
+    for (const key of Array.from(url.searchParams.keys())) {
+      if (/^(utm_|fbclid|gclid|ref|source|campaign|mc_|_ga)/i.test(key)) {
+        url.searchParams.delete(key);
+      }
+    }
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
+function parseRobotsRules(text: string): Array<{ userAgent: string; path: string; allow: boolean }> {
+  const rules: Array<{ userAgent: string; path: string; allow: boolean }> = [];
+  let agents: string[] = [];
+  for (const rawLine of text.split(/\\r?\\n/)) {
+    const line = rawLine.split('#', 1)[0].trim();
+    if (!line) continue;
+    const [rawKey, ...rest] = line.split(':');
+    const key = String(rawKey || '').trim().toLowerCase();
+    const value = rest.join(':').trim();
+    if (key === 'user-agent') {
+      agents = value ? [value.toLowerCase()] : [];
+      continue;
+    }
+    if ((key === 'allow' || key === 'disallow') && agents.length) {
+      rules.push({ userAgent: agents[0], path: value || '/', allow: key === 'allow' });
+    }
+  }
+  return rules;
+}
+
+function robotsAllows(robots: string | null, url: string): boolean {
+  if (!robots) return true;
+  const rules = parseRobotsRules(robots);
+  const path = new URL(url).pathname || '/';
+  const applicable = rules.filter((rule) => rule.userAgent === '*' || rule.userAgent.includes('humidor'));
+  if (!applicable.length) return true;
+  const matches = applicable
+    .filter((rule) => rule.path && path.startsWith(rule.path))
+    .sort((a, b) => b.path.length - a.path.length);
+  return matches.length ? matches[0].allow : true;
+}
+
+async function getRobots(domain: string): Promise<string | null> {
+  if (robotsCache.has(domain)) return robotsCache.get(domain) ?? null;
+  const response = await fetch('https://' + domain + '/robots.txt', {
+    headers: { 'User-Agent': 'HUMIDOR-product-scanner/1.0 (+personal-use)' },
+  }).catch(() => undefined);
+  const text = response?.ok ? await response.text().catch(() => '') : '';
+  robotsCache.set(domain, text || null);
+  return text || null;
+}
+
+async function waitForHost(hostname: string, delayMs: number): Promise<void> {
+  const now = Date.now();
+  const nextAllowed = hostNextRequestAt.get(hostname) || 0;
+  if (nextAllowed > now) await new Promise((resolve) => setTimeout(resolve, nextAllowed - now));
+  hostNextRequestAt.set(hostname, Date.now() + Math.max(0, delayMs));
+}
+
+async function fetchWithRetry(url: string, init: RequestInit, delayMs = 0): Promise<Response | undefined> {
+  let hostname = '';
+  try { hostname = new URL(url).hostname; } catch { return undefined; }
+  await waitForHost(hostname, delayMs);
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await fetch(url, init).catch(() => undefined);
+    if (response && response.ok) return response;
+    const status = response?.status || 0;
+    if (status === 403 || status === 404 || status === 410 || status === 429) return response;
+    if (attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 400 * Math.pow(2, attempt)));
+      await waitForHost(hostname, delayMs);
+    }
+  }
+  return undefined;
+}
+
+async function fetchText(url: string, delayMs = 0): Promise<string | undefined> {
+  const response = await fetchWithRetry(url, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
+      'User-Agent': 'HUMIDOR-product-scanner/1.0 (+personal-use)',
       Accept: 'text/xml,application/xml,text/plain,text/html;q=0.8',
     },
-  }).catch(() => undefined);
+  }, delayMs);
   if (!response?.ok) return undefined;
   return response.text().catch(() => undefined);
 }
 
 async function retailerSitemapUrls(domain: string): Promise<string[]> {
+  const source = ENABLED_UK_RETAILER_SOURCES.find((candidate) =>
+    new URL(candidate.baseUrl).hostname.replace(/^www\./, '') === domain
+  );
+  if (!source) return [];
+
   const cached = sitemapCache.get(domain);
   if (cached) return cached;
 
   const sitemapCandidates = new Set<string>([
-    `https://${domain}/sitemap.xml`,
+    source.sitemapUrl || `https://${domain}/sitemap.xml`,
     `https://${domain}/sitemap_index.xml`,
     `https://${domain}/wp-sitemap.xml`,
   ]);
-  const robots = await fetchText(`https://${domain}/robots.txt`);
-  if (robots) {
-    for (const match of robots.matchAll(/^\s*sitemap:\s*(https?:\/\/\S+)/gim)) sitemapCandidates.add(String(match[1]).trim());
+  const robots = await getRobots(domain);
+  const robotsText = robots || '';
+
+  for (const match of robotsText.matchAll(/^\\s*sitemap:\\s*(https?:\\/\\/\\S+)/gim)) {
+    sitemapCandidates.add(String(match[1]).trim());
   }
 
   const productUrls = new Set<string>();
   const childSitemaps = new Set<string>();
+
   for (const sitemap of sitemapCandidates) {
-    const xml = await fetchText(sitemap);
+    const xml = await fetchText(sitemap, source.requestDelayMs);
     if (!xml) continue;
     const locs = sitemapLocs(xml);
-    if (/<sitemap(?:index)?[\s>]/i.test(xml.slice(0, 1000))) locs.forEach((loc) => childSitemaps.add(loc));
-    else locs.forEach((loc) => productUrls.add(loc));
+    if (/<sitemap(?:index)?[\\s>]/i.test(xml.slice(0, 1200))) locs.forEach((loc) => childSitemaps.add(loc));
+    else locs.forEach((loc) => productUrls.add(canonicalizeUrl(loc)));
   }
 
   await Promise.all(Array.from(childSitemaps).slice(0, 12).map(async (sitemap) => {
-    const xml = await fetchText(sitemap);
+    const xml = await fetchText(sitemap, source.requestDelayMs);
     if (!xml) return;
-    sitemapLocs(xml).forEach((loc) => productUrls.add(loc));
+    sitemapLocs(xml).forEach((loc) => productUrls.add(canonicalizeUrl(loc)));
   }));
 
   const urls = Array.from(productUrls).filter((url) => {
     try {
-      const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-      return host === domain || host.endsWith(`.${domain}`);
+      const host = new URL(url).hostname.toLowerCase().replace(/^www\\./, '');
+      if (!(host === domain || host.endsWith(`.${domain}`))) return false;
+      return source.productUrlPatterns.length === 0 || source.productUrlPatterns.some((pattern) => pattern.test(new URL(url).pathname));
     } catch { return false; }
-  });
+  }).slice(0, source.maxPagesPerScan);
+
   sitemapCache.set(domain, urls);
   return urls;
 }
 
-async function directWebSearch(query: string): Promise<any[]> {
+async function directWebSearch(query: string): Promise<any[]>(query: string): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
 
@@ -670,55 +739,70 @@ async function directNativeSearch(query: string): Promise<any[]> {
   }
   return results.slice(0, MAX_SEARCH_RESULTS);
 }
-async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; product?: any }> {
-  const response = await fetch(url, {
+async function directScrape(url: string): Promise<{ metadata?: Record<string, any>; markdown?: string; products?: any[]; rawHtml?: string }> {
+  let domain = '';
+  try { domain = new URL(url).hostname.toLowerCase().replace(/^www\./, ''); } catch { throw new Error('Invalid retailer URL'); }
+  const source = ENABLED_UK_RETAILER_SOURCES.find((candidate) => new URL(candidate.baseUrl).hostname.replace(/^www\./, '') === domain);
+  if (!source) throw new Error('Retailer is not in approved source allow-list');
+
+  const robots = await getRobots(domain);
+  if (!robotsAllows(robots, url)) throw new Error('Blocked by retailer robots.txt');
+
+  const canonicalUrl = canonicalizeUrl(url);
+  const response = await fetchWithRetry(canonicalUrl, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; HUMIDOR price scanner)',
+      'User-Agent': 'HUMIDOR-product-scanner/1.0 (+personal-use)',
       Accept: 'text/html,application/xhtml+xml',
     },
-  }).catch(() => undefined);
+  }, source.requestDelayMs);
 
-  if (!response?.ok) throw new Error('Direct page fetch failed');
+  if (!response?.ok) throw new Error(`Direct page fetch failed (${response?.status || 'network'})`);
 
   const html = await response.text();
-  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '';
+  const title = html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)?.[1] || '';
+  const h1 = html.match(/<h1[^>]*>([\\s\\S]*?)<\\/h1>/i)?.[1] || '';
+  const meta: Record<string, string> = {};
+  for (const match of html.matchAll(/<meta\\b[^>]*(?:name|property|itemprop)=["']([^"']+)["'][^>]*content=["']([^"']*)["'][^>]*>/gi)) {
+    meta[String(match[1]).toLowerCase()] = decodeXml(String(match[2] || '').trim());
+  }
+
   const text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')
+    .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&amp;/gi, '&')
     .replace(/&#39;/gi, "'")
     .replace(/&quot;/gi, '"')
-    .replace(/\s+/g, ' ')
+    .replace(/\\s+/g, ' ')
     .trim();
 
   const products: any[] = [];
-  for (const match of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+  for (const match of html.matchAll(/<script[^>]+type=["']application\\/ld\\+json["'][^>]*>([\\s\\S]*?)<\\/script>/gi)) {
     try {
       const parsed = JSON.parse(match[1].trim());
       const roots = Array.isArray(parsed) ? parsed : [parsed];
       const values = [...roots];
       for (const value of roots) {
-        if (value?.['@graph']) {
-          values.push(...(Array.isArray(value['@graph']) ? value['@graph'] : [value['@graph']]));
-        }
+        if (value?.['@graph']) values.push(...(Array.isArray(value['@graph']) ? value['@graph'] : [value['@graph']]));
       }
       for (const value of values) {
-        if (value?.['@type'] === 'Product' ||
-            (Array.isArray(value?.['@type']) && value['@type'].includes('Product'))) {
+        if (value?.['@type'] === 'Product' || (Array.isArray(value?.['@type']) && value['@type'].includes('Product'))) {
           products.push(value);
         }
       }
-    } catch {
-      // Invalid retailer JSON-LD is ignored.
-    }
+    } catch {}
   }
 
   return {
-    metadata: { title: decodeXml(title.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()) },
+    metadata: {
+      title: decodeXml(title.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()),
+      h1: decodeXml(h1.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()),
+      meta,
+    },
     markdown: text,
-    product: products[0],
+    products,
+    rawHtml: html,
   };
 }
 
@@ -798,6 +882,19 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<any> {
   return payload?.data || {};
 }
 
+function metaPrice(page: any, requested: RetailerScanCigar): { price?: number; inStock?: boolean; title?: string } {
+  const meta = page?.metadata?.meta || {};
+  const title = String(meta['og:title'] || meta['twitter:title'] || meta['product:name'] || meta['itemprop:name'] || '');
+  if (!title || !exactProductMatch(title, '', requested.brand, requested.name, requested.vitola, requested.line, requested.variant, requested.packageType, requested.boxCount)) return {};
+  const rawPrice = meta['product:price:amount'] || meta['product:price'] || meta['price'] || meta['itemprop:price'];
+  const price = Number(String(rawPrice || '').replace(/[^0-9.]/g, ''));
+  const currency = String(meta['product:price:currency'] || meta['priceCurrency'] || meta['itemprop:pricecurrency'] || '').toUpperCase();
+  if (!Number.isFinite(price) || price < 3 || price >= 2000) return {};
+  if (currency && currency !== 'GBP' && currency !== '£') return {};
+  const availability = String(meta['product:availability'] || meta['availability'] || '').toLowerCase();
+  return { price, inStock: availability ? !/outofstock|soldout|unavailable/.test(availability) : undefined, title };
+}
+
 function buildQuote(
   result: any,
   requested: RetailerScanCigar,
@@ -808,27 +905,44 @@ function buildQuote(
   const url = String(result?.url || '');
   try {
     if (new URL(url).protocol !== 'https:') return undefined;
-  } catch {
-    return undefined;
-  }
+  } catch { return undefined; }
 
   if (isGenericRetailerPage(url)) return undefined;
 
-  // Prefer structured Product/Offer data. This ties the price to the exact
-  // product object instead of a nearby price elsewhere on the page.
-  const structured = priceFromJsonLd(productData?.product, requested);
+  const products = Array.isArray(productData?.products) ? productData.products : [];
+  let structured: { price?: number; inStock?: boolean; title?: string } = {};
+  for (const product of products) {
+    const candidate = priceFromJsonLd(product, requested);
+    if (candidate.price !== undefined) { structured = candidate; break; }
+  }
+
+  if (!structured.price && productData?.product) {
+    structured = structuredPrice(productData.product, requested);
+  }
+
+  if (!structured.price) structured = metaPrice(productData, requested);
+
+  const pageTitle = String(productData?.metadata?.h1 || title || '');
+  if (!structured.price && exactProductMatch(
+    pageTitle, '', requested.brand, requested.name, requested.vitola,
+    requested.line, requested.variant, requested.packageType, requested.boxCount
+  )) {
+    const visiblePrice = extractPounds(markdown, pageTitle);
+    if (visiblePrice !== undefined) structured = { price: visiblePrice, title: pageTitle };
+  }
+
   if (!structured.price) return undefined;
 
   const hostname = new URL(url).hostname;
   const vendor = retailerForHost(hostname);
   if (!vendor) return undefined;
 
-  const matchedTitle = structured.title || title;
+  const matchedTitle = structured.title || pageTitle || title;
   const combined = matchedTitle;
   const dims = dimensions(combined);
-  const smokeTimeMinutes = extractSmokeTimeMinutes(combined);
-  const strength = extractStrength(combined);
-  const rating = extractRetailerRating(combined);
+  const smokeTimeMinutes = extractSmokeTimeMinutes(markdown);
+  const strength = extractStrength(markdown);
+  const rating = extractRetailerRating(markdown);
   const retailerVitola = vitolaName(combined);
 
   return {
@@ -836,8 +950,13 @@ function buildQuote(
     price: Math.round(structured.price * 100) / 100,
     currency: '£',
     inStock: structured.inStock ?? !/out of stock|unavailable|sold out/i.test(markdown),
-    url,
+    url: canonicalizeUrl(url),
     lastUpdated: new Date().toISOString().split('T')[0],
+    sourceUpdatedAt: new Date().toISOString(),
+    sourceProductId: undefined,
+    productUrl: canonicalizeUrl(url),
+    matchingStatus: 'matched',
+    confidenceScore: products.length ? 0.99 : 0.94,
     ...(retailerVitola ? { vitola: retailerVitola } : {}),
     ...(dims.lengthMm ? { lengthMm: Math.round(dims.lengthMm) } : {}),
     ...(dims.ringGauge ? { ringGauge: dims.ringGauge } : {}),
@@ -854,26 +973,26 @@ async function collectQuotes(_apiKey: string, cigar: RetailerScanCigar, results:
     .filter((result) => {
       try { return Boolean(retailerForHost(new URL(result.url).hostname)); } catch { return false; }
     })
-    // Search result title must itself identify the requested product. A page
-    // containing the name somewhere later is not enough.
-    .filter((result) => exactPageTitleMatches(String(result.title || ''), cigar))
     .filter((result) => !isGenericRetailerPage(String(result.url)));
 
   const quotes: Record<string, any>[] = [];
   const seen = new Set<string>();
+  const cappedCandidates = candidates.slice(0, MAX_PAGE_SCRAPES);
   let next = 0;
 
   async function worker() {
     while (true) {
       const index = next++;
-      if (index >= candidates.length) return;
-      const candidate = candidates[index];
-      if (!candidate || seen.has(candidate.url)) continue;
-      seen.add(candidate.url);
+      if (index >= cappedCandidates.length) return;
+      const candidate = cappedCandidates[index];
+      if (!candidate) continue;
+      const canonical = canonicalizeUrl(candidate.url);
+      if (seen.has(canonical)) continue;
+      seen.add(canonical);
 
       try {
         const page = allowDirectScrape
-          ? await directScrape(candidate.url)
+          ? await directScrape(canonical)
           : candidate;
 
         const pageTitle = String(page?.metadata?.title || candidate.title || '');
@@ -923,22 +1042,10 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
 
   if (!quotes.length) {
     try {
-      rawResults = await directSearchEngine(query);
+      rawResults = await directWebSearch(query);
       quotes = await collectQuotes('', cigar, rawResults, true);
-
-      if (!quotes.length) {
-        const bingResults = await directBingSearch(query);
-        rawResults = [...rawResults, ...bingResults];
-        quotes = await collectQuotes('', cigar, bingResults, true);
-      }
-
-      if (!quotes.length) {
-        const nativeResults = await directNativeSearch(query);
-        rawResults = [...rawResults, ...nativeResults];
-        quotes = await collectQuotes('', cigar, nativeResults, true);
-      }
     } catch (error: any) {
-      console.warn('Direct retailer search unavailable for ' + cigar.brand + ' ' + cigar.name + ': ' + String(error?.message || error));
+      console.warn('Direct retailer sitemap scan unavailable for ' + cigar.brand + ' ' + cigar.name + ': ' + String(error?.message || error));
     }
   }
 
