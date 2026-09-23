@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractPounds, retailerListingMatches } from './firecrawlRetailerScanner';
+import { buildQuote, extractPounds, retailerListingMatches } from './firecrawlRetailerScanner';
 
 describe('retailerListingMatches', () => {
   it('matches retailer naming with Casa Carrillo prefix and Sojourn naming', () => {
@@ -95,4 +95,77 @@ describe('retailerListingMatches', () => {
     )).toBeUndefined();
   });
 
+});
+
+
+describe('buildQuote', () => {
+  const requested = {
+    id: 'res-padron-1964-torpedo-maduro',
+    brand: 'Padrón',
+    name: '1964 Anniversary Series',
+    vitola: 'Torpedo Maduro',
+    packageType: 'Single',
+  };
+
+  it('accepts the exact matching JSON-LD product when another Product object is present first', () => {
+    const quote = buildQuote(
+      { url: 'https://ukcigarstore.co.uk/products/padron-1964-anniversary-series-torpedo-maduro' },
+      requested,
+      {
+        metadata: { title: 'Padrón 1964 Anniversary Series Torpedo Maduro' },
+        markdown: 'Padrón 1964 Anniversary Series Torpedo Maduro 6 x 52 £21.15',
+        products: [
+          { name: 'Padrón 1964 Anniversary Series Torpedo Natural', offers: { price: '21.15', priceCurrency: 'GBP' } },
+          {
+            name: 'Padrón 1964 Anniversary Series Torpedo Maduro',
+            sku: 'P64-TM-1',
+            offers: { price: '21.15', priceCurrency: 'GBP', availability: 'https://schema.org/InStock' },
+          },
+        ],
+      },
+      'Padrón 1964 Anniversary Series Torpedo Maduro',
+      'Padrón 1964 Anniversary Series Torpedo Maduro 6 x 52 £21.15',
+    );
+    expect(quote?.price).toBe(21.15);
+    expect(quote?.sourceProductId).toBe('P64-TM-1');
+    expect(quote?.matchingStatus).toBe('matched');
+    expect(quote?.rawData?.evidenceType).toBe('json-ld-product');
+  });
+
+  it('rejects a related product price when the exact JSON-LD product is absent', () => {
+    const quote = buildQuote(
+      { url: 'https://www.cgarsltd.co.uk/padron-a-726.html' },
+      requested,
+      {
+        metadata: { title: 'Padrón 1964 Anniversary Series' },
+        markdown: 'Padrón 1964 Anniversary Series Natural £10.00',
+        products: [
+          { name: 'Padrón 1964 Anniversary Series Natural', offers: { price: '10.00', priceCurrency: 'GBP' } },
+        ],
+      },
+      'Padrón 1964 Anniversary Series',
+      'Padrón 1964 Anniversary Series Natural £10.00',
+    );
+    expect(quote).toBeUndefined();
+  });
+
+  it('accepts exact visible product context when structured data is unavailable', () => {
+    const quote = buildQuote(
+      { url: 'https://ukcigarstore.co.uk/products/padron-1964-anniversary-series-torpedo-maduro' },
+      requested,
+      {
+        metadata: {
+          title: 'Padrón 1964 Anniversary Series Torpedo Maduro',
+          h1: 'Padrón 1964 Anniversary Series Torpedo Maduro',
+          meta: {},
+        },
+        markdown: 'Padrón 1964 Anniversary Series Torpedo Maduro 6 x 52 £21.15 In stock',
+        products: [],
+      },
+      'Padrón 1964 Anniversary Series Torpedo Maduro',
+      'Padrón 1964 Anniversary Series Torpedo Maduro 6 x 52 £21.15 In stock',
+    );
+    expect(quote?.price).toBe(21.15);
+    expect(quote?.confidenceScore).toBe(0.94);
+  });
 });
