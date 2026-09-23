@@ -1,96 +1,32 @@
 {
-  "generatedAt": "2026-09-23T00:44:17.105Z",
+  "generatedAt": "2026-09-23T01:37:36.434Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 7,
+  "groundedCount": 4,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
       "brand": "Padrón",
       "name": "1964 Anniversary Series",
-      "quotes": [
-        {
-          "vendor": "C.Gars Ltd",
-          "price": 10,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.cgarsltd.co.uk/padron-a-726.html",
-          "lastUpdated": "2026-09-23"
-        }
-      ],
-      "bestPrice": 10,
-      "bestVendor": "C.Gars Ltd",
-      "grounded": true,
+      "quotes": [],
+      "bestPrice": null,
+      "bestVendor": null,
+      "grounded": false,
       "provider": "direct-web",
-      "groundedSources": [
-        {
-          "title": "Padrón 1964 Anniversary Series",
-          "uri": "https://www.cgarsltd.co.uk/padron-a-726.html"
-        }
-      ],
-      "scanStatus": "verified"
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-padron-1926-no9",
       "brand": "Padrón",
       "name": "1926 Serie",
-      "quotes": [
-        {
-          "vendor": "GQ Tobaccos",
-          "price": 37.59,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-35-single-cigar/",
-          "lastUpdated": "2026-09-23"
-        },
-        {
-          "vendor": "GQ Tobaccos",
-          "price": 50.99,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-maduro-no-2-single-cigar/",
-          "lastUpdated": "2026-09-23"
-        },
-        {
-          "vendor": "James J. Fox (London)",
-          "price": 150,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://www.jjfox.co.uk/padron-1926-series-no-35-maduro.html",
-          "lastUpdated": "2026-09-23"
-        },
-        {
-          "vendor": "GQ Tobaccos",
-          "price": 50.99,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-2-single-cigar/",
-          "lastUpdated": "2026-09-23"
-        }
-      ],
-      "bestPrice": 37.59,
-      "bestVendor": "GQ Tobaccos",
-      "grounded": true,
+      "quotes": [],
+      "bestPrice": null,
+      "bestVendor": null,
+      "grounded": false,
       "provider": "direct-web",
-      "groundedSources": [
-        {
-          "title": "Padrón 1926 Serie",
-          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-35-single-cigar/"
-        },
-        {
-          "title": "Padrón 1926 Serie",
-          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-maduro-no-2-single-cigar/"
-        },
-        {
-          "title": "Padrón 1926 Serie",
-          "uri": "https://www.jjfox.co.uk/padron-1926-series-no-35-maduro.html"
-        },
-        {
-          "title": "Padrón 1926 Serie",
-          "uri": "https://www.gqtobaccos.com/cigars/padron-1926-series-natural-no-2-single-cigar/"
-        }
-      ],
-      "scanStatus": "verified"
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-arturo-fuente-opusx-perfecxion-x",
@@ -115,7 +51,11 @@
           "currency": "£",
           "inStock": true,
           "url": "https://www.smoke-king.co.uk/products/arturo-fuente-don-carlos-no-2-cigar-single",
-          "lastUpdated": "2026-09-23"
+          "lastUpdated": "2026-09-23",
+          "smokeTimeMinutes": 50,
+          "strength": "Medium",
+          "retailerRating": 94,
+          "retailerRatingScale": 100
         }
       ],
       "bestPrice": 19.95,
@@ -141,7 +81,12 @@
           "currency": "£",
           "inStock": true,
           "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar",
-          "lastUpdated": "2026-09-23"
+          "lastUpdated": "2026-09-23",
+          "vitola": "churchill",
+          "smokeTimeMinutes": 75,
+          "strength": "Medium",
+          "retailerRating": 89,
+          "retailerRatingScale": 100
         }
       ],
       "bestPrice": 19.95,
@@ -179,7 +124,11 @@
           "currency": "£",
           "inStock": false,
           "url": "https://www.smoke-king.co.uk/products/cohiba-behike-52-cuban-cigar-single",
-          "lastUpdated": "2026-09-23"
+          "lastUpdated": "2026-09-23",
+          "smokeTimeMinutes": 50,
+          "strength": "Medium",
+          "retailerRating": 97,
+          "retailerRatingScale": 100
         }
       ],
       "bestPrice": 19.95,
@@ -265,7 +214,11 @@
           "currency": "£",
           "inStock": true,
           "url": "https://www.smoke-king.co.uk/products/plasencia-alma-fuerte-sixto-ii-hexagono-cigar-single",
-          "lastUpdated": "2026-09-23"
+          "lastUpdated": "2026-09-23",
+          "lengthMm": 152,
+          "ringGauge": 60,
+          "smokeTimeMinutes": 80,
+          "strength": "Medium"
         }
       ],
       "bestPrice": 19.95,
@@ -296,39 +249,13 @@
       "id": "res-my-father-le-bijou-1922-torpedo",
       "brand": "My Father Cigars",
       "name": "Le Bijou 1922",
-      "quotes": [
-        {
-          "vendor": "Turmeaus Tobacconist",
-          "price": 50,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.turmeaus.co.uk/father-bijou-1922-torpedo-box-pressed-cigar-single-p-28907.html",
-          "lastUpdated": "2026-09-23"
-        },
-        {
-          "vendor": "Hava Havana",
-          "price": 575,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp",
-          "lastUpdated": "2026-09-23"
-        }
-      ],
-      "bestPrice": 50,
-      "bestVendor": "Turmeaus Tobacconist",
-      "grounded": true,
+      "quotes": [],
+      "bestPrice": null,
+      "bestVendor": null,
+      "grounded": false,
       "provider": "direct-web",
-      "groundedSources": [
-        {
-          "title": "My Father Cigars Le Bijou 1922",
-          "uri": "https://www.turmeaus.co.uk/father-bijou-1922-torpedo-box-pressed-cigar-single-p-28907.html"
-        },
-        {
-          "title": "My Father Cigars Le Bijou 1922",
-          "uri": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp"
-        }
-      ],
-      "scanStatus": "verified"
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-foundation-the-tabernacle-broadleaf",
