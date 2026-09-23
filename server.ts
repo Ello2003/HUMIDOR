@@ -2480,131 +2480,60 @@ function getEstimatedUkRetailerQuotes(cigar: {
   });
 }
 
-// Endpoint: AI & Live Retailer Price Scanner for a single cigar
+// Endpoint: Verified UK Retailer Price Scanner for a single cigar.
+// Uses the same deterministic scanner as the scheduled GitHub Actions job.
+// No AI/reference-price fallback is allowed: an unverified price is omitted.
 app.post("/api/research/retailer-prices", async (req, res) => {
   try {
     const cigarValidation = validateScanCigar(req.body);
-    if (!cigarValidation.ok) return res.status(400).json({ error: ('error' in cigarValidation ? cigarValidation.error : 'Invalid cigar request') });
-    const { brand, name, line, variant, vitola, packageType, boxCount, countryOrigin, isCuban } = cigarValidation.cigar;
-    const requestedRetailers = validatedRetailers(req.body.retailers, DEFAULT_UK_RETAILERS);
-    if (!requestedRetailers) return res.status(400).json({ error: "Retailers must be provided as an array of names." });
-
-    const cigarLabel = `${brand} ${requestedIdentityName(name, line, variant)}`.trim();
-
-    try {
-      if (process.env.FIRECRAWL_API_KEY) {
-        const firecrawl = await firecrawlRetailerPriceSearch({ brand, name, line, variant, vitola, packageType, boxCount, retailers: requestedRetailers });
-        if (firecrawl.quotes.length > 0) {
-          const bestPrice = Math.min(...firecrawl.quotes.map((q: any) => q.price));
-          const bestQuote = firecrawl.quotes.find((q: any) => q.price === bestPrice);
-          return res.json({ success: true, data: { quotes: firecrawl.quotes, retailerQuotes: firecrawl.quotes, bestPrice, bestVendor: bestQuote?.vendor, marketLow: bestPrice, marketHigh: Math.max(...firecrawl.quotes.map((q: any) => q.price)), marketAverage: Math.round(firecrawl.quotes.reduce((sum: number, q: any) => sum + q.price, 0) / firecrawl.quotes.length * 100) / 100, pricingNotes: 'Live UK retailer pages retrieved via Firecrawl.', groundedSources: firecrawl.sources, grounded: true, provider: 'firecrawl' } });
-        }
-      }
-      // Gemini grounded-search fallback.
-      const grounded = await groundedWebResearch(
-        `Search the web for current UK retail prices in GBP for the cigar "${cigarLabel}" ` +
-          `(Vitola: ${vitola || "Standard"}, Origin: ${countryOrigin || (isCuban ? "Cuba" : "New World")}). ` +
-          `Check these known UK tobacconists first: ${retailerSearchBrief(requestedRetailers)}. ` +
-          `Then also search more broadly for any OTHER genuine UK cigar retailer that stocks this specific cigar -- ` +
-          `do not limit yourself to the list above. New World brands (Nicaragua, Honduras, Dominican Republic) are ` +
-          `often carried by different specialist shops than Cuban-only retailers, so don't assume the known list is exhaustive. ` +
-          `Use site-restricted searches where possible and check product pages, not snippets or general price guides. ` +
-          `Report the actual single-stick and box price, currency, stock status, product URL, and retailer for every ` +
-          `real UK retailer that has this exact cigar listed -- do not estimate, convert, or invent a price for a ` +
-          `retailer whose page you did not actually find, and do not stop after finding just one.`,
-        "You are a research assistant checking real UK cigar retailer websites. Search broadly, not just a fixed list. Only report prices you actually find via search."
-      );
-
-      if (!grounded.text || grounded.sources.length === 0) {
-        throw new Error("No grounded pricing results found.");
-      }
-
-      const parsedData = await structureTextToSchema({
-        text: grounded.text,
-        instruction:
-          "Extract the retailer price quotes mentioned in this search-grounded research into structured JSON, in GBP. " +
-          "Only include retailers explicitly mentioned with a price -- do not invent quotes for retailers not found. For every quote, include the exact product-page title and exact source URL from the grounded results. Treat the requested cigar variant and packaging as exact: never substitute a sibling variant or a box for a single.",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            quotes: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  vendor: { type: Type.STRING },
-                  price: { type: Type.NUMBER },
-                  inStock: { type: Type.BOOLEAN },
-                  boxPrice: { type: Type.NUMBER },
-                  boxCount: { type: Type.INTEGER },
-                  productTitle: { type: Type.STRING },
-                  sourceUrl: { type: Type.STRING },
-                  packageType: { type: Type.STRING },
-                },
-                required: ["vendor", "price", "inStock"],
-              },
-            },
-            pricingNotes: { type: Type.STRING },
-          },
-          required: ["quotes"],
-        },
-      });
-
-      if (parsedData.quotes && parsedData.quotes.length > 0) {
-        const today = new Date().toISOString().split("T")[0];
-        const exactQuotes = parsedData.quotes.filter((quote: any) => groundedQuoteMatchesRequestedCigar(quote, grounded.sources, { brand, name, line, variant, vitola, packageType, boxCount }));
-        const mergedQuotes = validateGroundedQuotes(exactQuotes, grounded.sources, UK_RETAILER_CATALOG, today);
-
-        if (mergedQuotes.length === 0) throw new Error("No valid GBP retailer quotes found.");
-
-        const bestPrice = Math.min(...mergedQuotes.map((q: any) => q.price));
-        const bestQuote = mergedQuotes.find((q: any) => q.price === bestPrice);
-
-        return res.json({
-          success: true,
-          data: {
-            quotes: mergedQuotes,
-            retailerQuotes: mergedQuotes,
-            bestPrice: bestPrice,
-            bestVendor: bestQuote?.vendor || mergedQuotes[0].vendor,
-            marketLow: bestPrice,
-            marketHigh: Math.max(...mergedQuotes.map((q: any) => q.price)),
-            marketAverage:
-              Math.round((mergedQuotes.reduce((a: number, b: any) => a + b.price, 0) / mergedQuotes.length) * 100) / 100,
-            pricingNotes: parsedData.pricingNotes || "Live search across UK retailers.",
-            groundedSources: grounded.sources,
-            grounded: true,
-          },
-        });
-      }
-    } catch (aiErr: any) {
-      console.warn("[Price Scanner] Grounded lookup failed or found nothing, falling back to reference dataset:", aiErr.message);
+    if (!cigarValidation.ok) {
+      return res.status(400).json({ error: ("error" in cigarValidation ? cigarValidation.error : "Invalid cigar request") });
     }
+
+    const requestedRetailers = validatedRetailers(req.body.retailers, []);
+    if (!requestedRetailers) {
+      return res.status(400).json({ error: "Retailers must be provided as an array of names." });
+    }
+
+    const result = await scanRetailerPrice(
+      cigarValidation.cigar,
+      process.env.FIRECRAWL_API_KEY || "",
+    );
+
+    const quotes = result.quotes;
+    const prices = quotes.map((quote: any) => Number(quote.price)).filter(Number.isFinite);
+    const bestPrice = prices.length ? Math.min(...prices) : null;
+    const bestQuote = bestPrice === null ? undefined : quotes.find((quote: any) => Number(quote.price) === bestPrice);
 
     return res.json({
       success: true,
       data: {
-        quotes: [],
-        retailerQuotes: [],
-        bestPrice: null,
-        bestVendor: null,
-        marketLow: null,
-        marketHigh: null,
-        marketAverage: null,
-        pricingNotes: `No live UK retailer page could be confirmed. No estimate was added.`,
-        grounded: false,
-        scanStatus: "no_verified_results",
+        quotes,
+        retailerQuotes: quotes,
+        bestPrice,
+        bestVendor: bestQuote?.vendor || null,
+        marketLow: bestPrice,
+        marketHigh: prices.length ? Math.max(...prices) : null,
+        marketAverage: prices.length
+          ? Math.round((prices.reduce((sum, price) => sum + price, 0) / prices.length) * 100) / 100
+          : null,
+        pricingNotes: quotes.length
+          ? "Verified prices from exact UK retailer product pages."
+          : "No exact UK retailer product page could be verified.",
+        groundedSources: result.groundedSources || [],
+        grounded: result.grounded,
+        provider: result.provider,
+        scanStatus: result.scanStatus,
       },
     });
   } catch (error: any) {
     console.error("Error in /api/research/retailer-prices:", error);
-    return res.status(500).json({
-      error: error.message || "Failed to scan retailer prices.",
-    });
+    return res.status(500).json({ error: error.message || "Failed to scan retailer prices." });
   }
 });
 
-// Endpoint: Batch Retailer Price Scanner across whole database
+// Endpoint: Verified UK Retailer Price Scanner across a batch.
+// Each cigar is isolated: one retailer/product failure cannot stop the batch.
 app.post("/api/research/batch-retailer-prices", async (req, res) => {
   try {
     const { cigars, retailers } = req.body;
@@ -2614,118 +2543,67 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
     if (cigars.length > MAX_SCAN_BATCH) {
       return res.status(400).json({ error: `A maximum of ${MAX_SCAN_BATCH} cigars can be scanned per request.` });
     }
+
     const validatedCigars = cigars.map((cigar) => validateScanCigar(cigar, true));
     const invalid = validatedCigars.find((result) => !result.ok);
-    if (invalid && !invalid.ok) return res.status(400).json({ error: ('error' in invalid ? invalid.error : 'Invalid cigar request') });
-    const batch = validatedCigars.map((result) => result.ok ? result.cigar : null).filter(Boolean);
+    if (invalid && !invalid.ok) {
+      return res.status(400).json({ error: ("error" in invalid ? invalid.error : "Invalid cigar request") });
+    }
+
+    const batch = validatedCigars
+      .map((result) => result.ok ? result.cigar : null)
+      .filter(Boolean);
     const requestedRetailers = validatedRetailers(retailers, []);
-    if (!requestedRetailers) return res.status(400).json({ error: "Retailers must be provided as an array of names." });
-    const CONCURRENCY = 3;
+
+    if (!requestedRetailers) {
+      return res.status(400).json({ error: "Retailers must be provided as an array of names." });
+    }
+
     const results: any[] = new Array(batch.length);
+    let nextIndex = 0;
 
-    async function scanOne(c: any): Promise<any> {
-      try {
-        const cigarLabel = `${c.brand} ${requestedIdentityName(c.name || c.line || '', c.line, c.variant)}`.trim();
-        if (process.env.FIRECRAWL_API_KEY) {
-          const firecrawl = await firecrawlRetailerPriceSearch({ brand: c.brand, name: c.name || c.line || '', line: c.line, variant: c.variant, vitola: c.vitola, packageType: c.packageType, boxCount: c.boxCount, retailers: requestedRetailers.length ? requestedRetailers : DEFAULT_UK_RETAILERS });
-          if (firecrawl.quotes.length > 0) {
-            return { id: c.id, brand: c.brand, name: c.name || c.line, quotes: firecrawl.quotes, bestPrice: Math.min(...firecrawl.quotes.map((q: any) => q.price)), bestVendor: firecrawl.quotes.reduce((prev: any, curr: any) => curr.price < prev.price ? curr : prev).vendor, grounded: true, provider: 'firecrawl', groundedSources: firecrawl.sources };
-          }
-        }
-        const grounded = await groundedWebResearch(
-          `Search the web for current UK retail prices in GBP for the exact cigar "${cigarLabel}" ` +
-            `(Vitola: ${c.vitola || "Standard"}). Check these known UK retailer domains first: ${retailerSearchBrief(requestedRetailers.length ? requestedRetailers : DEFAULT_UK_RETAILERS)}. ` +
-            `Then also search more broadly for any OTHER genuine UK cigar retailer that stocks this specific cigar -- ` +
-            `New World brands are often carried by different specialist shops than Cuban-only retailers, so don't ` +
-            `assume the known list is exhaustive. Use product pages and report only prices, currency, stock status, ` +
-            `retailer, and URLs you actually find. Do not estimate or invent missing quotes, and do not stop after finding just one.`,
-          "You are a research assistant checking real UK cigar retailer websites. Search broadly, not just a fixed list. Only report prices you actually find."
-        );
-        if (!grounded.text || grounded.sources.length === 0) throw new Error("no grounded results");
+    async function worker() {
+      while (true) {
+        const index = nextIndex++;
+        if (index >= batch.length) return;
+        const cigar = batch[index];
 
-        const parsed = await structureTextToSchema({
-          text: grounded.text,
-          instruction: "Extract retailer price quotes from this search-grounded research into structured JSON, in GBP. For every quote, include the exact product-page title and exact source URL from the grounded sources. Never substitute a sibling variant or packaging size.",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              quotes: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    vendor: { type: Type.STRING },
-                    price: { type: Type.NUMBER },
-                    inStock: { type: Type.BOOLEAN },
-                    productTitle: { type: Type.STRING },
-                    sourceUrl: { type: Type.STRING },
-                    packageType: { type: Type.STRING },
-                    boxCount: { type: Type.INTEGER },
-                  },
-                  required: ["vendor", "price", "inStock"],
-                },
-              },
-            },
-            required: ["quotes"],
-          },
-        });
-
-        const validQuotes = Array.isArray(parsed.quotes)
-          ? parsed.quotes
-              .filter((q: any) => Number.isFinite(Number(q.price)) && Number(q.price) > 0 && Number(q.price) < 2000)
-              .filter((q: any) => groundedQuoteMatchesRequestedCigar(q, grounded.sources, { brand: c.brand, name: c.name || c.line || "", line: c.line, variant: c.variant, vitola: c.vitola, packageType: c.packageType, boxCount: c.boxCount }))
-          : [];
-        if (validQuotes.length > 0) {
-          const today = new Date().toISOString().split("T")[0];
-          const quotes = validateGroundedQuotes(validQuotes, grounded.sources, UK_RETAILER_CATALOG, today);
-          return {
-            id: c.id,
-            brand: c.brand,
-            name: c.name || c.line,
-            quotes,
-            bestPrice: Math.min(...quotes.map((q: any) => q.price)),
-            bestVendor: quotes.reduce((prev: any, curr: any) => (curr.price < prev.price ? curr : prev)).vendor,
-            grounded: true,
+        try {
+          const result = await scanRetailerPrice(
+            cigar,
+            process.env.FIRECRAWL_API_KEY || "",
+          );
+          results[index] = result;
+        } catch (error: any) {
+          results[index] = {
+            id: cigar.id,
+            brand: cigar.brand,
+            name: cigar.name,
+            quotes: [],
+            bestPrice: null,
+            bestVendor: null,
+            grounded: false,
+            provider: "direct-web",
+            groundedSources: [],
+            scanStatus: `scan_error: ${String(error?.message || error).slice(0, 180)}`,
           };
         }
-      } catch {
-        // fall through to reference data below
-      }
-
-      return {
-        id: c.id,
-        brand: c.brand,
-        name: c.name || c.line,
-        quotes: [],
-        bestPrice: null,
-        bestVendor: null,
-        grounded: false,
-        scanStatus: "no_verified_results",
-      };
-    }
-
-    let nextIndex = 0;
-    async function worker() {
-      while (nextIndex < batch.length) {
-        const i = nextIndex++;
-        results[i] = await scanOne(batch[i]);
       }
     }
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, batch.length) }, worker));
+
+    await Promise.all(Array.from({ length: Math.min(3, batch.length) }, worker));
 
     return res.json({
       success: true,
       data: {
         scannedCount: results.length,
-        groundedCount: results.filter((r) => r.grounded).length,
+        groundedCount: results.filter((result) => result.grounded && result.quotes.length > 0).length,
         results,
       },
     });
   } catch (error: any) {
     console.error("Error in /api/research/batch-retailer-prices:", error);
-    return res.status(500).json({
-      error: error.message || "Failed to batch scan retailer prices.",
-    });
+    return res.status(500).json({ error: error.message || "Failed to batch scan retailer prices." });
   }
 });
 
