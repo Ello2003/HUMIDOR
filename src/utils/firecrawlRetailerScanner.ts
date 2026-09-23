@@ -545,7 +545,13 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
   if (!source) return [];
 
   const cached = sitemapCache.get(domain);
-  if (cached) return cached;
+  const selectRelevant = (allUrls: string[]) => {
+    const relevant = query
+      ? allUrls.filter((url) => sitemapUrlLooksRelevant(url, query))
+      : allUrls;
+    return relevant.slice(0, source.maxPagesPerScan);
+  };
+  if (cached) return selectRelevant(cached);
 
   const sitemapCandidates = new Set<string>([
     source.sitemapUrl || `https://${domain}/sitemap.xml`,
@@ -566,8 +572,11 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     const xml = await fetchText(sitemap, source.requestDelayMs);
     if (!xml) continue;
     const locs = sitemapLocs(xml);
-    if (/<sitemap(?:index)?[\s>]/i.test(xml.slice(0, 1200))) locs.forEach((loc) => childSitemaps.add(loc));
-    else locs.forEach((loc) => productUrls.add(canonicalizeUrl(loc)));
+    if (/<sitemap(?:index)?[\s>]/i.test(xml.slice(0, 1200))) {
+      locs.forEach((loc) => childSitemaps.add(loc));
+    } else {
+      locs.forEach((loc) => productUrls.add(canonicalizeUrl(loc)));
+    }
   }
 
   await Promise.all(Array.from(childSitemaps).slice(0, 12).map(async (sitemap) => {
@@ -580,37 +589,47 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     try {
       const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
       if (!(host === domain || host.endsWith(`.${domain}`))) return false;
-      return source.productUrlPatterns.length === 0 || source.productUrlPatterns.some((pattern) => pattern.test(new URL(url).pathname));
-    } catch { return false; }
+      return source.productUrlPatterns.length === 0 ||
+        source.productUrlPatterns.some((pattern) => pattern.test(new URL(url).pathname));
+    } catch {
+      return false;
+    }
   });
 
-  // Some approved retailers expose a product catalogue through HTML pages
-  // but do not publish a useful product sitemap. Only configured discovery
-  // paths on the approved retailer domain are visited.
+  sitemapCache.set(domain, urls);
+
+  // Category discovery is a fallback for retailers whose sitemap does not
+  // expose product URLs. It is restricted to configured paths on this domain.
+  const discovered = [...urls];
   for (const path of source.discoveryPaths) {
-    if (urls.length >= source.maxPagesPerScan) break;
+    if (discovered.length >= source.maxPagesPerScan * 3) break;
     const discoveryUrl = new URL(path, source.baseUrl).toString();
     const html = await fetchText(discoveryUrl, source.requestDelayMs);
     if (!html) continue;
     for (const match of html.matchAll(/<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\s\S]*?)<\/a>/gi)) {
       let href = String(match[1] || '');
-      try { href = canonicalizeUrl(new URL(href, source.baseUrl).toString()); } catch { continue; }
+      try {
+        href = canonicalizeUrl(new URL(href, source.baseUrl).toString());
+      } catch {
+        continue;
+      }
       try {
         const parsed = new URL(href);
         const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
         if (!(host === domain || host.endsWith(`.${domain}`))) continue;
-        if (source.productUrlPatterns.length && !source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname))) continue;
-      } catch { continue; }
+        if (source.productUrlPatterns.length &&
+            !source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname))) continue;
+      } catch {
+        continue;
+      }
       const anchorText = normalize(String(match[2] || '').replace(/<[^>]+>/g, ' '));
       if (query && !sitemapUrlLooksRelevant(href + ' ' + anchorText, query)) continue;
-      if (!urls.includes(href)) urls.push(href);
-      if (urls.length >= source.maxPagesPerScan) break;
+      if (!discovered.includes(href)) discovered.push(href);
+      if (discovered.length >= source.maxPagesPerScan * 3) break;
     }
   }
 
-  const capped = urls.slice(0, source.maxPagesPerScan);
-  sitemapCache.set(domain, capped);
-  return capped;
+  return selectRelevant(discovered);
 }
 
 async function directWebSearch(query: string): Promise<any[]> {
