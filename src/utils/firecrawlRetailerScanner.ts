@@ -731,6 +731,20 @@ function isGenericRetailerPage(url: string): boolean {
   }
 }
 
+function exactPageTitleMatches(title: string, cigar: RetailerScanCigar): boolean {
+  return Boolean(title) && retailerListingMatches(
+    title,
+    '',
+    cigar.brand,
+    cigar.name,
+    cigar.vitola,
+    cigar.line,
+    cigar.variant,
+    cigar.packageType,
+    cigar.boxCount,
+  );
+}
+
 function jsonLdProductMatches(product: any, cigar: RetailerScanCigar): boolean {
   if (!product || typeof product !== 'object') return false;
   return retailerListingMatches(
