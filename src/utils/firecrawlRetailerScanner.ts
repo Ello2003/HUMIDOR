@@ -171,29 +171,48 @@ function vitolaName(text: string): string | undefined {
     .sort((a, b) => b.length - a.length)[0];
 }
 
+function vitolaNames(text: string): string[] {
+  const normalized = normalize(text).replace(/[–—/|,()[\]{}:+]/g, ' ');
+  return VITOLA_NAMES.filter((name) => normalized.includes(name))
+    .sort((a, b) => b.length - a.length);
+}
+
+function vitolaRingGauge(text: string): number | undefined {
+  const normalized = normalize(text);
+  const match = normalized.match(/\b(?:bhk|behike)\s*(?:no\.?\s*)?(\d{2})\b/i);
+  return match ? Number(match[1]) : undefined;
+}
+
 function vitolaMatches(requestedVitola: string | undefined, identityText: string): boolean {
   if (!requestedVitola) return true;
 
   const requested = dimensions(requestedVitola);
   const found = dimensions(identityText);
+  const requestedGauge = requested.ringGauge || vitolaRingGauge(requestedVitola);
+  const foundGauge = found.ringGauge || vitolaRingGauge(identityText);
+
+  if (requestedGauge && foundGauge && Math.abs(requestedGauge - foundGauge) > 1) return false;
+
+  const requestedNames = vitolaNames(requestedVitola);
+  const foundNames = vitolaNames(identityText);
+
+  // Product titles can contain the line name as well as the actual vitola.
+  // If another explicit vitola is present, do not merge it into this record.
+  if (requestedNames.length && foundNames.length) {
+    const requestedName = requestedNames[0];
+    if (!foundNames.includes(requestedName)) return false;
+    if (foundNames.some((name) => name !== requestedName)) return false;
+  }
+
   if (requested.lengthMm && requested.ringGauge && found.lengthMm && found.ringGauge) {
     const dimensionsMatch = Math.abs(requested.lengthMm - found.lengthMm) <= 5 &&
       Math.abs(requested.ringGauge - found.ringGauge) <= 1;
     if (dimensionsMatch) return true;
-
-    // Retailer catalogues can publish a slightly different ring gauge for the
-    // same named vitola. Prefer the explicit vitola name over a conflicting
-    // catalogue dimension, but never use this fallback when named vitolas differ.
-    const requestedName = vitolaName(requestedVitola);
-    const foundName = vitolaName(identityText);
-    if (requestedName && foundName) return requestedName === foundName;
+    if (requestedNames.length && foundNames.length) return requestedNames[0] === foundNames[0];
     return false;
   }
 
-  const requestedName = vitolaName(requestedVitola);
-  const foundName = vitolaName(identityText);
-  if (requestedName && foundName) return requestedName === foundName;
-
+  if (requestedNames.length && foundNames.length) return requestedNames[0] === foundNames[0];
   return true;
 }
 
