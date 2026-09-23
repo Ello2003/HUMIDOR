@@ -430,22 +430,18 @@ function decodeXml(value: string): string {
 }
 
 function sitemapLocs(xml: string): string[] {
-  return [...xml.matchAll(/<loc\\b[^>]*>([\\s\\S]*?)<\\/loc>/gi)]
+  return [...xml.matchAll(/<loc\b[^>]*>([\s\S]*?)<\/loc>/gi)]
     .map((match) => decodeXml(String(match[1] || '').trim()))
-    .filter((url) => /^https?:\\/\\//i.test(url));
+    .filter((url) => /^https?:\/\//i.test(url));
 }
 
 function sitemapIsIndex(xml: string): boolean {
-  return /<sitemapindex\\b/i.test(xml) || /<sitemap\\b/i.test(xml.slice(0, 5000));
+  return /<sitemapindex\b/i.test(xml) || /<sitemap\b/i.test(xml.slice(0, 5000));
 }
 
 function sitemapUrlLooksRelevant(url: string, query: string): boolean {
   let decodedUrl = url;
-  try {
-    decodedUrl = decodeURIComponent(url);
-  } catch {
-    // Keep the raw URL if it is not valid URI encoding.
-  }
+  try { decodedUrl = decodeURIComponent(url); } catch {}
 
   const urlText = normalize(decodedUrl);
   const tokens = meaningfulTokens(query)
@@ -453,21 +449,14 @@ function sitemapUrlLooksRelevant(url: string, query: string): boolean {
     .filter((token) => !/^(cigar|price|prices|pounds|gbp|uk)$/i.test(token));
 
   if (!tokens.length) return true;
-
   const hits = tokens.filter((token) => urlText.includes(token));
   return hits.length >= Math.min(2, tokens.length);
 }
 
 function relevantUrlScore(url: string, query: string): number {
   if (!query) return 0;
-
   let decodedUrl = url;
-  try {
-    decodedUrl = decodeURIComponent(url);
-  } catch {
-    // Keep the raw URL.
-  }
-
+  try { decodedUrl = decodeURIComponent(url); } catch {}
   const text = normalize(decodedUrl);
   return meaningfulTokens(query)
     .filter((token) => token.length >= 4)
@@ -477,7 +466,7 @@ function relevantUrlScore(url: string, query: string): number {
 
 async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]> {
   const source = ENABLED_UK_RETAILER_SOURCES.find((candidate) =>
-    new URL(candidate.baseUrl).hostname.replace(/^www\\./, '') === domain
+    new URL(candidate.baseUrl).hostname.replace(/^www\./, '') === domain
   );
   if (!source) return [];
 
@@ -486,7 +475,6 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     const filtered = query
       ? allUrls.filter((url) => sitemapUrlLooksRelevant(url, query))
       : allUrls;
-
     return filtered
       .sort((a, b) => relevantUrlScore(b, query) - relevantUrlScore(a, query))
       .slice(0, source.maxPagesPerScan);
@@ -495,13 +483,13 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
   if (cached) return selectRelevant([...cached]);
 
   const sitemapCandidates = new Set<string>([
-    source.sitemapUrl || `https://${domain}/sitemap.xml`,
-    `https://${domain}/sitemap_index.xml`,
-    `https://${domain}/wp-sitemap.xml`,
+    source.sitemapUrl || \`https://\${domain}/sitemap.xml\`,
+    \`https://\${domain}/sitemap_index.xml\`,
+    \`https://\${domain}/wp-sitemap.xml\`,
   ]);
 
   const robots = await getRobots(domain);
-  for (const match of (robots || '').matchAll(/^\\s*sitemap:\\s*(https?:\\/\\/\\S+)/gim)) {
+  for (const match of (robots || '').matchAll(/^\s*sitemap:\s*(https?:\/\/\S+)/gim)) {
     sitemapCandidates.add(String(match[1]).trim());
   }
 
@@ -509,9 +497,6 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
   const pendingSitemaps = [...sitemapCandidates];
   const visitedSitemaps = new Set<string>();
 
-  // Follow sitemap indexes recursively. Many retailers expose several
-  // child sitemaps (products, categories, images, etc.), and the product
-  // sitemap is not necessarily one of the first few entries.
   while (pendingSitemaps.length && visitedSitemaps.size < 60) {
     const sitemap = canonicalizeUrl(pendingSitemaps.shift() || '');
     if (!sitemap || visitedSitemaps.has(sitemap)) continue;
@@ -532,21 +517,19 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     for (const loc of locs) {
       try {
         const parsed = new URL(loc);
-        const host = parsed.hostname.toLowerCase().replace(/^www\\./, '');
-        if (host === domain || host.endsWith(`.${domain}`)) {
+        const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+        if (host === domain || host.endsWith(\`.\${domain}\`)) {
           productUrls.add(canonicalizeUrl(loc));
         }
-      } catch {
-        // Ignore malformed sitemap entries.
-      }
+      } catch {}
     }
   }
 
   const urls = Array.from(productUrls).filter((url) => {
     try {
       const parsed = new URL(url);
-      const host = parsed.hostname.toLowerCase().replace(/^www\\./, '');
-      if (!(host === domain || host.endsWith(`.${domain}`))) return false;
+      const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+      if (!(host === domain || host.endsWith(\`.\${domain}\`))) return false;
       return source.productUrlPatterns.length === 0 ||
         source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname));
     } catch {
@@ -554,33 +537,23 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     }
   });
 
-  // Cache the complete product URL set. Query filtering happens only after
-  // the catalogue has been collected, so a sitemap filename or child-sitemap
-  // name can never prevent an exact product URL from being considered.
   sitemapCache.set(domain, urls);
 
-  // Category discovery remains a fallback for retailers whose sitemap does
-  // not expose usable product URLs. It is limited to configured paths.
   const discovered = [...urls];
   for (const path of source.discoveryPaths) {
     if (discovered.length >= source.maxPagesPerScan * 3) break;
-
     const discoveryUrl = new URL(path, source.baseUrl).toString();
     const html = await fetchText(discoveryUrl, source.requestDelayMs);
     if (!html) continue;
 
-    for (const match of html.matchAll(/<a\\b[^>]*href=[\\"']([^\"']+)[\\"'][^>]*>([\\s\\S]*?)<\\/a>/gi)) {
+    for (const match of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
       let href = String(match[1] || '');
-      try {
-        href = canonicalizeUrl(new URL(href, source.baseUrl).toString());
-      } catch {
-        continue;
-      }
+      try { href = canonicalizeUrl(new URL(href, source.baseUrl).toString()); } catch { continue; }
 
       try {
         const parsed = new URL(href);
-        const host = parsed.hostname.toLowerCase().replace(/^www\\./, '');
-        if (!(host === domain || host.endsWith(`.${domain}`))) continue;
+        const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+        if (!(host === domain || host.endsWith(\`.\${domain}\`))) continue;
         if (source.productUrlPatterns.length &&
             !source.productUrlPatterns.some((pattern) => pattern.test(parsed.pathname))) continue;
       } catch {
@@ -592,8 +565,6 @@ async function retailerSitemapUrls(domain: string, query = ''): Promise<string[]
     }
   }
 
-  // Include fallback-discovered URLs in the cache as well, then rank/filter
-  // by product URL relevance for this particular cigar.
   const uniqueDiscovered = Array.from(new Set(discovered));
   sitemapCache.set(domain, uniqueDiscovered);
   return selectRelevant(uniqueDiscovered);
