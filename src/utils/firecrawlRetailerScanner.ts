@@ -1035,8 +1035,12 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar, retailerNames?
   };
 }
 
-export async function scanRetailerPrice(cigar: RetailerScanCigar, apiKey = process.env.FIRECRAWL_API_KEY || ''): Promise<RetailerScanResult> {
-  return scanOnce(apiKey, cigar);
+export async function scanRetailerPrice(
+  cigar: RetailerScanCigar,
+  apiKey = process.env.FIRECRAWL_API_KEY || '',
+  retailers?: string[],
+): Promise<RetailerScanResult> {
+  return scanOnce(apiKey, cigar, retailers);
 }
 
 export async function scanRetailerPrices(
