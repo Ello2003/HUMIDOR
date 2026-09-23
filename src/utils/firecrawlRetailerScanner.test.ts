@@ -71,4 +71,14 @@ describe('retailerListingMatches', () => {
       'BHK 52 (Petit Robusto)',
     )).toBe(true);
   });
+  it('does not merge Padron 1964 Anniversary Torpedo Natural into Maduro', () => {
+    expect(retailerListingMatches(
+      'Padron 1964 Anniversary Series Torpedo Natural Cigar - 1 Single',
+      'https://www.example.co.uk/padron-1964-anniversary-series-torpedo-natural-single',
+      'Padrón',
+      '1964 Anniversary Series',
+      'Torpedo Maduro',
+    )).toBe(false);
+  });
+
 });
