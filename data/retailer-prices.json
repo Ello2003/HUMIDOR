@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-23T01:37:36.434Z",
+  "generatedAt": "2026-09-23T01:56:16.049Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 4,
+  "groundedCount": 0,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
@@ -44,62 +44,25 @@
       "id": "res-arturo-fuente-don-carlos-no2",
       "brand": "Arturo Fuente",
       "name": "Don Carlos",
-      "quotes": [
-        {
-          "vendor": "Smoke King",
-          "price": 19.95,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/arturo-fuente-don-carlos-no-2-cigar-single",
-          "lastUpdated": "2026-09-23",
-          "smokeTimeMinutes": 50,
-          "strength": "Medium",
-          "retailerRating": 94,
-          "retailerRatingScale": 100
-        }
-      ],
-      "bestPrice": 19.95,
-      "bestVendor": "Smoke King",
-      "grounded": true,
+      "quotes": [],
+      "bestPrice": null,
+      "bestVendor": null,
+      "grounded": false,
       "provider": "direct-web",
-      "groundedSources": [
-        {
-          "title": "Arturo Fuente Don Carlos",
-          "uri": "https://www.smoke-king.co.uk/products/arturo-fuente-don-carlos-no-2-cigar-single"
-        }
-      ],
-      "scanStatus": "verified"
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-davidoff-late-hour-churchill",
       "brand": "Davidoff",
       "name": "Winston Churchill Late Hour",
-      "quotes": [
-        {
-          "vendor": "Smoke King",
-          "price": 19.95,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar",
-          "lastUpdated": "2026-09-23",
-          "vitola": "churchill",
-          "smokeTimeMinutes": 75,
-          "strength": "Medium",
-          "retailerRating": 89,
-          "retailerRatingScale": 100
-        }
-      ],
-      "bestPrice": 19.95,
-      "bestVendor": "Smoke King",
-      "grounded": true,
+      "quotes": [],
+      "bestPrice": null,
+      "bestVendor": null,
+      "grounded": false,
       "provider": "direct-web",
-      "groundedSources": [
-        {
-          "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar"
-        }
-      ],
-      "scanStatus": "verified"
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-davidoff-millennium-robusto",
@@ -117,31 +80,13 @@
       "id": "res-cohiba-behike-bhk52",
       "brand": "Cohiba",
       "name": "Behike",
-      "quotes": [
-        {
-          "vendor": "Smoke King",
-          "price": 19.95,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://www.smoke-king.co.uk/products/cohiba-behike-52-cuban-cigar-single",
-          "lastUpdated": "2026-09-23",
-          "smokeTimeMinutes": 50,
-          "strength": "Medium",
-          "retailerRating": 97,
-          "retailerRatingScale": 100
-        }
-      ],
-      "bestPrice": 19.95,
-      "bestVendor": "Smoke King",
-      "grounded": true,
+      "quotes": [],
+      "bestPrice": null,
+      "bestVendor": null,
+      "grounded": false,
       "provider": "direct-web",
-      "groundedSources": [
-        {
-          "title": "Cohiba Behike",
-          "uri": "https://www.smoke-king.co.uk/products/cohiba-behike-52-cuban-cigar-single"
-        }
-      ],
-      "scanStatus": "verified"
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-montecristo-no2-cuban",
@@ -207,31 +152,13 @@
       "id": "res-plasencia-alma-fuerte-sixto-ii",
       "brand": "Plasencia",
       "name": "Alma Fuerte",
-      "quotes": [
-        {
-          "vendor": "Smoke King",
-          "price": 19.95,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/plasencia-alma-fuerte-sixto-ii-hexagono-cigar-single",
-          "lastUpdated": "2026-09-23",
-          "lengthMm": 152,
-          "ringGauge": 60,
-          "smokeTimeMinutes": 80,
-          "strength": "Medium"
-        }
-      ],
-      "bestPrice": 19.95,
-      "bestVendor": "Smoke King",
-      "grounded": true,
+      "quotes": [],
+      "bestPrice": null,
+      "bestVendor": null,
+      "grounded": false,
       "provider": "direct-web",
-      "groundedSources": [
-        {
-          "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.smoke-king.co.uk/products/plasencia-alma-fuerte-sixto-ii-hexagono-cigar-single"
-        }
-      ],
-      "scanStatus": "verified"
+      "groundedSources": [],
+      "scanStatus": "no_verified_results"
     },
     {
       "id": "res-dunbarton-sobremesa-brulee-blue",
