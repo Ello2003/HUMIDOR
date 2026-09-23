@@ -975,7 +975,7 @@ async function scanOnce(apiKey: string, cigar: RetailerScanCigar): Promise<Retai
     try {
       rawResults = await firecrawlSearch(apiKey, query, RETAILER_DOMAINS);
       quotes = await collectQuotes(apiKey, cigar, rawResults, true);
-      provider = 'firecrawl';
+      if (quotes.length) provider = 'firecrawl';
     } catch (error: any) {
       console.warn('Firecrawl unavailable for ' + cigar.brand + ' ' + cigar.name + ': ' + String(error?.message || error));
     }
