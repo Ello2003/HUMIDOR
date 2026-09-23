@@ -41,7 +41,6 @@ describe('retailerListingMatches', () => {
       'No. 2',
     )).toBe(true);
   });
-});
 
   it('does not merge Davidoff Toro into the Churchill canonical record', () => {
     expect(retailerListingMatches(
@@ -72,3 +71,4 @@ describe('retailerListingMatches', () => {
       'BHK 52 (Petit Robusto)',
     )).toBe(true);
   });
+});
