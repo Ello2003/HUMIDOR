@@ -300,31 +300,78 @@ function exactProductMatch(
   );
 }
 
+function allIndicesOf(haystack: string, needle: string): number[] {
+  if (!needle) return [];
+  const indices: number[] = [];
+  let from = 0;
+  while (from <= haystack.length) {
+    const index = haystack.indexOf(needle, from);
+    if (index < 0) break;
+    indices.push(index);
+    from = index + Math.max(1, needle.length);
+    if (indices.length >= 12) break; // page templates rarely repeat a title more than this
+  }
+  return indices;
+}
+
 export function extractPounds(text: string, label: string): number | undefined {
   const normalized = normalize(text);
   const normalizedLabel = normalize(label);
   if (!normalizedLabel) return undefined;
 
-  const labelIndex = normalized.indexOf(normalizedLabel);
-  if (labelIndex < 0) return undefined;
+  // Many retailer templates repeat the exact product title several times on a
+  // page (breadcrumbs, image alt text, meta tags, "also available in..."
+  // panels) before the real price/add-to-basket block. Checking only the
+  // first occurrence regularly anchors the search window on a mention that
+  // is nowhere near the actual price. Instead, check every occurrence and
+  // keep whichever nearby £ amount sits closest to any of them.
+  const labelIndices = allIndicesOf(normalized, normalizedLabel);
+  if (!labelIndices.length) return undefined;
 
-  // A price is only valid when it is tightly associated with the exact
-  // matched product label. Never fall back to the first £ amount on a page:
-  // retailer pages commonly contain prices for related cigars, bundles and
-  // recommendations.
-  const contextStart = Math.max(0, labelIndex - 90);
-  const contextEnd = Math.min(normalized.length, labelIndex + normalizedLabel.length + 150);
-  const context = normalized.slice(contextStart, contextEnd);
-  const matches = [...context.matchAll(/(?:£|gbp\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi)]
-    .map((match) => ({ price: Number(match[1]), index: match.index ?? 0 }))
-    .filter(({ price }) => Number.isFinite(price) && price >= 3 && price < 2000);
+  let best: { price: number; distance: number } | undefined;
 
-  if (!matches.length) return undefined;
+  for (const labelIndex of labelIndices) {
+    // A price is only valid when it is tightly associated with the exact
+    // matched product label. Never fall back to the first £ amount on a page:
+    // retailer pages commonly contain prices for related cigars, bundles and
+    // recommendations.
+    const contextStart = Math.max(0, labelIndex - 90);
+    const contextEnd = Math.min(normalized.length, labelIndex + normalizedLabel.length + 220);
+    const context = normalized.slice(contextStart, contextEnd);
+    const labelOffset = labelIndex - contextStart;
 
-  const labelOffset = labelIndex - contextStart;
-  return matches
-    .map((match) => ({ ...match, distance: Math.abs(match.index - labelOffset) }))
-    .sort((a, b) => a.distance - b.distance)[0]?.price;
+    const matches = [...context.matchAll(/(?:£|gbp\s*)([0-9]{1,4}(?:\.[0-9]{1,2})?)/gi)]
+      .map((match) => ({ price: Number(match[1]), index: match.index ?? 0 }))
+      .filter(({ price }) => Number.isFinite(price) && price >= 3 && price < 2000)
+      .map((match) => ({ ...match, distance: Math.abs(match.index - labelOffset) }));
+
+    for (const match of matches) {
+      if (!best || match.distance < best.distance) best = match;
+    }
+  }
+
+  return best?.price;
+}
+
+/**
+ * Some retailer templates embed the price as plain text in an og/twitter
+ * description meta tag, e.g. `Price: £940.00 - Length: 6" ...`, with no
+ * structured price data anywhere else on the page. This is a reliable,
+ * vendor-authored association (no proximity guessing needed), so it is
+ * checked ahead of the generic visible-price fallback.
+ */
+function priceFromDescriptionMeta(meta: Record<string, string> | undefined): number | undefined {
+  if (!meta) return undefined;
+  const candidates = [meta['og:description'], meta['twitter:description'], meta['description']]
+    .filter(Boolean)
+    .map(String);
+  for (const candidate of candidates) {
+    const match = candidate.match(/\bprice\s*[:\-]?\s*£\s*([0-9]{1,4}(?:\.[0-9]{1,2})?)/i);
+    if (!match) continue;
+    const price = Number(match[1]);
+    if (Number.isFinite(price) && price >= 3 && price < 2000) return price;
+  }
+  return undefined;
 }
 
 function structuredPrice(product: any, requested: RetailerScanCigar): {
@@ -909,10 +956,16 @@ function metaPrice(page: any, requested: RetailerScanCigar): { price?: number; i
   const title = String(meta['og:title'] || meta['twitter:title'] || meta['product:name'] || meta['itemprop:name'] || '');
   if (!title || !exactProductMatch(title, '', requested.brand, requested.name, requested.vitola, requested.line, requested.variant, requested.packageType, requested.boxCount)) return {};
   const rawPrice = meta['product:price:amount'] || meta['product:price'] || meta['price'] || meta['itemprop:price'];
-  const price = Number(String(rawPrice || '').replace(/[^0-9.]/g, ''));
+  let price = Number(String(rawPrice || '').replace(/[^0-9.]/g, ''));
   const currency = String(meta['product:price:currency'] || meta['priceCurrency'] || meta['itemprop:pricecurrency'] || '').toUpperCase();
-  if (!Number.isFinite(price) || price < 3 || price >= 2000) return {};
   if (currency && currency !== 'GBP' && currency !== '£') return {};
+  if (!Number.isFinite(price) || price < 3 || price >= 2000) {
+    // Fall back to a price embedded as plain text in a description meta tag
+    // (common on legacy/custom cart platforms with no dedicated price meta).
+    const described = priceFromDescriptionMeta(meta);
+    if (described === undefined) return {};
+    price = described;
+  }
   const availability = String(meta['product:availability'] || meta['availability'] || '').toLowerCase();
   return { price, inStock: availability ? !/outofstock|soldout|unavailable/.test(availability) : undefined, title, sourceProductId: meta['product:id'] || meta['product:sku'] || meta['sku'] || undefined };
 }
@@ -949,7 +1002,8 @@ export function buildQuote(
     pageTitle, '', requested.brand, requested.name, requested.vitola,
     requested.line, requested.variant, requested.packageType, requested.boxCount
   ) && hasSpecificProductEvidence(pageTitle, requested)) {
-    const visiblePrice = extractPounds(markdown, pageTitle);
+    const describedPrice = priceFromDescriptionMeta(productData?.metadata?.meta);
+    const visiblePrice = describedPrice ?? extractPounds(markdown, pageTitle);
     if (visiblePrice !== undefined) structured = { price: visiblePrice, title: pageTitle };
   }
 

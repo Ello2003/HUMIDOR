@@ -95,6 +95,18 @@ describe('retailerListingMatches', () => {
     )).toBeUndefined();
   });
 
+  it('finds the price near a later repeat of the title when the first mention (e.g. a breadcrumb) has no nearby price', () => {
+    const title = 'Padron 1964 Anniversary Series Torpedo Maduro Cigar - Box of 20';
+    const page = [
+      title, // meta/breadcrumb mention, no price anywhere nearby
+      'x'.repeat(400),
+      'Ordering Order Online or by Phone: 0345 604 0044 Free UK Shipping',
+      'x'.repeat(400),
+      `1 Single Box of 20 Buy and earn 940 points. ${title} £940.00 Quantity:`,
+    ].join(' ');
+    expect(extractPounds(page, title)).toBe(940);
+  });
+
 });
 
 
@@ -186,5 +198,32 @@ describe('buildQuote', () => {
     );
     expect(quote?.price).toBe(21.15);
     expect(quote?.confidenceScore).toBe(0.94);
+  });
+
+  it('reads the price from a description meta tag on legacy cart platforms with no JSON-LD or price meta (e.g. C.Gars Ltd)', () => {
+    const title = 'Padron 1964 Anniversary Series Torpedo Maduro Cigar - Box of 20';
+    const requestedBox = { ...requested, packageType: 'Box', boxCount: 20 };
+    const quote = buildQuote(
+      { url: 'https://www.cgarsltd.co.uk/padron-1964-anniversary-series-torpedo-maduro-cigar-box-p-56378.html' },
+      requestedBox,
+      {
+        metadata: {
+          title,
+          h1: title,
+          meta: {
+            'og:title': title,
+            'twitter:title': title,
+            'twitter:description': 'Price: £940.00 - Length: 6 Ring Gauge: 52 Packaging: Box of 20 Founded in 1964...',
+          },
+        },
+        // No £ amount anywhere near the repeated title mentions in the body copy.
+        markdown: `${title} ${title} Ordering Order Online or by Phone: 0345 604 0044`,
+        products: [],
+      },
+      title,
+      `${title} ${title} Ordering Order Online or by Phone: 0345 604 0044`,
+    );
+    expect(quote?.price).toBe(940);
+    expect(quote?.rawData?.evidenceType).toBe('product-meta-or-visible');
   });
 });

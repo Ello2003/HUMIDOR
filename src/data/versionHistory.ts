@@ -1,6 +1,6 @@
 import { VersionHistoryEntry, AppSettings } from '../types';
 
-export const APP_VERSION = 'v2.14.2';
+export const APP_VERSION = 'v2.14.3';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   visibleTabs: {
@@ -97,6 +97,19 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 };
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
+  {
+    version: 'v2.14.3',
+    releaseDate: 'September 2026',
+    title: 'Fixed the UK Retailer Price Scanner',
+    summary: 'Found and fixed the bug that made the scheduled price scan return almost no results: retailer hostnames were being matched inconsistently (www vs. non-www), so a fetched product page was silently discarded even when it was the right page. Also made price extraction far more robust on retailer sites that have no structured product data.',
+    type: 'patch',
+    highlights: [
+      'Root cause fix: the retailer domain lookup compared a "www."-stripped hostname against an un-stripped catalog entry, so every retailer whose site uses "www." (almost all 24 enabled UK retailers) never matched — their pages were fetched but then thrown away.',
+      'Visible-price fallback now checks every repeated occurrence of the product title on a page (not just the first, e.g. a breadcrumb or image caption far from the price) and keeps the closest valid £ amount to any of them.',
+      'New fallback reads a price embedded as plain text in an og/twitter description meta tag (e.g. "Price: £940.00 - ..."), which several legacy retailer platforms use instead of any structured price data.',
+      'Added regression tests covering both fixes.',
+    ],
+  },
   {
     version: 'v2.14.2',
     releaseDate: 'September 2026',

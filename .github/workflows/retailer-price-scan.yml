@@ -18,9 +18,14 @@ concurrency:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      # Now that quotes are actually being matched (see v2.14.3), the scan
+      # does real page-fetch work across ~24 retailers instead of discarding
+      # every candidate. A little extra per-cigar parallelism keeps the run
+      # inside the job timeout.
+      PRICE_SCAN_CONCURRENCY: '4'
     steps:
       # FIRECRAWL_API_KEY is optional. The scanner has a zero-cost direct-web
       # fallback so price updates can continue without a paid Firecrawl plan.
