@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T17:24:15.325Z",
+  "generatedAt": "2026-09-24T21:36:21.801Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
   "groundedCount": 4,
@@ -132,28 +132,6 @@
           "strength": "Medium"
         },
         {
-          "vendor": "No.6 Cavendish",
-          "price": 45,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill",
-          "lastUpdated": "2026-09-24",
-          "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.94,
-          "rawData": {
-            "evidenceType": "product-meta-or-visible",
-            "title": "Davidoff Winston Churchill 'The Late Hour Series' Churchill",
-            "sourceProductId": null,
-            "price": 45,
-            "currency": "GBP",
-            "inStock": null
-          },
-          "vitola": "churchill"
-        },
-        {
           "vendor": "Robert Graham 1874",
           "price": 59.35,
           "currency": "£",
@@ -175,6 +153,28 @@
           },
           "vitola": "churchill",
           "strength": "medium"
+        },
+        {
+          "vendor": "No.6 Cavendish",
+          "price": 45,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill",
+          "lastUpdated": "2026-09-24",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.94,
+          "rawData": {
+            "evidenceType": "product-meta-or-visible",
+            "title": "Davidoff Winston Churchill 'The Late Hour Series' Churchill",
+            "sourceProductId": null,
+            "price": 45,
+            "currency": "GBP",
+            "inStock": null
+          },
+          "vitola": "churchill"
         },
         {
           "vendor": "Simply Cigars",
@@ -220,11 +220,11 @@
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill"
+          "uri": "https://robertgraham1874.com/product/davidoff-winston-churchill-late-hour-churchill-single-cigar/"
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://robertgraham1874.com/product/davidoff-winston-churchill-late-hour-churchill-single-cigar/"
+          "uri": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill"
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
@@ -323,6 +323,28 @@
       "name": "Alma Fuerte",
       "quotes": [
         {
+          "vendor": "Cuban Cigar Club",
+          "price": 36.9,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Plasencia-Alma-Fuerte-Sixto-II-Hexagono~592.php",
+          "lastUpdated": "2026-09-24",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Plasencia-Alma-Fuerte-Sixto-II-Hexagono~592.php",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Nicaraguan Plasencia Alma Fuerte Sixto II - Hexagono   Handmade Cigar",
+            "sourceProductId": null,
+            "price": 36.9,
+            "currency": "GBP",
+            "inStock": false
+          },
+          "strength": "Full"
+        },
+        {
           "vendor": "Smoke King",
           "price": 35,
           "currency": "£",
@@ -346,28 +368,6 @@
           "strength": "Medium",
           "retailerRating": 88,
           "retailerRatingScale": 100
-        },
-        {
-          "vendor": "Cuban Cigar Club",
-          "price": 36.9,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Plasencia-Alma-Fuerte-Sixto-II-Hexagono~592.php",
-          "lastUpdated": "2026-09-24",
-          "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Plasencia-Alma-Fuerte-Sixto-II-Hexagono~592.php",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Nicaraguan Plasencia Alma Fuerte Sixto II - Hexagono   Handmade Cigar",
-            "sourceProductId": null,
-            "price": 36.9,
-            "currency": "GBP",
-            "inStock": false
-          },
-          "strength": "Full"
         },
         {
           "vendor": "Smoke King",
@@ -397,30 +397,6 @@
           "price": 34.99,
           "currency": "£",
           "inStock": true,
-          "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
-          "lastUpdated": "2026-09-24",
-          "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Plasencia Alma Fuerte Colorado Sixto I Hexagono Gordo Cigar - Single",
-            "sourceProductId": null,
-            "price": 34.99,
-            "currency": "GBP",
-            "inStock": true
-          },
-          "vitola": "gordo",
-          "smokeTimeMinutes": 75,
-          "strength": "3/5"
-        },
-        {
-          "vendor": "The House of Cigars",
-          "price": 34.99,
-          "currency": "£",
-          "inStock": true,
           "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alama-fuerte-sixto-ii-hexagono-cigar-single/",
           "lastUpdated": "2026-09-24",
           "sourceUpdatedAt": null,
@@ -439,6 +415,30 @@
           "vitola": "gordo",
           "smokeTimeMinutes": 75,
           "strength": "5/5"
+        },
+        {
+          "vendor": "The House of Cigars",
+          "price": 34.99,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
+          "lastUpdated": "2026-09-24",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Plasencia Alma Fuerte Colorado Sixto I Hexagono Gordo Cigar - Single",
+            "sourceProductId": null,
+            "price": 34.99,
+            "currency": "GBP",
+            "inStock": true
+          },
+          "vitola": "gordo",
+          "smokeTimeMinutes": 75,
+          "strength": "3/5"
         }
       ],
       "bestPrice": 34.99,
@@ -448,11 +448,11 @@
       "groundedSources": [
         {
           "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar"
+          "uri": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Plasencia-Alma-Fuerte-Sixto-II-Hexagono~592.php"
         },
         {
           "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Plasencia-Alma-Fuerte-Sixto-II-Hexagono~592.php"
+          "uri": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar"
         },
         {
           "title": "Plasencia Alma Fuerte",
@@ -460,11 +460,11 @@
         },
         {
           "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/"
+          "uri": "https://www.thehouseofcigars.co.uk/product/plasencia-alama-fuerte-sixto-ii-hexagono-cigar-single/"
         },
         {
           "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.thehouseofcigars.co.uk/product/plasencia-alama-fuerte-sixto-ii-hexagono-cigar-single/"
+          "uri": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/"
         }
       ],
       "scanStatus": "verified"
@@ -555,28 +555,6 @@
           "vitola": "torpedo",
           "smokeTimeMinutes": 75,
           "strength": "5/5"
-        },
-        {
-          "vendor": "The Smoking Jacket",
-          "price": 49.99,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://thesmokingjacket.co.uk/products/my-father-le-bijou-1922-torpedo-box-pressed",
-          "lastUpdated": "2026-09-24",
-          "sourceUpdatedAt": null,
-          "sourceProductId": "8123470971066",
-          "productUrl": "https://thesmokingjacket.co.uk/products/my-father-le-bijou-1922-torpedo-box-pressed",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "My Father Le Bijou 1922 Torpedo Box Pressed - 1 Single Cigar",
-            "sourceProductId": "8123470971066",
-            "price": 49.99,
-            "currency": "GBP",
-            "inStock": true
-          },
-          "vitola": "torpedo"
         }
       ],
       "bestPrice": 42.99,
@@ -595,10 +573,6 @@
         {
           "title": "My Father Cigars Le Bijou 1922",
           "uri": "https://www.thehouseofcigars.co.uk/product/my-father-le-bijou-1922-torpedo-box-pressed-cigar-single/"
-        },
-        {
-          "title": "My Father Cigars Le Bijou 1922",
-          "uri": "https://thesmokingjacket.co.uk/products/my-father-le-bijou-1922-torpedo-box-pressed"
         }
       ],
       "scanStatus": "verified"
