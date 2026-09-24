@@ -59,6 +59,13 @@ export const UK_RETAILER_SOURCES: RetailerSource[] = [
 
 export const ENABLED_UK_RETAILER_SOURCES = UK_RETAILER_SOURCES.filter((source) => source.enabled);
 
+// NOTE: domain is normalized without a leading "www." so it matches hostnames
+// consistently regardless of whether a given URL (sitemap entry, redirect,
+// canonical link, etc.) includes the www subdomain or not. Every lookup
+// against this catalog (see retailerForHost in firecrawlRetailerScanner.ts)
+// strips "www." from the host it is checking, so this map must do the same
+// or matching silently fails for every retailer whose baseUrl starts with
+// "https://www." (i.e. almost all of them).
 export const UK_RETAILER_CATALOG: Record<string, { domain: string }> = Object.fromEntries(
-  UK_RETAILER_SOURCES.map((source) => [source.retailer, { domain: new URL(source.baseUrl).hostname }]),
+  UK_RETAILER_SOURCES.map((source) => [source.retailer, { domain: new URL(source.baseUrl).hostname.replace(/^www\./, '') }]),
 );
