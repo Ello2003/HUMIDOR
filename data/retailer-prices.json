@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T11:55:06.217Z",
+  "generatedAt": "2026-09-24T17:24:15.325Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
   "groundedCount": 4,
@@ -132,30 +132,6 @@
           "strength": "Medium"
         },
         {
-          "vendor": "Simply Cigars",
-          "price": 57.77,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
-          "lastUpdated": "2026-09-24",
-          "sourceUpdatedAt": null,
-          "sourceProductId": "3756",
-          "productUrl": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Davidoff Winston Churchill The Late Hour Churchill Cigar - Single",
-            "sourceProductId": "3756",
-            "price": 57.77,
-            "currency": "GBP",
-            "inStock": true
-          },
-          "vitola": "churchill",
-          "smokeTimeMinutes": 65,
-          "strength": "Medium"
-        },
-        {
           "vendor": "No.6 Cavendish",
           "price": 45,
           "currency": "£",
@@ -199,6 +175,30 @@
           },
           "vitola": "churchill",
           "strength": "medium"
+        },
+        {
+          "vendor": "Simply Cigars",
+          "price": 57.77,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
+          "lastUpdated": "2026-09-24",
+          "sourceUpdatedAt": null,
+          "sourceProductId": "3756",
+          "productUrl": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Davidoff Winston Churchill The Late Hour Churchill Cigar - Single",
+            "sourceProductId": "3756",
+            "price": 57.77,
+            "currency": "GBP",
+            "inStock": true
+          },
+          "vitola": "churchill",
+          "smokeTimeMinutes": 65,
+          "strength": "Medium"
         }
       ],
       "bestPrice": 12.5,
@@ -220,15 +220,15 @@
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html"
-        },
-        {
-          "title": "Davidoff Winston Churchill Late Hour",
           "uri": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill"
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
           "uri": "https://robertgraham1874.com/product/davidoff-winston-churchill-late-hour-churchill-single-cigar/"
+        },
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html"
         }
       ],
       "scanStatus": "verified"
@@ -326,7 +326,7 @@
           "vendor": "Smoke King",
           "price": 35,
           "currency": "£",
-          "inStock": false,
+          "inStock": true,
           "url": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar",
           "lastUpdated": "2026-09-24",
           "sourceUpdatedAt": null,
@@ -340,7 +340,7 @@
             "sourceProductId": "DF-15650-X1",
             "price": 35,
             "currency": "GBP",
-            "inStock": false
+            "inStock": true
           },
           "smokeTimeMinutes": 78,
           "strength": "Medium",
@@ -555,6 +555,28 @@
           "vitola": "torpedo",
           "smokeTimeMinutes": 75,
           "strength": "5/5"
+        },
+        {
+          "vendor": "The Smoking Jacket",
+          "price": 49.99,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://thesmokingjacket.co.uk/products/my-father-le-bijou-1922-torpedo-box-pressed",
+          "lastUpdated": "2026-09-24",
+          "sourceUpdatedAt": null,
+          "sourceProductId": "8123470971066",
+          "productUrl": "https://thesmokingjacket.co.uk/products/my-father-le-bijou-1922-torpedo-box-pressed",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "My Father Le Bijou 1922 Torpedo Box Pressed - 1 Single Cigar",
+            "sourceProductId": "8123470971066",
+            "price": 49.99,
+            "currency": "GBP",
+            "inStock": true
+          },
+          "vitola": "torpedo"
         }
       ],
       "bestPrice": 42.99,
@@ -573,6 +595,10 @@
         {
           "title": "My Father Cigars Le Bijou 1922",
           "uri": "https://www.thehouseofcigars.co.uk/product/my-father-le-bijou-1922-torpedo-box-pressed-cigar-single/"
+        },
+        {
+          "title": "My Father Cigars Le Bijou 1922",
+          "uri": "https://thesmokingjacket.co.uk/products/my-father-le-bijou-1922-torpedo-box-pressed"
         }
       ],
       "scanStatus": "verified"
