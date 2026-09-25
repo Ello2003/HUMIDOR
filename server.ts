@@ -1185,8 +1185,7 @@ app.post("/api/research/cigar", async (req, res) => {
 
     const systemInstruction = `You are a world-class Master Tobacconist, Cigar Sommelier, and historian with deep encyclopedic knowledge of premium hand-rolled cigars, tobacco varieties, wrappers, terroir, vitolas, aging science, and spirits pairings. Return structured, highly accurate, and engaging cigar research in JSON format.`;
 
-    const prompt = `Provide a comprehensive connoisseur research dossier for the following cigar: "${query}".
-Include precise wrapper, binder, filler information, factory & blender history, typical flavor profile broken down into 1st Third, 2nd Third, and Final Third, aging/resting recommendations, pairing suggestions (spirits, wine, coffee/tea, non-alcoholic), recommended cut & lighting method, ring gauge and length specifications, and interesting trivia or factory notes.`;
+    const prompt = `Provide a comprehensive connoisseur research dossier for the following cigar: "${query}".\nInclude precise wrapper, binder, filler information, factory & blender history, typical flavor profile broken down into 1st Third, 2nd Third, and Final Third, aging/resting recommendations, pairing suggestions (spirits, wine, coffee/tea, non-alcoholic), recommended cut & lighting method, ring gauge and length specifications, and interesting trivia or factory notes.\nFor every string field, return clean reader-facing prose only: no Markdown headings, no **bold**, no bullet markers, no code fences, and no literal \\n escape sequences. Keep each field concise enough to display in the dossier UI.`
 
     const response = await generateContentWithRetryAndFallback({
       contents: prompt,
