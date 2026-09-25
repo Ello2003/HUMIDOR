@@ -15,16 +15,26 @@ if (retailerArgIndex >= 0 && (!retailer || retailer.startsWith('--'))) {
 }
 
 const researchCigars = INITIAL_RESEARCH_DATABASE.map((cigar) => {
-  // e.g. vitola "Serie D No. 4 (Robusto)" -> modelName "Serie D No. 4". Most
+  // e.g. vitola "Serie D No. 4 (Robusto)" -> modelName "Serie D No. 4". Many
   // of the database's Cuban and boutique entries carry their real,
   // retailer-facing model name this way; `line` alone (e.g. "Serie Line")
   // is frequently too generic to appear in any actual product title.
+  //
+  // IMPORTANT: this only feeds an extra internal matching alias (`variant`).
+  // The reported `name` stays as `cigar.line`, unchanged from before, because
+  // the app's client-side lookup (src/utils/retailerPrices.ts) matches a
+  // wishlist item to a scan result by comparing name strings whenever the
+  // wishlist item's id doesn't line up with the research database's id.
+  // Changing the reported name here would silently break that lookup for
+  // every wishlist item copied from the database, even though the
+  // underlying retailer match itself now works.
   const modelName = extractVitolaModelName(cigar.vitola);
   return {
     id: cigar.id,
     brand: cigar.brand,
-    name: modelName || cigar.line,
+    name: cigar.line,
     line: cigar.line,
+    variant: modelName,
     vitola: cigar.vitola,
     countryOrigin: cigar.countryOrigin,
     isCuban: cigar.isCuban,
@@ -36,6 +46,7 @@ const wishlistCigars = initialWishlist.map((item) => ({
   brand: item.brand,
   name: item.name,
   line: item.name,
+  variant: extractVitolaModelName(item.vitola),
   vitola: item.vitola,
 }));
 

@@ -40,6 +40,22 @@ describe('retailerListingMatches', () => {
     )).toBe(false);
   });
 
+  it('matches via the variant alias when name/line are both the generic database label', () => {
+    // This mirrors the actual scan script's cigar shape after the fix:
+    // name/line stay as the generic "Serie Line" (so client-side lookups by
+    // name are unaffected), while the real model name rides along in
+    // `variant` purely to help retailer-page matching.
+    expect(retailerListingMatches(
+      'Partagas Serie D No.4 Cuban Cigar - Single',
+      'https://www.smoke-king.co.uk/products/partagas-serie-d-no-4-cuban-cigar',
+      'Partagás',
+      'Serie Line',
+      'Serie D No. 4 (Robusto)',
+      'Serie Line',
+      extractVitolaModelName('Serie D No. 4 (Robusto)'),
+    )).toBe(true);
+  });
+
   it('matches retailer naming with Casa Carrillo prefix and Sojourn naming', () => {
     expect(retailerListingMatches(
       'Casa Carrillo by E.P. Carrillo Pledge Sojourn Cigar - 1 Single',
