@@ -74,6 +74,19 @@ import { apiUrl } from '../utils/api';
 import { batchScanRetailerPrices, scanRetailerPrices } from '../utils/retailerPrices';
 
 // Clean and format error messages to avoid raw JSON dumps
+// AI-generated text can occasionally contain Markdown markers or literal escaped
+// newlines even when Gemini returns the field through a JSON schema. Keep dossier
+// copy presentation-safe and readable without injecting HTML.
+function formatAiText(value: unknown): string {
+  return String(value ?? '')
+    .replace(/\\\\n/g, '\\n')
+    .replace(/\\r\\n/g, '\\n')
+    .replace(/\\r/g, '\\n')
+    .replace(/^\\s*#{1,6}\\s+/gm, '')
+    .replace(/\\*\\*(.*?)\\*\\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .trim();
+}
 function cleanErrorMessage(raw: any, fallback = 'Unable to complete request.'): string {
   if (!raw) return fallback;
   if (typeof raw === 'object') {
@@ -3458,8 +3471,8 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
               </div>
 
               <div className="p-4 bg-surface border border-line rounded-md">
-                <p className="text-xs sm:text-sm text-text leading-relaxed font-serif italic">
-                  "{dossierResult.summary}"
+                <p className="text-xs sm:text-sm text-text leading-relaxed font-serif italic whitespace-pre-line">
+                  "{formatAiText(dossierResult.summary)}"
                 </p>
               </div>
 
@@ -3496,16 +3509,16 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-4 bg-surface border border-line rounded-md space-y-2">
                     <strong className="text-gold text-xs font-serif font-semibold">1st Third (Initial Light)</strong>
-                    <p className="text-xs text-text leading-relaxed">
-                      {dossierResult.flavorTransitions.firstThird.overview}
+                    <p className="text-xs text-text leading-relaxed whitespace-pre-line">
+                      {formatAiText(dossierResult.flavorTransitions.firstThird.overview)}
                     </p>
                     <div className="flex flex-wrap gap-1 pt-1">
                       {dossierResult.flavorTransitions.firstThird.keyNotes.map((note) => (
                         <span
-                          key={note}
+                          key={formatAiText(note)}
                           className="text-[10px] px-2 py-0.5 rounded bg-header text-text border border-line"
                         >
-                          {note}
+                          {formatAiText(note)}
                         </span>
                       ))}
                     </div>
@@ -3514,15 +3527,15 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   <div className="p-4 bg-surface border border-line rounded-md space-y-2">
                     <strong className="text-gold text-xs font-serif font-semibold">2nd Third (Sweet Spot)</strong>
                     <p className="text-xs text-text leading-relaxed">
-                      {dossierResult.flavorTransitions.secondThird.overview}
+                      {formatAiText(dossierResult.flavorTransitions.secondThird.overview)}
                     </p>
                     <div className="flex flex-wrap gap-1 pt-1">
                       {dossierResult.flavorTransitions.secondThird.keyNotes.map((note) => (
                         <span
-                          key={note}
+                          key={formatAiText(note)}
                           className="text-[10px] px-2 py-0.5 rounded bg-header text-text border border-line"
                         >
-                          {note}
+                          {formatAiText(note)}
                         </span>
                       ))}
                     </div>
@@ -3531,15 +3544,15 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                   <div className="p-4 bg-surface border border-line rounded-md space-y-2">
                     <strong className="text-gold text-xs font-serif font-semibold">Final Third (Nub & Finish)</strong>
                     <p className="text-xs text-text leading-relaxed">
-                      {dossierResult.flavorTransitions.finalThird.overview}
+                      {formatAiText(dossierResult.flavorTransitions.finalThird.overview)}
                     </p>
                     <div className="flex flex-wrap gap-1 pt-1">
                       {dossierResult.flavorTransitions.finalThird.keyNotes.map((note) => (
                         <span
-                          key={note}
+                          key={formatAiText(note)}
                           className="text-[10px] px-2 py-0.5 rounded bg-header text-text border border-line"
                         >
-                          {note}
+                          {formatAiText(note)}
                         </span>
                       ))}
                     </div>
@@ -3562,7 +3575,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                           {pairing.category}
                         </span>
                       </div>
-                      <p className="text-text text-xs leading-relaxed">{pairing.whyItWorks}</p>
+                      <p className="text-text text-xs leading-relaxed whitespace-pre-line">{formatAiText(pairing.whyItWorks)}</p>
                     </div>
                   ))}
                 </div>
