@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-24T21:36:21.801Z",
+  "generatedAt": "2026-09-25T00:33:26.066Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
-  "groundedCount": 4,
+  "groundedCount": 5,
   "results": [
     {
       "id": "res-padron-1964-exclusivo",
@@ -32,13 +32,41 @@
       "id": "res-arturo-fuente-opusx-perfecxion-x",
       "brand": "Arturo Fuente",
       "name": "Fuente Fuente OpusX",
-      "quotes": [],
-      "bestPrice": null,
-      "bestVendor": null,
-      "grounded": false,
+      "quotes": [
+        {
+          "vendor": "Hava Havana",
+          "price": 50,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.havahavana.com/products/arturo-fuente-fuente-opus-x-angels-share-perfection",
+          "lastUpdated": "2026-09-25",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://www.havahavana.com/products/arturo-fuente-fuente-opus-x-angels-share-perfection",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Arturo Fuente fuente Opus X Angels Share Perfection",
+            "sourceProductId": null,
+            "price": 50,
+            "currency": "GBP",
+            "inStock": false
+          },
+          "strength": "Medium"
+        }
+      ],
+      "bestPrice": 50,
+      "bestVendor": "Hava Havana",
+      "grounded": true,
       "provider": "direct-web",
-      "groundedSources": [],
-      "scanStatus": "no_verified_results"
+      "groundedSources": [
+        {
+          "title": "Arturo Fuente Fuente Fuente OpusX",
+          "uri": "https://www.havahavana.com/products/arturo-fuente-fuente-opus-x-angels-share-perfection"
+        }
+      ],
+      "scanStatus": "verified"
     },
     {
       "id": "res-arturo-fuente-don-carlos-no2",
@@ -63,7 +91,7 @@
           "currency": "£",
           "inStock": true,
           "url": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-petit-panatela-tin-of-5-cigars",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": "DAV-LH-PP-TIN",
           "productUrl": "https://www.smoke-king.co.uk/products/davidoff-winston-churchill-the-late-hour-petit-panatela-tin-of-5-cigars",
@@ -83,11 +111,35 @@
         },
         {
           "vendor": "Smoke King",
+          "price": 12.5,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
+          "lastUpdated": "2026-09-25",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Davidoff Winston Churchill The Late Hour Petit Panatela Cigar - Single",
+            "sourceProductId": null,
+            "price": 12.5,
+            "currency": "GBP",
+            "inStock": null
+          },
+          "vitola": "churchill",
+          "smokeTimeMinutes": 18,
+          "strength": "Medium"
+        },
+        {
+          "vendor": "Smoke King",
           "price": 51.5,
           "currency": "£",
           "inStock": true,
           "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": "dav105690-1",
           "productUrl": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar",
@@ -108,36 +160,12 @@
           "retailerRatingScale": 100
         },
         {
-          "vendor": "Smoke King",
-          "price": 12.5,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
-          "lastUpdated": "2026-09-24",
-          "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Davidoff Winston Churchill The Late Hour Petit Panatela Cigar - Single",
-            "sourceProductId": null,
-            "price": 12.5,
-            "currency": "GBP",
-            "inStock": null
-          },
-          "vitola": "churchill",
-          "smokeTimeMinutes": 18,
-          "strength": "Medium"
-        },
-        {
           "vendor": "Robert Graham 1874",
           "price": 59.35,
           "currency": "£",
           "inStock": true,
           "url": "https://robertgraham1874.com/product/davidoff-winston-churchill-late-hour-churchill-single-cigar/",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": null,
           "productUrl": "https://robertgraham1874.com/product/davidoff-winston-churchill-late-hour-churchill-single-cigar/",
@@ -160,7 +188,7 @@
           "currency": "£",
           "inStock": true,
           "url": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": null,
           "productUrl": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill",
@@ -182,7 +210,7 @@
           "currency": "£",
           "inStock": true,
           "url": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": "3756",
           "productUrl": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
@@ -212,11 +240,11 @@
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar"
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar"
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar"
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar"
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
@@ -328,7 +356,7 @@
           "currency": "£",
           "inStock": false,
           "url": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Plasencia-Alma-Fuerte-Sixto-II-Hexagono~592.php",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": null,
           "productUrl": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Plasencia-Alma-Fuerte-Sixto-II-Hexagono~592.php",
@@ -346,36 +374,11 @@
         },
         {
           "vendor": "Smoke King",
-          "price": 35,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar",
-          "lastUpdated": "2026-09-24",
-          "sourceUpdatedAt": null,
-          "sourceProductId": "DF-15650-X1",
-          "productUrl": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Plasencia Alma Fuerte Sixto l Hexagono Cigar - Single",
-            "sourceProductId": "DF-15650-X1",
-            "price": 35,
-            "currency": "GBP",
-            "inStock": true
-          },
-          "smokeTimeMinutes": 78,
-          "strength": "Medium",
-          "retailerRating": 88,
-          "retailerRatingScale": 100
-        },
-        {
-          "vendor": "Smoke King",
           "price": 36.25,
           "currency": "£",
           "inStock": true,
           "url": "https://www.smoke-king.co.uk/products/plasencia-alma-fuerte-sixto-ii-hexagono-cigar-single",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": "DF-15400-X1",
           "productUrl": "https://www.smoke-king.co.uk/products/plasencia-alma-fuerte-sixto-ii-hexagono-cigar-single",
@@ -397,8 +400,32 @@
           "price": 34.99,
           "currency": "£",
           "inStock": true,
+          "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
+          "lastUpdated": "2026-09-25",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Plasencia Alma Fuerte Colorado Sixto I Hexagono Gordo Cigar - Single",
+            "sourceProductId": null,
+            "price": 34.99,
+            "currency": "GBP",
+            "inStock": true
+          },
+          "vitola": "gordo",
+          "smokeTimeMinutes": 75,
+          "strength": "3/5"
+        },
+        {
+          "vendor": "The House of Cigars",
+          "price": 34.99,
+          "currency": "£",
+          "inStock": true,
           "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alama-fuerte-sixto-ii-hexagono-cigar-single/",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": null,
           "productUrl": "https://www.thehouseofcigars.co.uk/product/plasencia-alama-fuerte-sixto-ii-hexagono-cigar-single/",
@@ -417,28 +444,29 @@
           "strength": "5/5"
         },
         {
-          "vendor": "The House of Cigars",
-          "price": 34.99,
+          "vendor": "Smoke King",
+          "price": 35,
           "currency": "£",
           "inStock": true,
-          "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
-          "lastUpdated": "2026-09-24",
+          "url": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
+          "sourceProductId": "DF-15650-X1",
+          "productUrl": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar",
           "matchingStatus": "matched",
           "confidenceScore": 0.99,
           "rawData": {
             "evidenceType": "json-ld-product",
-            "title": "Plasencia Alma Fuerte Colorado Sixto I Hexagono Gordo Cigar - Single",
-            "sourceProductId": null,
-            "price": 34.99,
+            "title": "Plasencia Alma Fuerte Sixto l Hexagono Cigar - Single",
+            "sourceProductId": "DF-15650-X1",
+            "price": 35,
             "currency": "GBP",
             "inStock": true
           },
-          "vitola": "gordo",
-          "smokeTimeMinutes": 75,
-          "strength": "3/5"
+          "smokeTimeMinutes": 78,
+          "strength": "Medium",
+          "retailerRating": 88,
+          "retailerRatingScale": 100
         }
       ],
       "bestPrice": 34.99,
@@ -452,11 +480,11 @@
         },
         {
           "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar"
+          "uri": "https://www.smoke-king.co.uk/products/plasencia-alma-fuerte-sixto-ii-hexagono-cigar-single"
         },
         {
           "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.smoke-king.co.uk/products/plasencia-alma-fuerte-sixto-ii-hexagono-cigar-single"
+          "uri": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/"
         },
         {
           "title": "Plasencia Alma Fuerte",
@@ -464,7 +492,7 @@
         },
         {
           "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/"
+          "uri": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar"
         }
       ],
       "scanStatus": "verified"
@@ -492,7 +520,7 @@
           "currency": "£",
           "inStock": true,
           "url": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": "3911",
           "productUrl": "https://www.simplycigars.co.uk/father-bijou-1922-torpedo-box-pressed-single-cigar-p-3911.html",
@@ -516,7 +544,7 @@
           "currency": "£",
           "inStock": false,
           "url": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": null,
           "productUrl": "https://www.havahavana.com/products/my-father-le-bijou-1922-torpedo-bp",
@@ -538,7 +566,7 @@
           "currency": "£",
           "inStock": true,
           "url": "https://www.thehouseofcigars.co.uk/product/my-father-le-bijou-1922-torpedo-box-pressed-cigar-single/",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": null,
           "productUrl": "https://www.thehouseofcigars.co.uk/product/my-father-le-bijou-1922-torpedo-box-pressed-cigar-single/",
@@ -636,7 +664,7 @@
           "currency": "£",
           "inStock": true,
           "url": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Perdomo-10th-Anniversary-Connecticut-Epicure~1547.php",
-          "lastUpdated": "2026-09-24",
+          "lastUpdated": "2026-09-25",
           "sourceUpdatedAt": null,
           "sourceProductId": null,
           "productUrl": "https://www.cubancigarclub.co.uk/products/Nicaraguan-Perdomo-10th-Anniversary-Connecticut-Epicure~1547.php",
