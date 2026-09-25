@@ -3515,7 +3515,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     <div className="flex flex-wrap gap-1 pt-1">
                       {dossierResult.flavorTransitions.firstThird.keyNotes.map((note) => (
                         <span
-                          key={formatAiText(note)}
+                          key={note}
                           className="text-[10px] px-2 py-0.5 rounded bg-header text-text border border-line"
                         >
                           {formatAiText(note)}
