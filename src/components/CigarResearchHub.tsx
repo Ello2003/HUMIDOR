@@ -3148,13 +3148,24 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
                     <span>UK Retailer Price Intelligence & Cross-App Sync</span>
                   </span>
                 </div>
-                <div className="text-xs text-text">
-                  <strong>Research:</strong> {researchDatabase.length} entries &bull;{' '}
-                  <strong>Humidors:</strong> {cigars.length} vitolas ({cigars.reduce((a, b) => a + (b.quantity || 1), 0)} total sticks) &bull;{' '}
-                  <strong>Wishlist:</strong> {wishlist.length} target sticks
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text">
+                  <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+                    <strong className="text-text">Research:</strong>
+                    <span>{researchDatabase.length} entries</span>
+                  </span>
+                  <span className="hidden sm:inline text-line" aria-hidden="true">•</span>
+                  <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+                    <strong className="text-text">Humidors:</strong>
+                    <span>{cigars.length} vitolas ({cigars.reduce((a, b) => a + (b.quantity || 1), 0)} total sticks)</span>
+                  </span>
+                  <span className="hidden sm:inline text-line" aria-hidden="true">•</span>
+                  <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+                    <strong className="text-text">Wishlist:</strong>
+                    <span>{wishlist.length} target sticks</span>
+                  </span>
                 </div>
-                <div className="text-[11px] text-text-muted">
-                  Multi-shop scanning across a broad network of UK tobacconists, with only live product-page prices added to your records. Auto-calculates accurate smoke duration badges (⏱️ 50–65 min) across every item.
+                <div className="text-[11px] text-text-muted leading-relaxed max-w-4xl">
+                  Multi-shop scanning across a broad network of UK tobacconists. Only live product-page prices are added to your records, with automatic smoke-duration badges calculated across every item.
                 </div>
                 {missingSpecsStats.totalMissing > 0 && (
                   <div className="flex items-center gap-2 pt-1 text-[10px] text-gold">
