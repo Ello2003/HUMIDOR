@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { INITIAL_RESEARCH_DATABASE } from '../src/data/cigarDatabase';
 import { initialWishlist } from '../src/data/initialData';
-import { scanRetailerPrices } from '../src/utils/firecrawlRetailerScanner';
+import { scanRetailerPrices, extractVitolaModelName } from '../src/utils/firecrawlRetailerScanner';
 
 const outputPath = 'data/retailer-prices.json';
 
@@ -14,15 +14,22 @@ if (retailerArgIndex >= 0 && (!retailer || retailer.startsWith('--'))) {
   throw new Error('--retailer requires an enabled retailer name.');
 }
 
-const researchCigars = INITIAL_RESEARCH_DATABASE.map((cigar) => ({
-  id: cigar.id,
-  brand: cigar.brand,
-  name: cigar.line,
-  line: cigar.line,
-  vitola: cigar.vitola,
-  countryOrigin: cigar.countryOrigin,
-  isCuban: cigar.isCuban,
-}));
+const researchCigars = INITIAL_RESEARCH_DATABASE.map((cigar) => {
+  // e.g. vitola "Serie D No. 4 (Robusto)" -> modelName "Serie D No. 4". Most
+  // of the database's Cuban and boutique entries carry their real,
+  // retailer-facing model name this way; `line` alone (e.g. "Serie Line")
+  // is frequently too generic to appear in any actual product title.
+  const modelName = extractVitolaModelName(cigar.vitola);
+  return {
+    id: cigar.id,
+    brand: cigar.brand,
+    name: modelName || cigar.line,
+    line: cigar.line,
+    vitola: cigar.vitola,
+    countryOrigin: cigar.countryOrigin,
+    isCuban: cigar.isCuban,
+  };
+});
 
 const wishlistCigars = initialWishlist.map((item) => ({
   id: item.id,

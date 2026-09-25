@@ -238,6 +238,21 @@ function tokenCompatible(requested: string, foundText: string): boolean {
   return false;
 }
 
+/**
+ * Several database entries encode the true commercial model/size name as the
+ * prefix of the `vitola` field, with the generic shape category in
+ * parentheses — e.g. "Serie D No. 4 (Robusto)", "BHK 52 (Petit Robusto)",
+ * "PerfecXion X (Toro)". The prefix (not the parenthetical) is what actually
+ * appears in retailer product titles; a bare `line` value like "Serie Line"
+ * or "Behike" is often too generic on its own to match a real listing.
+ * Returns the trimmed prefix, or undefined when there's no parenthetical.
+ */
+export function extractVitolaModelName(vitola?: string): string | undefined {
+  const match = /^(.+?)\s*\(([^)]+)\)\s*$/.exec(String(vitola || '').trim());
+  const modelName = match?.[1]?.trim();
+  return modelName || undefined;
+}
+
 export function retailerListingMatches(
   title: string,
   url: string,

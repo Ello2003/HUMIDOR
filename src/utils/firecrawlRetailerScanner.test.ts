@@ -1,7 +1,45 @@
 import { describe, expect, it } from 'vitest';
-import { buildQuote, extractPounds, retailerListingMatches } from './firecrawlRetailerScanner';
+import { buildQuote, extractPounds, extractVitolaModelName, retailerListingMatches } from './firecrawlRetailerScanner';
+
+describe('extractVitolaModelName', () => {
+  it('extracts the model/size name that precedes a parenthetical generic shape', () => {
+    expect(extractVitolaModelName('Serie D No. 4 (Robusto)')).toBe('Serie D No. 4');
+    expect(extractVitolaModelName('BHK 52 (Petit Robusto)')).toBe('BHK 52');
+    expect(extractVitolaModelName('PerfecXion X (Toro)')).toBe('PerfecXion X');
+  });
+
+  it('returns undefined for a plain vitola with no parenthetical', () => {
+    expect(extractVitolaModelName('Churchill')).toBeUndefined();
+    expect(extractVitolaModelName(undefined)).toBeUndefined();
+  });
+});
 
 describe('retailerListingMatches', () => {
+  it('matches a Cuban classic using the vitola-derived model name, not a generic line label', () => {
+    // Regression test for the "Partagás Serie D No. 4" bug: the database's
+    // `line` field for this cigar is the generic "Serie Line", which never
+    // appears in any real retailer title. The actual scan input must use
+    // the model name extracted from the vitola field (see
+    // extractVitolaModelName) for matching to succeed.
+    expect(retailerListingMatches(
+      'Partagas Serie D No.4 Cuban Cigar - Single',
+      'https://www.smoke-king.co.uk/products/partagas-serie-d-no-4-cuban-cigar',
+      'Partagás',
+      extractVitolaModelName('Serie D No. 4 (Robusto)')!,
+      'Serie D No. 4 (Robusto)',
+    )).toBe(true);
+
+    // The bare `line` label alone is exactly the failure mode being fixed:
+    // it should NOT be relied on as the sole name for matching.
+    expect(retailerListingMatches(
+      'Partagas Serie D No.4 Cuban Cigar - Single',
+      'https://www.smoke-king.co.uk/products/partagas-serie-d-no-4-cuban-cigar',
+      'Partagás',
+      'Serie Line',
+      'Serie D No. 4 (Robusto)',
+    )).toBe(false);
+  });
+
   it('matches retailer naming with Casa Carrillo prefix and Sojourn naming', () => {
     expect(retailerListingMatches(
       'Casa Carrillo by E.P. Carrillo Pledge Sojourn Cigar - 1 Single',
