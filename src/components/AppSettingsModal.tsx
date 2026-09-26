@@ -854,7 +854,7 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               <div className="p-3 rounded-lg border border-gold/20 bg-gold/5">
                 <div className="text-xs font-semibold text-white">UK price scanner</div>
                 <div className="text-[11px] text-text-muted mt-1 leading-relaxed">
-                  Firecrawl searches live UK retailer pages first. Gemini is used as the fallback. HUMIDOR only saves a quote when a real retailer result and price can be verified.
+                  Firecrawl is optional discovery for the live UK retailer scanner. Direct retailer sitemap/catalogue scanning is the fallback. Gemini is used for separate research and extraction features. HUMIDOR only saves a quote when a real retailer result and price can be verified.
                 </div>
               </div>
 
