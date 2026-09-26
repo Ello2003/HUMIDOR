@@ -10,7 +10,7 @@ GitHub Pages is a static host and does not run `server.ts`.
 
 ## Price scanner
 
-The scheduled scanner uses the repository's `FIRECRAWL_API_KEY` Actions secret directly from the GitHub runner. The key is never bundled into the browser.
+The scheduled scanner may use the repository's `FIRECRAWL_API_KEY` Actions secret for optional Firecrawl discovery. The key is never bundled into the browser.
 
 The scanner is deliberately deterministic:
 
