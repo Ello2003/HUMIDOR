@@ -39,7 +39,8 @@ export async function encryptJson<T>(
   payload: T,
   password: string,
   format = 'github-sync-encrypted',
-  version = 1
+  version = 1,
+  flattenPayload = false
 ): Promise<EncryptedSyncDocument> {
   if (!password || password.length < 8) {
     throw new Error('Use a sync password of at least 8 characters.');
@@ -48,11 +49,10 @@ export async function encryptJson<T>(
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(password, salt);
-  const plaintext = new TextEncoder().encode(JSON.stringify({
-    schemaVersion: version,
-    exportedAt: new Date().toISOString(),
-    payload,
-  }));
+  const envelope = flattenPayload && payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? { schemaVersion: version, exportedAt: new Date().toISOString(), ...(payload as Record<string, unknown>) }
+    : { schemaVersion: version, exportedAt: new Date().toISOString(), payload };
+  const plaintext = new TextEncoder().encode(JSON.stringify(envelope));
   const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext);
 
   return {
@@ -71,7 +71,8 @@ export async function encryptJson<T>(
 export async function decryptJson<T>(
   document: EncryptedSyncDocument,
   password: string,
-  expectedFormat = 'github-sync-encrypted'
+  expectedFormat = 'github-sync-encrypted',
+  flattenPayload = false
 ): Promise<T> {
   if (!document || document.format !== expectedFormat || document.version !== 1) {
     throw new Error('This GitHub sync file is not a supported encrypted sync document.');
@@ -85,14 +86,20 @@ export async function decryptJson<T>(
     const key = await deriveKey(password, salt, document.iterations || DEFAULT_ITERATIONS);
     const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
     const parsed = JSON.parse(new TextDecoder().decode(plaintext));
-    return parsed.payload as T;
+    return (flattenPayload ? parsed : parsed.payload) as T;
   } catch {
     throw new Error('Unable to decrypt this backup. Check the sync password and try again.');
   }
 }
 
 export function encodeJsonDocument(document: EncryptedSyncDocument): string {
-  return btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(document, null, 2))));
+  const bytes = new TextEncoder().encode(JSON.stringify(document, null, 2));
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
 }
 
 export function decodeJsonDocument(value: string): EncryptedSyncDocument {
