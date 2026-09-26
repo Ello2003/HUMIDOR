@@ -1,5 +1,6 @@
 import { Cigar, Humidor, SmokeLog, WishlistItem, CigarResearchItem, WishlistBasketItem } from '../types';
 import { createGitHubSync, GitHubSyncConfig } from '../plugins/github-sync';
+import { decryptJson, encryptJson } from '../plugins/github-sync/crypto';
 
 export interface HumidorSyncPayload {
   cigars: Cigar[];
@@ -24,26 +25,15 @@ function isHumidorSyncPayload(value: unknown): value is HumidorSyncPayload {
 }
 
 export async function encryptSyncPayload(payload: HumidorSyncPayload, password: string) {
-  const sync = createGitHubSync<HumidorSyncPayload>({
-    config: { token: '', repository: 'owner/repo', path: DEFAULT_PATH },
-    password,
-    format: FORMAT,
-    flattenPayload: true,
-  });
-
-  // Reuse the plugin's encryption implementation without making a GitHub request.
-  // This is intentionally kept as a small compatibility adapter for existing Humidor backups.
-  return sync;
+  return encryptJson(payload, password, FORMAT, 1, true);
 }
 
 export async function decryptSyncPayload(document: any, password: string): Promise<HumidorSyncPayload> {
-  // This function remains exported for compatibility; actual decryption is performed
-  // by createGitHubSync in pullHumidorSync so validation and crypto stay in one module.
-  if (!document || document.format !== FORMAT || document.version !== 1) {
-    throw new Error('This GitHub sync file is not a supported Humidor backup.');
+  const payload = await decryptJson<HumidorSyncPayload>(document, password, FORMAT, true);
+  if (!isHumidorSyncPayload(payload)) {
+    throw new Error('This GitHub sync payload is not valid Humidor data.');
   }
-  if (!password) throw new Error('Enter your sync password.');
-  throw new Error('Use pullHumidorSync to decrypt a GitHub backup.');
+  return payload;
 }
 
 export async function pushHumidorSync(
