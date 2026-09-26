@@ -1,6 +1,7 @@
 import { assertRepository, getSyncFile, putSyncFile } from './client';
 import { decodeJsonDocument, decryptJson, encodeJsonDocument, encryptJson } from './crypto';
 import { GitHubPullResult, GitHubSyncConfig, GitHubSyncResult } from './types';
+export type { GitHubSyncConfig, GitHubPullResult, GitHubSyncResult } from './types';
 
 export interface EncryptedGitHubSyncOptions<T> {
   config: GitHubSyncConfig;
