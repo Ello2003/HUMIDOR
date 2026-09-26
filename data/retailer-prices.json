@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-26T10:39:31.914Z",
+  "generatedAt": "2026-09-26T11:25:42.677Z",
   "source": "github-actions-retailer-scan",
   "scannedCount": 28,
   "groundedCount": 5,
@@ -83,30 +83,6 @@
         },
         {
           "vendor": "Smoke King",
-          "price": 12.5,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
-          "lastUpdated": "2026-09-26",
-          "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Davidoff Winston Churchill The Late Hour Petit Panatela Cigar - Single",
-            "sourceProductId": null,
-            "price": 12.5,
-            "currency": "GBP",
-            "inStock": null
-          },
-          "vitola": "churchill",
-          "smokeTimeMinutes": 18,
-          "strength": "Medium"
-        },
-        {
-          "vendor": "Smoke King",
           "price": 51.5,
           "currency": "£",
           "inStock": true,
@@ -132,27 +108,27 @@
           "retailerRatingScale": 100
         },
         {
-          "vendor": "Simply Cigars",
-          "price": 57.77,
+          "vendor": "Smoke King",
+          "price": 12.5,
           "currency": "£",
           "inStock": true,
-          "url": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
+          "url": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
           "lastUpdated": "2026-09-26",
           "sourceUpdatedAt": null,
-          "sourceProductId": "3756",
-          "productUrl": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
+          "sourceProductId": null,
+          "productUrl": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar",
           "matchingStatus": "matched",
           "confidenceScore": 0.99,
           "rawData": {
             "evidenceType": "json-ld-product",
-            "title": "Davidoff Winston Churchill The Late Hour Churchill Cigar - Single",
-            "sourceProductId": "3756",
-            "price": 57.77,
+            "title": "Davidoff Winston Churchill The Late Hour Petit Panatela Cigar - Single",
+            "sourceProductId": null,
+            "price": 12.5,
             "currency": "GBP",
-            "inStock": true
+            "inStock": null
           },
           "vitola": "churchill",
-          "smokeTimeMinutes": 65,
+          "smokeTimeMinutes": 18,
           "strength": "Medium"
         },
         {
@@ -199,6 +175,30 @@
             "inStock": null
           },
           "vitola": "churchill"
+        },
+        {
+          "vendor": "Simply Cigars",
+          "price": 57.77,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
+          "lastUpdated": "2026-09-26",
+          "sourceUpdatedAt": null,
+          "sourceProductId": "3756",
+          "productUrl": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Davidoff Winston Churchill The Late Hour Churchill Cigar - Single",
+            "sourceProductId": "3756",
+            "price": 57.77,
+            "currency": "GBP",
+            "inStock": true
+          },
+          "vitola": "churchill",
+          "smokeTimeMinutes": 65,
+          "strength": "Medium"
         }
       ],
       "bestPrice": 12.5,
@@ -212,15 +212,11 @@
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar"
-        },
-        {
-          "title": "Davidoff Winston Churchill Late Hour",
           "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-churchill-handmade-cigar"
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
-          "uri": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html"
+          "uri": "https://www.smoke-king.co.uk/products/single-davidoff-winston-churchill-the-late-hour-petit-panatela-cigar"
         },
         {
           "title": "Davidoff Winston Churchill Late Hour",
@@ -229,6 +225,10 @@
         {
           "title": "Davidoff Winston Churchill Late Hour",
           "uri": "https://www.no6cavendish.com/products/davidoff-the-late-hour-churchill"
+        },
+        {
+          "title": "Davidoff Winston Churchill Late Hour",
+          "uri": "https://www.simplycigars.co.uk/davidoff-winston-churchill-the-late-hour-churchill-cigar-single-p-3756.html"
         }
       ],
       "scanStatus": "verified"
@@ -345,6 +345,54 @@
           "strength": "Full"
         },
         {
+          "vendor": "The House of Cigars",
+          "price": 34.99,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
+          "lastUpdated": "2026-09-26",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Plasencia Alma Fuerte Colorado Sixto I Hexagono Gordo Cigar - Single",
+            "sourceProductId": null,
+            "price": 34.99,
+            "currency": "GBP",
+            "inStock": true
+          },
+          "vitola": "gordo",
+          "smokeTimeMinutes": 75,
+          "strength": "3/5"
+        },
+        {
+          "vendor": "The House of Cigars",
+          "price": 34.99,
+          "currency": "£",
+          "inStock": true,
+          "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alama-fuerte-sixto-ii-hexagono-cigar-single/",
+          "lastUpdated": "2026-09-26",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://www.thehouseofcigars.co.uk/product/plasencia-alama-fuerte-sixto-ii-hexagono-cigar-single/",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Plasencia Alma Fuerte Sixto II Hexagono Gordo Cigar - Single",
+            "sourceProductId": null,
+            "price": 34.99,
+            "currency": "GBP",
+            "inStock": true
+          },
+          "vitola": "gordo",
+          "smokeTimeMinutes": 75,
+          "strength": "5/5"
+        },
+        {
           "vendor": "Smoke King",
           "price": 35,
           "currency": "£",
@@ -391,54 +439,6 @@
           },
           "smokeTimeMinutes": 80,
           "strength": "Medium"
-        },
-        {
-          "vendor": "The House of Cigars",
-          "price": 34.99,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alama-fuerte-sixto-ii-hexagono-cigar-single/",
-          "lastUpdated": "2026-09-26",
-          "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.thehouseofcigars.co.uk/product/plasencia-alama-fuerte-sixto-ii-hexagono-cigar-single/",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Plasencia Alma Fuerte Sixto II Hexagono Gordo Cigar - Single",
-            "sourceProductId": null,
-            "price": 34.99,
-            "currency": "GBP",
-            "inStock": true
-          },
-          "vitola": "gordo",
-          "smokeTimeMinutes": 75,
-          "strength": "5/5"
-        },
-        {
-          "vendor": "The House of Cigars",
-          "price": 34.99,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
-          "lastUpdated": "2026-09-26",
-          "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Plasencia Alma Fuerte Colorado Sixto I Hexagono Gordo Cigar - Single",
-            "sourceProductId": null,
-            "price": 34.99,
-            "currency": "GBP",
-            "inStock": true
-          },
-          "vitola": "gordo",
-          "smokeTimeMinutes": 75,
-          "strength": "3/5"
         }
       ],
       "bestPrice": 34.99,
@@ -452,11 +452,7 @@
         },
         {
           "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar"
-        },
-        {
-          "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.smoke-king.co.uk/products/plasencia-alma-fuerte-sixto-ii-hexagono-cigar-single"
+          "uri": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/"
         },
         {
           "title": "Plasencia Alma Fuerte",
@@ -464,7 +460,11 @@
         },
         {
           "title": "Plasencia Alma Fuerte",
-          "uri": "https://www.thehouseofcigars.co.uk/product/plasencia-alma-fuerte-sixto-i-hexagono-cigar-single/"
+          "uri": "https://www.smoke-king.co.uk/products/plascencia-alma-fuerte-suxto-l-hexagono-single-box-pressed-cigar"
+        },
+        {
+          "title": "Plasencia Alma Fuerte",
+          "uri": "https://www.smoke-king.co.uk/products/plasencia-alma-fuerte-sixto-ii-hexagono-cigar-single"
         }
       ],
       "scanStatus": "verified"
@@ -756,6 +756,29 @@
         },
         {
           "vendor": "Cuban Cigar Club",
+          "price": 178.6,
+          "currency": "£",
+          "inStock": false,
+          "url": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Churchill-Tubed~305.php",
+          "lastUpdated": "2026-09-26",
+          "sourceUpdatedAt": null,
+          "sourceProductId": null,
+          "productUrl": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Churchill-Tubed~305.php",
+          "matchingStatus": "matched",
+          "confidenceScore": 0.99,
+          "rawData": {
+            "evidenceType": "json-ld-product",
+            "title": "Cuban Romeo y Julieta Churchill Tubed   Handmade Cigar",
+            "sourceProductId": null,
+            "price": 178.6,
+            "currency": "GBP",
+            "inStock": false
+          },
+          "vitola": "churchill",
+          "strength": "Medium"
+        },
+        {
+          "vendor": "Cuban Cigar Club",
           "price": 115.09,
           "currency": "£",
           "inStock": false,
@@ -794,52 +817,6 @@
             "title": "Cuban Romeo y Julieta Churchill Tubed   Handmade Cigar",
             "sourceProductId": null,
             "price": 60.44,
-            "currency": "GBP",
-            "inStock": false
-          },
-          "vitola": "churchill",
-          "strength": "Medium"
-        },
-        {
-          "vendor": "Cuban Cigar Club",
-          "price": 178.6,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Churchill-Tubed~305.php",
-          "lastUpdated": "2026-09-26",
-          "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Churchill-Tubed~305.php",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Cuban Romeo y Julieta Churchill Tubed   Handmade Cigar",
-            "sourceProductId": null,
-            "price": 178.6,
-            "currency": "GBP",
-            "inStock": false
-          },
-          "vitola": "churchill",
-          "strength": "Medium"
-        },
-        {
-          "vendor": "Cuban Cigar Club",
-          "price": 38.95,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Tubed-Petit-Churchill~709.php",
-          "lastUpdated": "2026-09-26",
-          "sourceUpdatedAt": null,
-          "sourceProductId": null,
-          "productUrl": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Tubed-Petit-Churchill~709.php",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Cuban Romeo y Julieta Tubed Petit Churchill   Handmade Cigar",
-            "sourceProductId": null,
-            "price": 38.95,
             "currency": "GBP",
             "inStock": false
           },
@@ -893,30 +870,27 @@
           "strength": "Medium"
         },
         {
-          "vendor": "Smoke King",
-          "price": 36,
+          "vendor": "Cuban Cigar Club",
+          "price": 38.95,
           "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/romeo-y-julieta-short-churchill-cuban-cigar",
+          "inStock": false,
+          "url": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Tubed-Petit-Churchill~709.php",
           "lastUpdated": "2026-09-26",
           "sourceUpdatedAt": null,
-          "sourceProductId": "ROM-SHO-CHU-X1",
-          "productUrl": "https://www.smoke-king.co.uk/products/romeo-y-julieta-short-churchill-cuban-cigar",
+          "sourceProductId": null,
+          "productUrl": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Tubed-Petit-Churchill~709.php",
           "matchingStatus": "matched",
           "confidenceScore": 0.99,
           "rawData": {
             "evidenceType": "json-ld-product",
-            "title": "Romeo y Julieta Short Churchill Cuban Cigar - Single",
-            "sourceProductId": "ROM-SHO-CHU-X1",
-            "price": 36,
+            "title": "Cuban Romeo y Julieta Tubed Petit Churchill   Handmade Cigar",
+            "sourceProductId": null,
+            "price": 38.95,
             "currency": "GBP",
-            "inStock": true
+            "inStock": false
           },
           "vitola": "churchill",
-          "smokeTimeMinutes": 50,
-          "strength": "Medium",
-          "retailerRating": 90,
-          "retailerRatingScale": 100
+          "strength": "Medium"
         },
         {
           "vendor": "Smoke King",
@@ -946,58 +920,6 @@
         },
         {
           "vendor": "Smoke King",
-          "price": 30,
-          "currency": "£",
-          "inStock": true,
-          "url": "https://www.smoke-king.co.uk/products/romeo-y-julieta-petit-churchill-cuban-cigar-single",
-          "lastUpdated": "2026-09-26",
-          "sourceUpdatedAt": null,
-          "sourceProductId": "ROM-PET-CHU-X1",
-          "productUrl": "https://www.smoke-king.co.uk/products/romeo-y-julieta-petit-churchill-cuban-cigar-single",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Romeo y Julieta Petit Churchill Cuban Cigar - Single",
-            "sourceProductId": "ROM-PET-CHU-X1",
-            "price": 30,
-            "currency": "GBP",
-            "inStock": true
-          },
-          "vitola": "churchill",
-          "smokeTimeMinutes": 30,
-          "strength": "Medium",
-          "retailerRating": 90,
-          "retailerRatingScale": 100
-        },
-        {
-          "vendor": "Smoke King",
-          "price": 51,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://www.smoke-king.co.uk/products/romeo-y-julieta-wide-churchill-tubos-cuban-cigar-single",
-          "lastUpdated": "2026-09-26",
-          "sourceUpdatedAt": null,
-          "sourceProductId": "4509",
-          "productUrl": "https://www.smoke-king.co.uk/products/romeo-y-julieta-wide-churchill-tubos-cuban-cigar-single",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Romeo y Julieta Wide Churchill Tubos Cuban Cigar - Single",
-            "sourceProductId": "4509",
-            "price": 51,
-            "currency": "GBP",
-            "inStock": false
-          },
-          "vitola": "churchill",
-          "smokeTimeMinutes": 50,
-          "strength": "Medium",
-          "retailerRating": 91,
-          "retailerRatingScale": 100
-        },
-        {
-          "vendor": "Smoke King",
           "price": 34,
           "currency": "£",
           "inStock": false,
@@ -1017,32 +939,6 @@
             "inStock": null
           },
           "smokeTimeMinutes": 30,
-          "strength": "Medium",
-          "retailerRating": 90,
-          "retailerRatingScale": 100
-        },
-        {
-          "vendor": "Smoke King",
-          "price": 39,
-          "currency": "£",
-          "inStock": false,
-          "url": "https://www.smoke-king.co.uk/products/romeo-y-julieta-short-churchills-tubos-cuban-cigar",
-          "lastUpdated": "2026-09-26",
-          "sourceUpdatedAt": null,
-          "sourceProductId": "4511-1",
-          "productUrl": "https://www.smoke-king.co.uk/products/romeo-y-julieta-short-churchills-tubos-cuban-cigar",
-          "matchingStatus": "matched",
-          "confidenceScore": 0.99,
-          "rawData": {
-            "evidenceType": "json-ld-product",
-            "title": "Romeo y Julieta Short Churchill Tubos Cuban Cigar - Single",
-            "sourceProductId": "4511-1",
-            "price": 39,
-            "currency": "GBP",
-            "inStock": false
-          },
-          "vitola": "churchill",
-          "smokeTimeMinutes": 50,
           "strength": "Medium",
           "retailerRating": 90,
           "retailerRatingScale": 100
@@ -1132,7 +1028,7 @@
           }
         }
       ],
-      "bestPrice": 30,
+      "bestPrice": 34,
       "bestVendor": "Smoke King",
       "grounded": true,
       "provider": "direct-web",
@@ -1140,6 +1036,10 @@
         {
           "title": "Romeo y Julieta Classic Churchill Line",
           "uri": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Petit-Churchill~77.php"
+        },
+        {
+          "title": "Romeo y Julieta Classic Churchill Line",
+          "uri": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Churchill-Tubed~305.php"
         },
         {
           "title": "Romeo y Julieta Classic Churchill Line",
@@ -1151,14 +1051,6 @@
         },
         {
           "title": "Romeo y Julieta Classic Churchill Line",
-          "uri": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Churchill-Tubed~305.php"
-        },
-        {
-          "title": "Romeo y Julieta Classic Churchill Line",
-          "uri": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Tubed-Petit-Churchill~709.php"
-        },
-        {
-          "title": "Romeo y Julieta Classic Churchill Line",
           "uri": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Churchill~597.php"
         },
         {
@@ -1167,7 +1059,7 @@
         },
         {
           "title": "Romeo y Julieta Classic Churchill Line",
-          "uri": "https://www.smoke-king.co.uk/products/romeo-y-julieta-short-churchill-cuban-cigar"
+          "uri": "https://www.cubancigarclub.co.uk/products/Cuban-Romeo-y-Julieta-Tubed-Petit-Churchill~709.php"
         },
         {
           "title": "Romeo y Julieta Classic Churchill Line",
@@ -1175,19 +1067,7 @@
         },
         {
           "title": "Romeo y Julieta Classic Churchill Line",
-          "uri": "https://www.smoke-king.co.uk/products/romeo-y-julieta-petit-churchill-cuban-cigar-single"
-        },
-        {
-          "title": "Romeo y Julieta Classic Churchill Line",
-          "uri": "https://www.smoke-king.co.uk/products/romeo-y-julieta-wide-churchill-tubos-cuban-cigar-single"
-        },
-        {
-          "title": "Romeo y Julieta Classic Churchill Line",
           "uri": "https://www.smoke-king.co.uk/products/romeo-y-julieta-petit-churchills-tubos-cuban-cigar"
-        },
-        {
-          "title": "Romeo y Julieta Classic Churchill Line",
-          "uri": "https://www.smoke-king.co.uk/products/romeo-y-julieta-short-churchills-tubos-cuban-cigar"
         },
         {
           "title": "Romeo y Julieta Classic Churchill Line",
