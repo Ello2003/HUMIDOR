@@ -78,7 +78,7 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
       setPriceServiceStatus(null);
       setPriceServiceError(
         error?.message ||
-          'The price API could not be reached. Deploy the API on Vercel and check VITE_API_BASE_URL if this frontend is on GitHub Pages.'
+          'The local price API could not be reached. Start HUMIDOR with `npm run dev` if you want live API features.'
       );
     } finally {
       setPriceServiceChecking(false);
@@ -815,7 +815,7 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <ShieldCheck className="w-3.5 h-3.5 text-gold" />
-                <span>Price Service & UK Retailer Scanner</span>
+                <span>Local Price Service & UK Retailer Scanner</span>
               </h3>
               <button
                 type="button"
@@ -858,19 +858,6 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg border border-line bg-modal space-y-2">
-                <div className="text-xs font-semibold text-white">Vercel setup</div>
-                <div className="text-[11px] text-text-muted leading-relaxed">
-                  Add these as <span className="text-white font-mono">Environment Variables</span> in your Vercel project, then redeploy:
-                </div>
-                <div className="font-mono text-[11px] text-gold bg-surface rounded p-2">
-                  GEMINI_API_KEY<br />
-                  FIRECRAWL_API_KEY
-                </div>
-                <div className="text-[11px] text-text-muted leading-relaxed">
-                  If this frontend stays on GitHub Pages, set the repository variable <span className="text-white font-mono">VITE_API_BASE_URL</span> to your Vercel API origin. Do not put either secret key in VITE_ variables or in browser storage.
-                </div>
-              </div>
             </div>
           </div>
 
