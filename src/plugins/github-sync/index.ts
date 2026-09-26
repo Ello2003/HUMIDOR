@@ -8,6 +8,7 @@ export interface EncryptedGitHubSyncOptions<T> {
   format?: string;
   version?: number;
   commitMessage?: string;
+  flattenPayload?: boolean;
   validate?: (payload: unknown) => payload is T;
 }
 
@@ -26,7 +27,7 @@ export function createGitHubSync<T = unknown>(options: EncryptedGitHubSyncOption
     async push(payload: T): Promise<GitHubSyncResult> {
       const config = getConfig();
       assertRepository(config.repository);
-      const encrypted = await encryptJson(payload, options.password, format, version);
+      const encrypted = await encryptJson(payload, options.password, format, version, options.flattenPayload);
       const content = encodeJsonDocument(encrypted);
 
       let existingSha: string | undefined;
@@ -50,7 +51,7 @@ export function createGitHubSync<T = unknown>(options: EncryptedGitHubSyncOption
       assertRepository(config.repository);
       const file = await getSyncFile(config);
       const document = decodeJsonDocument(file.content);
-      const payload = await decryptJson<T>(document, options.password, format);
+      const payload = await decryptJson<T>(document, options.password, format, options.flattenPayload);
 
       if (options.validate && !options.validate(payload)) {
         throw new Error('The GitHub sync payload failed validation.');
