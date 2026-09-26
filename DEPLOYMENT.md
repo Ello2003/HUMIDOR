@@ -17,7 +17,7 @@ The scanner is deliberately deterministic:
 - Search the known UK specialist-retailer domains first.
 - Search the wider web only when the first search finds no verified product.
 - Require brand + exact line/variant + vitola/package compatibility.
-- Prefer Firecrawl's structured product price data.
+- Prefer structured product price data when available; otherwise use the direct retailer sitemap/catalogue fallback.
 - Scrape at most four candidate product pages when structured price data is missing.
 - Run up to four cigars concurrently.
 - Deduplicate identical cigar requests in the same run.
