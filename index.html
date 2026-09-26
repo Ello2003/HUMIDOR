@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en" class="dark" style="background-color: #0F0D0C;">
+  <head>
+    <script>
+      // Gracefully catch and log cross-origin and unhandled exceptions
+      window.addEventListener('error', function (event) {
+        if (!event.filename || event.message === 'Script error.') {
+          console.warn('[The Humidor] Handled external/cross-origin script notification.');
+          event.preventDefault();
+          return true;
+        }
+      });
+      window.addEventListener('unhandledrejection', function (event) {
+        console.warn('[The Humidor] Handled unhandled rejection:', event.reason);
+      });
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Humidor</title>
+    <meta name="description" content="Personal cigar humidor manager, connoisseur smoke journal, AI sommelier research engine, and data exporter." />
+    <meta property="og:title" content="The Humidor" />
+    <meta property="og:description" content="Personal cigar humidor manager, connoisseur smoke journal, AI sommelier research engine, and data exporter." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#0F0D0C] text-[#E5E1DA] antialiased selection:bg-[#C5A059]/30 selection:text-[#E5E1DA] min-h-screen">
+    <div id="root">
+      <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #0F0D0C; color: #E5E1DA; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
+        <div style="width: 44px; height: 44px; border-radius: 6px; background-color: #8B5E3C; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; border: 1px solid rgba(168,159,148,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+          <span style="font-family: 'Playfair Display', Georgia, serif; font-size: 24px; font-style: italic; font-weight: bold; color: #FFFFFF;">H</span>
+        </div>
+        <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; letter-spacing: 0.5px; color: #E5E1DA; margin-bottom: 6px;">The Humidor</div>
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #C5A059;">Opening Vault...</div>
+      </div>
+    </div>
+    <script type="module" crossorigin="anonymous" src="/src/main.tsx"></script>
+  </body>
+</html>
+
