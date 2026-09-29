@@ -785,7 +785,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       }
 
       const data = await response.json();
-      const scannedPrices: VendorPriceEntry[] = data.prices || [];
+      const scannedPrices: VendorPriceEntry[] = data?.data?.retailerQuotes || data?.data?.quotes || [];
 
       if (scannedPrices.length > 0) {
         const currentQuotes = item.vendorPrices || [];
@@ -839,11 +839,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
           `🇬🇧 Updated shop quotes for ${item.brand} ${item.name}! Best quote: £${minPrice.toFixed(2)} at ${bestVendor}.`
         );
       } else {
-        setFeedbackNotice(`Scanned UK retailers — no direct matches found for ${item.brand} ${item.name}.`);
+        setFeedbackNotice(`Scanned UK retailers — no verified prices found for ${item.brand} ${item.name}.`);
       }
     } catch (err) {
       console.error('Error scanning retailer prices:', err);
-      setFeedbackNotice(`Price scan completed for ${item.brand} ${item.name}.`);
+      setFeedbackNotice(`Price scan failed for ${item.brand} ${item.name} — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?`);
     } finally {
       setScanningItemId(null);
     }
@@ -875,18 +875,18 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       }
 
       const data = await response.json();
-      const results: Array<{ id: string; brand: string; name: string; prices: VendorPriceEntry[] }> = data.results || [];
+      const results: Array<{ id: string; brand: string; name: string; quotes: VendorPriceEntry[] }> = data?.data?.results || [];
       let updatedCount = 0;
 
       results.forEach((res) => {
         const item = wishlist.find(
           (w) => w.id === res.id || areCigarsMatching(w, { brand: res.brand, name: res.name, line: res.name })
         );
-        if (item && res.prices && res.prices.length > 0) {
+        if (item && res.quotes && res.quotes.length > 0) {
           const currentQuotes = item.vendorPrices || [];
           const merged = [...currentQuotes];
 
-          res.prices.forEach((sp) => {
+          res.quotes.forEach((sp) => {
             const cVendor = canonicalizeVendorName(sp.vendor);
             const idx = merged.findIndex((q) => canonicalizeVendorName(q.vendor) === cVendor);
             const formatted: VendorPriceEntry = {
@@ -937,7 +937,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       );
     } catch (err) {
       console.error('Batch scan error:', err);
-      setFeedbackNotice('Completed batch scan across UK retailers.');
+      setFeedbackNotice('Batch price scan failed — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?');
     } finally {
       setIsBatchScanning(false);
     }

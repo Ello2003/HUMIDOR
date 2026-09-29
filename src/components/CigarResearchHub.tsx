@@ -794,7 +794,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         }),
       });
       const data = await res.json();
-      if (res.ok && data.success && data.data?.retailerQuotes) {
+      if (res.ok && data.success && data.data?.retailerQuotes?.length > 0) {
         const quotes: VendorPriceEntry[] = data.data.retailerQuotes.map((q: any) => ({
           id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           vendor: canonicalizeVendorName(q.vendor),
@@ -839,10 +839,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
         showFeedback(`Scanned UK Retailers (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff): Best price £${data.data.bestPrice.toFixed(2)} at ${data.data.bestVendor}!`);
       } else {
-        showFeedback(`UK market price scan complete for "${cigar.brand} ${cigar.line}".`);
+        showFeedback(`No verified UK retailer prices found for "${cigar.brand} ${cigar.line}".`);
       }
     } catch (err: any) {
-      showFeedback(`Scan complete using UK market price intelligence.`);
+      showFeedback(`Price scan failed — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?`);
     } finally {
       setScanningPriceCigarId(null);
     }
@@ -870,7 +870,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
         let updatedCount = 0;
         data.data.results.forEach((r: any) => {
           const cigar = researchDatabase.find((c) => c.id === r.id);
-          if (cigar && r.quotes) {
+          if (cigar && r.quotes && r.quotes.length > 0) {
             const quotes: VendorPriceEntry[] = r.quotes.map((q: any) => ({
               id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
               vendor: canonicalizeVendorName(q.vendor),

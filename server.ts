@@ -165,6 +165,30 @@ async function groundedWebResearch(query: string, systemInstruction?: string): P
   };
 }
 
+
+/**
+ * Picks the grounded search source that best belongs to a retailer name.
+ * Gemini returns titles like "cgarsltd.co.uk", which never contain a vendor
+ * string like "C.Gars Ltd" verbatim, so compare with punctuation/spacing
+ * stripped from both sides.
+ */
+function findSourceForVendor(
+  sources: Array<{ title: string; uri: string }>,
+  vendor: string,
+): { title: string; uri: string } | undefined {
+  const compact = (v: string) => String(v || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const vendorWords = String(vendor || "")
+    .toLowerCase()
+    .split(/[\s.()]+/)
+    .map(compact)
+    .filter((w) => w.length >= 3 && !["ltd", "the", "london", "cigars", "tobacconist", "tobacconists"].includes(w));
+  if (!vendorWords.length) return undefined;
+  return sources.find((src) => {
+    const hay = compact(src.title) + compact(src.uri);
+    return vendorWords.some((w) => hay.includes(w));
+  });
+}
+
 /**
  * Takes free-text (typically the output of `groundedWebResearch`) and
  * reshapes it into a specific JSON schema via a second, ungrounded call.
@@ -1601,138 +1625,6 @@ app.post("/api/import/basket-from-url", async (req, res) => {
 });
 
 // Deterministic UK Retailer Price Estimator & Market Intelligence for top UK merchants
-function getEstimatedUkRetailerQuotes(cigar: {
-  brand: string;
-  name?: string;
-  line?: string;
-  vitola?: string;
-  countryOrigin?: string;
-  isCuban?: boolean;
-  lengthInches?: number;
-  ringGauge?: number;
-  retailers?: string[];
-}): Array<{
-  vendor: string;
-  price: number;
-  currency: string;
-  inStock: boolean;
-  url?: string;
-  boxPrice?: number;
-  boxCount?: number;
-  lastUpdated: string;
-}> {
-  const brand = cigar.brand || "Unknown";
-  const name = cigar.name || cigar.line || "Cigar";
-  const vitola = (cigar.vitola || "").toLowerCase();
-  const origin = (cigar.countryOrigin || "").toLowerCase();
-  const isCuban = cigar.isCuban || origin.includes("cuba") || /cohiba|montecristo|partagas|partagás|trinidad|hoyo|upmann|bolivar|ramon|ramón|romeo|punch/i.test(brand);
-
-  // Baseline price calculation according to vitola & brand tier in UK market (GBP £)
-  let basePrice = 24.0;
-  if (isCuban) {
-    if (/cohiba|trinidad/i.test(brand)) {
-      basePrice = vitola.includes("petit") || vitola.includes("minutos") ? 42.0 : vitola.includes("robusto") || vitola.includes("siglo") ? 68.0 : 95.0;
-    } else if (/montecristo|partagas|partagás/i.test(brand)) {
-      basePrice = vitola.includes("petit") || vitola.includes("no. 4") || vitola.includes("no. 5") ? 22.5 : vitola.includes("robusto") || vitola.includes("serie d") || vitola.includes("no. 2") ? 36.5 : 44.0;
-    } else if (/romeo|hoyo|upmann|bolivar|ramon|ramón/i.test(brand)) {
-      basePrice = vitola.includes("petit") || vitola.includes("coronas junior") ? 19.5 : vitola.includes("robusto") || vitola.includes("epicure") || vitola.includes("short") ? 32.0 : 39.5;
-    } else {
-      basePrice = vitola.includes("petit") ? 17.5 : 29.0;
-    }
-  } else {
-    // New World
-    if (/padron|padrón|davidoff|fuente|opus/i.test(brand)) {
-      basePrice = vitola.includes("robusto") ? 31.0 : vitola.includes("toro") || vitola.includes("churchill") ? 38.0 : 25.0;
-    } else if (/plasencia|oliva|olíva|liga privada/i.test(brand)) {
-      basePrice = vitola.includes("robusto") ? 22.5 : vitola.includes("gordo") || vitola.includes("toro") ? 26.5 : 18.5;
-    } else {
-      basePrice = vitola.includes("robusto") ? 16.5 : vitola.includes("petit") ? 13.5 : 21.0;
-    }
-  }
-
-  const today = new Date().toISOString().split("T")[0];
-
-  // Comprehensive UK tobacconist catalog
-  const defaultMerchantCatalog: Record<string, { multiplier: number; searchUrl: (q: string) => string }> = {
-    "C.Gars Ltd": {
-      multiplier: 1.0,
-      searchUrl: (q) => `https://www.cgarsltd.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Cuban Cigar Club": {
-      multiplier: 0.98,
-      searchUrl: (q) => `https://www.cubancigarclub.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Havana House": {
-      multiplier: 1.02,
-      searchUrl: (q) => `https://www.havanahouse.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Smoke King": {
-      multiplier: 0.96,
-      searchUrl: (q) => `https://www.smoke-king.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Davidoff of London": {
-      multiplier: 1.05,
-      searchUrl: (q) => `https://davidoffoflondon.com/search?q=${encodeURIComponent(q)}`,
-    },
-    "James J. Fox (London)": {
-      multiplier: 1.04,
-      searchUrl: (q) => `https://www.jjfox.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Sautter Cigars (London)": {
-      multiplier: 1.03,
-      searchUrl: (q) => `https://sauttercigars.com/search?q=${encodeURIComponent(q)}`,
-    },
-    "Turmeaus Tobacconist": {
-      multiplier: 0.99,
-      searchUrl: (q) => `https://www.turmeaus.co.uk/search?q=${encodeURIComponent(q)}`,
-    },
-    "Robert Graham 1874": {
-      multiplier: 1.01,
-      searchUrl: (q) => `https://www.robertgraham1874.com/search?q=${encodeURIComponent(q)}`,
-    },
-    "GQ Tobaccos": {
-      multiplier: 0.97,
-      searchUrl: (q) => `https://www.gqtobaccos.com/search.php?search_query=${encodeURIComponent(q)}`,
-    },
-  };
-
-  // Determine which retailers to quote
-  const selectedRetailerNames = cigar.retailers && cigar.retailers.length > 0
-    ? cigar.retailers
-    : [
-        "C.Gars Ltd",
-        "Cuban Cigar Club",
-        "Havana House",
-        "Smoke King",
-        "Davidoff of London",
-        "James J. Fox (London)",
-        "Sautter Cigars (London)",
-        "Turmeaus Tobacconist",
-      ];
-
-  return selectedRetailerNames.map((vendorName) => {
-    const meta = defaultMerchantCatalog[vendorName] || {
-      multiplier: 1.0 + (Math.random() * 0.08 - 0.04),
-      searchUrl: (q: string) => `https://www.google.com/search?q=${encodeURIComponent(vendorName + " " + q)}`,
-    };
-
-    const unitPrice = Math.round((basePrice * meta.multiplier + (Math.random() * 1.5 - 0.75)) * 100) / 100;
-    const boxCount = isCuban ? (unitPrice > 40 ? 10 : 25) : 20;
-    const boxPrice = Math.round(unitPrice * boxCount * 0.95 * 100) / 100;
-
-    return {
-      vendor: vendorName,
-      price: unitPrice,
-      currency: "£",
-      inStock: true,
-      url: meta.searchUrl(brand + " " + name),
-      boxPrice,
-      boxCount,
-      lastUpdated: today,
-    };
-  });
-}
-
 // Endpoint: AI & Live Retailer Price Scanner for a single cigar
 app.post("/api/research/retailer-prices", async (req, res) => {
   try {
@@ -1753,15 +1645,6 @@ app.post("/api/research/retailer-prices", async (req, res) => {
           "Sautter Cigars (London)",
           "Turmeaus Tobacconist",
         ];
-
-    const fallbackQuotes = getEstimatedUkRetailerQuotes({
-      brand,
-      name,
-      vitola,
-      countryOrigin,
-      isCuban,
-      retailers: requestedRetailers,
-    });
 
     const cigarLabel = `${brand} ${name || ""}`.trim();
 
@@ -1813,14 +1696,11 @@ app.post("/api/research/retailer-prices", async (req, res) => {
       if (parsedData.quotes && parsedData.quotes.length > 0) {
         const today = new Date().toISOString().split("T")[0];
         const mergedQuotes = parsedData.quotes.map((q: any) => {
-          const matchedSource = grounded.sources.find(
-            (src) =>
-              src.title.toLowerCase().includes(String(q.vendor).toLowerCase().split(" ")[0]) ||
-              src.uri.toLowerCase().includes(String(q.vendor).toLowerCase().replace(/\s+/g, ""))
-          );
+          const matchedSource = findSourceForVendor(grounded.sources, q.vendor);
           return {
             ...q,
             currency: "£",
+            recordedAt: today,
             lastUpdated: today,
             url: matchedSource?.uri, // real URL only -- never fabricated
           };
@@ -1847,23 +1727,21 @@ app.post("/api/research/retailer-prices", async (req, res) => {
         });
       }
     } catch (aiErr: any) {
-      console.warn("[Price Scanner] Grounded lookup failed or found nothing, falling back to reference dataset:", aiErr.message);
+      console.warn("[Price Scanner] Grounded lookup found no verified prices for " + cigarLabel + ":", aiErr.message);
     }
 
-    const bestPrice = Math.min(...fallbackQuotes.map((q) => q.price));
-    const bestQuote = fallbackQuotes.find((q) => q.price === bestPrice);
-
+    // No verified live price could be found. Report that honestly rather
+    // than inventing a plausible-looking number -- a fabricated "estimate"
+    // is worse than no data, because there is no way for the person reading
+    // it to tell it apart from a real, verified retailer quote.
     return res.json({
       success: true,
       data: {
-        quotes: fallbackQuotes,
-        retailerQuotes: fallbackQuotes,
-        bestPrice: bestPrice,
-        bestVendor: bestQuote?.vendor || fallbackQuotes[0].vendor,
-        marketLow: bestPrice,
-        marketHigh: Math.max(...fallbackQuotes.map((q) => q.price)),
-        marketAverage: Math.round((fallbackQuotes.reduce((a, b) => a + b.price, 0) / fallbackQuotes.length) * 100) / 100,
-        pricingNotes: `Unverified reference estimate -- no live retailer page could be confirmed for this cigar.`,
+        quotes: [],
+        retailerQuotes: [],
+        bestPrice: null,
+        bestVendor: null,
+        pricingNotes: "No verified UK retailer prices could be found for this cigar.",
         grounded: false,
       },
     });
@@ -1889,19 +1767,13 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
     const results: any[] = new Array(batch.length);
 
     async function scanOne(c: any): Promise<any> {
-      const fallbackQuotes = getEstimatedUkRetailerQuotes({
-        brand: c.brand,
-        name: c.name || c.line,
-        vitola: c.vitola,
-        countryOrigin: c.countryOrigin,
-        isCuban: c.isCuban,
-        retailers: requestedRetailers,
-      });
-
       try {
         const cigarLabel = `${c.brand} ${c.name || c.line || ""}`.trim();
         const grounded = await groundedWebResearch(
           `Search for current UK retail prices in GBP for the cigar "${cigarLabel}". ` +
+            (requestedRetailers.length
+              ? `Check these UK tobacconists specifically: ${requestedRetailers.join(", ")}. `
+              : '') +
             `Only report prices you actually find via search, for retailers that genuinely stock it.`,
           "You are a research assistant checking real UK cigar retailer websites. Only report prices you actually find."
         );
@@ -1933,12 +1805,8 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
         if (parsed.quotes && parsed.quotes.length > 0) {
           const today = new Date().toISOString().split("T")[0];
           const quotes = parsed.quotes.map((q: any) => {
-            const matchedSource = grounded.sources.find(
-              (src) =>
-                src.title.toLowerCase().includes(String(q.vendor).toLowerCase().split(" ")[0]) ||
-                src.uri.toLowerCase().includes(String(q.vendor).toLowerCase().replace(/\s+/g, ""))
-            );
-            return { ...q, currency: "£", lastUpdated: today, url: matchedSource?.uri };
+            const matchedSource = findSourceForVendor(grounded.sources, q.vendor);
+            return { ...q, currency: "£", recordedAt: today, lastUpdated: today, url: matchedSource?.uri };
           });
           return {
             id: c.id,
@@ -1951,16 +1819,19 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
           };
         }
       } catch {
-        // fall through to reference data below
+        // No verified live price found for this cigar -- fall through below.
       }
 
+      // Report honestly rather than inventing a plausible-looking number: a
+      // fabricated "estimate" is indistinguishable from a real, verified
+      // retailer quote once it's in the UI, which is worse than no data.
       return {
         id: c.id,
         brand: c.brand,
         name: c.name || c.line,
-        quotes: fallbackQuotes,
-        bestPrice: Math.min(...fallbackQuotes.map((q) => q.price)),
-        bestVendor: fallbackQuotes.reduce((prev, curr) => (curr.price < prev.price ? curr : prev)).vendor,
+        quotes: [],
+        bestPrice: null,
+        bestVendor: null,
         grounded: false,
       };
     }
