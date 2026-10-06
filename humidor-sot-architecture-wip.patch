@@ -1,0 +1,3060 @@
+diff --git a/.DS_Store b/.DS_Store
+deleted file mode 100644
+index 4a444662c4daa435a6c5ae5166654af306c93199..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 8196
+zcmeHMJ!lj`82!dQ%t0*9LO3jBi!`DMi53Bau!gg-lN2dzyq}N+v+Qw~^jp|zL_x5z
+zvA3|Z5-rmQA%a~R%Lo>tjqjV8+nw3jvx^FTbIg3pyl?iseYZEeGe<;fb#Jgl)Fz@P
+zD#z9=nwr8m*PxuSJ#&Z(<7sDeX|127!yr>S!~t<Y91sV@0de48aRAS3F3l;=eS=CX
+z4u}K)r2{-a#Hbt-8*>x&)PY7X0T3JL)&<8cK0u6ZOl-_e1cIW>P((9S*(HWD!_gnx
+zyu`-bL^GU}U3@6Ztn3O!X?C1H*6E}Y6Qvag#DUNOUb{DFfi`KIcD?oc+^0t_mS&w!
+zZzt=aula3uasA}_!7U#j6!^X6`2ZhoIeP=xc|e(&@X{9TQO{$iHvh0I8Lo!Q53Wo&
+zf~-=>^ej)0nQWTS!%9+kF`$e_o+9;i8H$1&SJSiTkZxYnzSQKEs(zQ}=`xdCL|q!v
+zwx@<@1!^qfYPj^|UHWBFYbel?IYd1^Gx?qc-x!|_+NE)Yl@)oo%T1JjzH?P`S8_@P
+z({gHbH1I8Sp`q(*czX;D1?KWEoE(3AJh?CJ*fcA->u{g<15T~aol(Df?JE~t%;nAZ
+zpKrV}p0h4J*5$3kecpt5XW)6CM!5Tiq4Vb+h8eDgmp_YZubjtKa`EWykH|Pw$@2B+
+zr)UH{BkFtZx5jUv!y+#Ki|?;*yq~xCogU}%hN#DP{^?|kQJ(*NCrA+oPTzsZP_%jd
+ze|!4=|LF@625~?f_-hWRMrW<F3VOS?4utSaUyOPml?&(PCh8$*^qVRozqK=7{9%aW
+X*!Cqh<|YC`k&OUtgEZp6A9dgt7^M|Q
+
+diff --git a/.github/.DS_Store b/.github/.DS_Store
+deleted file mode 100644
+index 8d8d1322b16f1cc4806e0bfcaf82bc9b4b186fb6..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 6148
+zcmeHKy-EZz5T4O1R<yX%GLPWd3-MTc;a)(_Lj`xqp@?l7Ti?ju+NTiTz|L<n<8h0*
+zPDG9wNWMwtC)p1+$q*4w9~Kj$F%dOrf-Fi!WV&kFG3ODGOO7k*DA6O`ch{9f|8Yw8
+zzK0zrx}#fK+y7*Cnfj$}`QW+k)u*<dcWDl5^Yr;fC&#a+n>-gQ&yVw${{3i^=kjKK
+z<$!c9&VV!E3^)VMz^^iZJ6ojLSM=T)a0Z-#6$5fU1T?{Dm=(*>fv%JQKzT+NfiAU#
+z#00}=m=$4xu!aIPl&!>I4aa;izi5~hHJsRr54M%Rix)1dBY!CF#8J_EXTTX4GO(+|
+zvE2V>_+_d^{xHNx&VVzpWeo7BowZYZl-;dAK2Pr2fOdf<B7RvE2=u`t00TKk4vSIk
+bL3H><!>lM-WWIz0{UJ~Y@y;3e0|veTlV>u3
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..731a608
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,9 @@
++node_modules/
++dist/
++.env
++.env.*
++!.env.example
++.DS_Store
++**/.DS_Store
++*.log
++.vite/
+diff --git a/server.ts b/server.ts
+index 336512d..957acb9 100644
+--- a/server.ts
++++ b/server.ts
+@@ -165,6 +165,68 @@ async function groundedWebResearch(query: string, systemInstruction?: string): P
+   };
+ }
+ 
++
++/**
++ * Infers a UK/US cigar retailer's display name from a hostname, URL, page
++ * title, or any other free text that might contain its domain or brand
++ * name.
++ *
++ * This one function replaces what used to be two separate, independently
++ * maintained copies of the same if/else-if chain (one here, one -- calling
++ * itself `detectVendorFromText` -- further down this file), each one
++ * claiming in its own comment to be *the* consolidated version. They had
++ * already drifted apart: one recognised "jjfox.co.uk" as James J. Fox
++ * (London) and the Famous Smoke/Holt's branches, the other recognised
++ * Gotham Cigars/Cigars International/Cigarworld, and neither recognised
++ * everything the other did. Add a new retailer once, here, and every import
++ * path benefits.
++ */
++function inferVendorFromHints(text: string, fallback: string): string {
++  const check = String(text || '').toLowerCase();
++  const rules: Array<[RegExp | string, string]> = [
++    [/cgars|c-gars|cgarsltd/, 'C.Gars Ltd (UK)'],
++    ['havanahouse', 'Havana House (UK)'],
++    [/smoke-king|smokeking/, 'Smoke King (UK)'],
++    ['sautter', 'Sautter Cigars (London)'],
++    [/jjfox|james j fox/, 'James J. Fox (London)'],
++    ['davidoff', 'Davidoff of London'],
++    ['foxcigar', 'Fox Cigar'],
++    [/neptunecigar|neptune/, 'Neptune Cigar'],
++    ['famous-smoke', 'Famous Smoke Shop'],
++    ['holts', "Holt's Cigar Co."],
++    ['gotham', 'Gotham Cigars'],
++    ['cigarsinternational', 'Cigars International'],
++    ['cigarworld', 'Cigarworld'],
++  ];
++  for (const [match, vendor] of rules) {
++    if (typeof match === 'string' ? check.includes(match) : match.test(check)) return vendor;
++  }
++  return fallback;
++}
++
++/**
++ * Picks the grounded search source that best belongs to a retailer name.
++ * Gemini returns titles like "cgarsltd.co.uk", which never contain a vendor
++ * string like "C.Gars Ltd" verbatim, so compare with punctuation/spacing
++ * stripped from both sides.
++ */
++function findSourceForVendor(
++  sources: Array<{ title: string; uri: string }>,
++  vendor: string,
++): { title: string; uri: string } | undefined {
++  const compact = (v: string) => String(v || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
++  const vendorWords = String(vendor || "")
++    .toLowerCase()
++    .split(/[\s.()]+/)
++    .map(compact)
++    .filter((w) => w.length >= 3 && !["ltd", "the", "london", "cigars", "tobacconist", "tobacconists"].includes(w));
++  if (!vendorWords.length) return undefined;
++  return sources.find((src) => {
++    const hay = compact(src.title) + compact(src.uri);
++    return vendorWords.some((w) => hay.includes(w));
++  });
++}
++
+ /**
+  * Takes free-text (typically the output of `groundedWebResearch`) and
+  * reshapes it into a specific JSON schema via a second, ungrounded call.
+@@ -239,20 +301,7 @@ function extractCigarFromHtmlLocally({
+ 
+   // Infer retailer & domain website accurately
+   const combined = ((sourceUrl || "") + " " + (fileName || "") + " " + parsed.title + " " + parsed.textContent.slice(0, 2000)).toLowerCase();
+-  if (combined.includes("cgars") || combined.includes("c-gars") || combined.includes("cgarsltd")) vendorName = "C.Gars Ltd (UK)";
+-  else if (combined.includes("havanahouse")) vendorName = "Havana House (UK)";
+-  else if (combined.includes("smoke-king") || combined.includes("smokeking")) vendorName = "Smoke King (UK)";
+-  else if (combined.includes("sautter")) vendorName = "Sautter Cigars (London)";
+-  else if (combined.includes("davidoff")) vendorName = "Davidoff of London";
+-  else if (combined.includes("foxcigar")) vendorName = "Fox Cigar";
+-  else if (combined.includes("neptune")) vendorName = "Neptune Cigar";
+-  else if (combined.includes("famous-smoke")) vendorName = "Famous Smoke Shop";
+-  else if (combined.includes("holts")) vendorName = "Holt's Cigar Co.";
+-  else if (combined.includes("gotham")) vendorName = "Gotham Cigars";
+-  else if (combined.includes("cigarsinternational")) vendorName = "Cigars International";
+-  else if (combined.includes("cigarworld")) vendorName = "Cigarworld";
+-
+-  // Clean raw title
++  vendorName = inferVendorFromHints(combined, vendorName);  // Clean raw title
+   let rawTitle = parsed.title || fileName || "Cigar";
+   rawTitle = rawTitle.replace(/\s*[-–|].*$/, "").replace(/Buy\s+/i, "").replace(/Single Cigar.*$/i, "").trim();
+ 
+@@ -870,13 +919,7 @@ function extractBasketFromHtmlLocally({
+   let vendorName = fallbackVendor || "C.Gars Ltd (UK)";
+ 
+   const combined = ((sourceUrl || "") + " " + (fileName || "") + " " + parsed.title + " " + parsed.textContent.slice(0, 2000)).toLowerCase();
+-  if (combined.includes("cgars") || combined.includes("c-gars")) vendorName = "C.Gars Ltd (UK)";
+-  else if (combined.includes("havanahouse")) vendorName = "Havana House (UK)";
+-  else if (combined.includes("smoke-king") || combined.includes("smokeking")) vendorName = "Smoke King (UK)";
+-  else if (combined.includes("sautter")) vendorName = "Sautter Cigars (London)";
+-  else if (combined.includes("davidoff")) vendorName = "Davidoff of London";
+-  else if (combined.includes("foxcigar")) vendorName = "Fox Cigar";
+-  else if (combined.includes("neptune")) vendorName = "Neptune Cigar";
++  vendorName = inferVendorFromHints(combined, vendorName);
+ 
+   const knownBrands = [
+     "Montecristo", "Cohiba", "Partagás", "Partagas", "Ramón Allones", "Ramon Allones",
+@@ -1012,13 +1055,7 @@ async function extractBasketFromHtmlPayload({
+   let vendorName = fallbackVendor || "C.Gars Ltd (UK)";
+ 
+   const combinedCheck = ((sourceUrl || "") + " " + (fileName || "") + " " + parsed.title + " " + parsed.textContent.slice(0, 2000)).toLowerCase();
+-  if (combinedCheck.includes("cgars") || combinedCheck.includes("c-gars")) vendorName = "C.Gars Ltd (UK)";
+-  else if (combinedCheck.includes("havanahouse")) vendorName = "Havana House (UK)";
+-  else if (combinedCheck.includes("smoke-king") || combinedCheck.includes("smokeking")) vendorName = "Smoke King (UK)";
+-  else if (combinedCheck.includes("sautter")) vendorName = "Sautter Cigars (London)";
+-  else if (combinedCheck.includes("davidoff")) vendorName = "Davidoff of London";
+-  else if (combinedCheck.includes("foxcigar")) vendorName = "Fox Cigar";
+-  else if (combinedCheck.includes("neptune")) vendorName = "Neptune Cigar";
++  vendorName = inferVendorFromHints(combinedCheck, vendorName);
+ 
+   const systemInstruction = `You are an expert Master Tobacconist, Sommelier, and data extraction engine specializing in cigar shopping baskets, carts, checkout summaries, and order confirmation HTML from retailers such as C.Gars Ltd (cgarsltd.co.uk), Havana House, Smoke King, Sautter London, Neptune, Famous Smoke, and Holt's.
+ Extract EVERY individual cigar line item in the shopping basket or order into a structured list. Populate complete connoisseur specifications (brand, model/name, vitola, length in inches, ring gauge, country of origin, wrapper type, binder, filler, strength, quantity, unit price in £/currency, total price, flavor tags, resting recommendations, and critic rating).`;
+@@ -1178,33 +1215,10 @@ async function extractCigarFromHtmlPayload({
+   fallbackVendor?: string;
+ }) {
+   const parsed = cleanHtmlContent(html);
+-  let vendorName = fallbackVendor || "C.Gars Ltd / UK Retailer";
+ 
+   // Infer retailer from HTML contents or filename
+   const combinedCheck = (sourceUrl || "") + " " + (fileName || "") + " " + parsed.title + " " + parsed.textContent.substring(0, 2000);
+-  const lowerCheck = combinedCheck.toLowerCase();
+-
+-  if (lowerCheck.includes("cgars") || lowerCheck.includes("c-gars") || lowerCheck.includes("cgarsltd")) {
+-    vendorName = "C.Gars Ltd (UK)";
+-  } else if (lowerCheck.includes("havanahouse")) {
+-    vendorName = "Havana House (UK)";
+-  } else if (lowerCheck.includes("smoke-king") || lowerCheck.includes("smokeking")) {
+-    vendorName = "Smoke King (UK)";
+-  } else if (lowerCheck.includes("sautter")) {
+-    vendorName = "Sautter Cigars (London)";
+-  } else if (lowerCheck.includes("davidoff")) {
+-    vendorName = "Davidoff of London";
+-  } else if (lowerCheck.includes("jjfox") || lowerCheck.includes("james j fox")) {
+-    vendorName = "James J. Fox (London)";
+-  } else if (lowerCheck.includes("foxcigar")) {
+-    vendorName = "Fox Cigar";
+-  } else if (lowerCheck.includes("neptunecigar")) {
+-    vendorName = "Neptune Cigar";
+-  } else if (lowerCheck.includes("famous-smoke")) {
+-    vendorName = "Famous Smoke Shop";
+-  } else if (lowerCheck.includes("holts")) {
+-    vendorName = "Holt's Cigar Co.";
+-  }
++  const vendorName = inferVendorFromHints(combinedCheck, fallbackVendor || "C.Gars Ltd / UK Retailer");
+ 
+   const systemInstruction = `You are a Master Tobacconist, Sommelier, and data extraction engine specializing in British and international cigar retailers (including C.Gars Ltd cgarsltd.co.uk, Havana House, Smoke King, Sautter, Davidoff, Neptune, etc.). Extract precise cigar specifications, dimensions, blend composition, country of origin, vitola shape, ring gauge, length, strength, tasting notes, and price in British Pounds (£ GBP) from saved HTML files and webpages.`;
+ 
+@@ -1364,27 +1378,7 @@ app.post("/api/import/cigar-from-url", async (req, res) => {
+       try {
+         const parsedUrl = new URL(url);
+         const host = parsedUrl.hostname.toLowerCase();
+-        if (host.includes("cgars") || host.includes("c-gars")) {
+-          vendorName = "C.Gars Ltd (UK)";
+-        } else if (host.includes("havanahouse")) {
+-          vendorName = "Havana House (UK)";
+-        } else if (host.includes("smoke-king") || host.includes("smokeking")) {
+-          vendorName = "Smoke King (UK)";
+-        } else if (host.includes("sautter")) {
+-          vendorName = "Sautter Cigars (London)";
+-        } else if (host.includes("davidoff")) {
+-          vendorName = "Davidoff of London";
+-        } else if (host.includes("foxcigar")) {
+-          vendorName = "Fox Cigar";
+-        } else if (host.includes("neptunecigar")) {
+-          vendorName = "Neptune Cigar";
+-        } else if (host.includes("famous-smoke")) {
+-          vendorName = "Famous Smoke Shop";
+-        } else if (host.includes("holts")) {
+-          vendorName = "Holt's Cigar Co.";
+-        } else {
+-          vendorName = host.replace("www.", "").split(".")[0].toUpperCase();
+-        }
++        vendorName = inferVendorFromHints(host, host.replace("www.", "").split(".")[0].toUpperCase());
+ 
+         // Fetch page with standard browser headers
+         const controller = new AbortController();
+@@ -1545,13 +1539,7 @@ app.post("/api/import/basket-from-url", async (req, res) => {
+       try {
+         const parsedUrl = new URL(url);
+         const host = parsedUrl.hostname.toLowerCase();
+-        if (host.includes("cgars") || host.includes("c-gars")) vendorName = "C.Gars Ltd (UK)";
+-        else if (host.includes("havanahouse")) vendorName = "Havana House (UK)";
+-        else if (host.includes("smoke-king") || host.includes("smokeking")) vendorName = "Smoke King (UK)";
+-        else if (host.includes("sautter")) vendorName = "Sautter Cigars (London)";
+-        else if (host.includes("davidoff")) vendorName = "Davidoff of London";
+-        else if (host.includes("foxcigar")) vendorName = "Fox Cigar";
+-        else if (host.includes("neptune")) vendorName = "Neptune Cigar";
++        vendorName = inferVendorFromHints(host, vendorName);
+ 
+         const controller = new AbortController();
+         const timeoutId = setTimeout(() => controller.abort(), 12000);
+@@ -1601,138 +1589,6 @@ app.post("/api/import/basket-from-url", async (req, res) => {
+ });
+ 
+ // Deterministic UK Retailer Price Estimator & Market Intelligence for top UK merchants
+-function getEstimatedUkRetailerQuotes(cigar: {
+-  brand: string;
+-  name?: string;
+-  line?: string;
+-  vitola?: string;
+-  countryOrigin?: string;
+-  isCuban?: boolean;
+-  lengthInches?: number;
+-  ringGauge?: number;
+-  retailers?: string[];
+-}): Array<{
+-  vendor: string;
+-  price: number;
+-  currency: string;
+-  inStock: boolean;
+-  url?: string;
+-  boxPrice?: number;
+-  boxCount?: number;
+-  lastUpdated: string;
+-}> {
+-  const brand = cigar.brand || "Unknown";
+-  const name = cigar.name || cigar.line || "Cigar";
+-  const vitola = (cigar.vitola || "").toLowerCase();
+-  const origin = (cigar.countryOrigin || "").toLowerCase();
+-  const isCuban = cigar.isCuban || origin.includes("cuba") || /cohiba|montecristo|partagas|partagás|trinidad|hoyo|upmann|bolivar|ramon|ramón|romeo|punch/i.test(brand);
+-
+-  // Baseline price calculation according to vitola & brand tier in UK market (GBP £)
+-  let basePrice = 24.0;
+-  if (isCuban) {
+-    if (/cohiba|trinidad/i.test(brand)) {
+-      basePrice = vitola.includes("petit") || vitola.includes("minutos") ? 42.0 : vitola.includes("robusto") || vitola.includes("siglo") ? 68.0 : 95.0;
+-    } else if (/montecristo|partagas|partagás/i.test(brand)) {
+-      basePrice = vitola.includes("petit") || vitola.includes("no. 4") || vitola.includes("no. 5") ? 22.5 : vitola.includes("robusto") || vitola.includes("serie d") || vitola.includes("no. 2") ? 36.5 : 44.0;
+-    } else if (/romeo|hoyo|upmann|bolivar|ramon|ramón/i.test(brand)) {
+-      basePrice = vitola.includes("petit") || vitola.includes("coronas junior") ? 19.5 : vitola.includes("robusto") || vitola.includes("epicure") || vitola.includes("short") ? 32.0 : 39.5;
+-    } else {
+-      basePrice = vitola.includes("petit") ? 17.5 : 29.0;
+-    }
+-  } else {
+-    // New World
+-    if (/padron|padrón|davidoff|fuente|opus/i.test(brand)) {
+-      basePrice = vitola.includes("robusto") ? 31.0 : vitola.includes("toro") || vitola.includes("churchill") ? 38.0 : 25.0;
+-    } else if (/plasencia|oliva|olíva|liga privada/i.test(brand)) {
+-      basePrice = vitola.includes("robusto") ? 22.5 : vitola.includes("gordo") || vitola.includes("toro") ? 26.5 : 18.5;
+-    } else {
+-      basePrice = vitola.includes("robusto") ? 16.5 : vitola.includes("petit") ? 13.5 : 21.0;
+-    }
+-  }
+-
+-  const today = new Date().toISOString().split("T")[0];
+-
+-  // Comprehensive UK tobacconist catalog
+-  const defaultMerchantCatalog: Record<string, { multiplier: number; searchUrl: (q: string) => string }> = {
+-    "C.Gars Ltd": {
+-      multiplier: 1.0,
+-      searchUrl: (q) => `https://www.cgarsltd.co.uk/search?q=${encodeURIComponent(q)}`,
+-    },
+-    "Cuban Cigar Club": {
+-      multiplier: 0.98,
+-      searchUrl: (q) => `https://www.cubancigarclub.co.uk/search?q=${encodeURIComponent(q)}`,
+-    },
+-    "Havana House": {
+-      multiplier: 1.02,
+-      searchUrl: (q) => `https://www.havanahouse.co.uk/search?q=${encodeURIComponent(q)}`,
+-    },
+-    "Smoke King": {
+-      multiplier: 0.96,
+-      searchUrl: (q) => `https://www.smoke-king.co.uk/search?q=${encodeURIComponent(q)}`,
+-    },
+-    "Davidoff of London": {
+-      multiplier: 1.05,
+-      searchUrl: (q) => `https://davidoffoflondon.com/search?q=${encodeURIComponent(q)}`,
+-    },
+-    "James J. Fox (London)": {
+-      multiplier: 1.04,
+-      searchUrl: (q) => `https://www.jjfox.co.uk/search?q=${encodeURIComponent(q)}`,
+-    },
+-    "Sautter Cigars (London)": {
+-      multiplier: 1.03,
+-      searchUrl: (q) => `https://sauttercigars.com/search?q=${encodeURIComponent(q)}`,
+-    },
+-    "Turmeaus Tobacconist": {
+-      multiplier: 0.99,
+-      searchUrl: (q) => `https://www.turmeaus.co.uk/search?q=${encodeURIComponent(q)}`,
+-    },
+-    "Robert Graham 1874": {
+-      multiplier: 1.01,
+-      searchUrl: (q) => `https://www.robertgraham1874.com/search?q=${encodeURIComponent(q)}`,
+-    },
+-    "GQ Tobaccos": {
+-      multiplier: 0.97,
+-      searchUrl: (q) => `https://www.gqtobaccos.com/search.php?search_query=${encodeURIComponent(q)}`,
+-    },
+-  };
+-
+-  // Determine which retailers to quote
+-  const selectedRetailerNames = cigar.retailers && cigar.retailers.length > 0
+-    ? cigar.retailers
+-    : [
+-        "C.Gars Ltd",
+-        "Cuban Cigar Club",
+-        "Havana House",
+-        "Smoke King",
+-        "Davidoff of London",
+-        "James J. Fox (London)",
+-        "Sautter Cigars (London)",
+-        "Turmeaus Tobacconist",
+-      ];
+-
+-  return selectedRetailerNames.map((vendorName) => {
+-    const meta = defaultMerchantCatalog[vendorName] || {
+-      multiplier: 1.0 + (Math.random() * 0.08 - 0.04),
+-      searchUrl: (q: string) => `https://www.google.com/search?q=${encodeURIComponent(vendorName + " " + q)}`,
+-    };
+-
+-    const unitPrice = Math.round((basePrice * meta.multiplier + (Math.random() * 1.5 - 0.75)) * 100) / 100;
+-    const boxCount = isCuban ? (unitPrice > 40 ? 10 : 25) : 20;
+-    const boxPrice = Math.round(unitPrice * boxCount * 0.95 * 100) / 100;
+-
+-    return {
+-      vendor: vendorName,
+-      price: unitPrice,
+-      currency: "£",
+-      inStock: true,
+-      url: meta.searchUrl(brand + " " + name),
+-      boxPrice,
+-      boxCount,
+-      lastUpdated: today,
+-    };
+-  });
+-}
+-
+ // Endpoint: AI & Live Retailer Price Scanner for a single cigar
+ app.post("/api/research/retailer-prices", async (req, res) => {
+   try {
+@@ -1754,15 +1610,6 @@ app.post("/api/research/retailer-prices", async (req, res) => {
+           "Turmeaus Tobacconist",
+         ];
+ 
+-    const fallbackQuotes = getEstimatedUkRetailerQuotes({
+-      brand,
+-      name,
+-      vitola,
+-      countryOrigin,
+-      isCuban,
+-      retailers: requestedRetailers,
+-    });
+-
+     const cigarLabel = `${brand} ${name || ""}`.trim();
+ 
+     try {
+@@ -1813,14 +1660,11 @@ app.post("/api/research/retailer-prices", async (req, res) => {
+       if (parsedData.quotes && parsedData.quotes.length > 0) {
+         const today = new Date().toISOString().split("T")[0];
+         const mergedQuotes = parsedData.quotes.map((q: any) => {
+-          const matchedSource = grounded.sources.find(
+-            (src) =>
+-              src.title.toLowerCase().includes(String(q.vendor).toLowerCase().split(" ")[0]) ||
+-              src.uri.toLowerCase().includes(String(q.vendor).toLowerCase().replace(/\s+/g, ""))
+-          );
++          const matchedSource = findSourceForVendor(grounded.sources, q.vendor);
+           return {
+             ...q,
+             currency: "£",
++            recordedAt: today,
+             lastUpdated: today,
+             url: matchedSource?.uri, // real URL only -- never fabricated
+           };
+@@ -1847,23 +1691,21 @@ app.post("/api/research/retailer-prices", async (req, res) => {
+         });
+       }
+     } catch (aiErr: any) {
+-      console.warn("[Price Scanner] Grounded lookup failed or found nothing, falling back to reference dataset:", aiErr.message);
++      console.warn("[Price Scanner] Grounded lookup found no verified prices for " + cigarLabel + ":", aiErr.message);
+     }
+ 
+-    const bestPrice = Math.min(...fallbackQuotes.map((q) => q.price));
+-    const bestQuote = fallbackQuotes.find((q) => q.price === bestPrice);
+-
++    // No verified live price could be found. Report that honestly rather
++    // than inventing a plausible-looking number -- a fabricated "estimate"
++    // is worse than no data, because there is no way for the person reading
++    // it to tell it apart from a real, verified retailer quote.
+     return res.json({
+       success: true,
+       data: {
+-        quotes: fallbackQuotes,
+-        retailerQuotes: fallbackQuotes,
+-        bestPrice: bestPrice,
+-        bestVendor: bestQuote?.vendor || fallbackQuotes[0].vendor,
+-        marketLow: bestPrice,
+-        marketHigh: Math.max(...fallbackQuotes.map((q) => q.price)),
+-        marketAverage: Math.round((fallbackQuotes.reduce((a, b) => a + b.price, 0) / fallbackQuotes.length) * 100) / 100,
+-        pricingNotes: `Unverified reference estimate -- no live retailer page could be confirmed for this cigar.`,
++        quotes: [],
++        retailerQuotes: [],
++        bestPrice: null,
++        bestVendor: null,
++        pricingNotes: "No verified UK retailer prices could be found for this cigar.",
+         grounded: false,
+       },
+     });
+@@ -1889,19 +1731,13 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
+     const results: any[] = new Array(batch.length);
+ 
+     async function scanOne(c: any): Promise<any> {
+-      const fallbackQuotes = getEstimatedUkRetailerQuotes({
+-        brand: c.brand,
+-        name: c.name || c.line,
+-        vitola: c.vitola,
+-        countryOrigin: c.countryOrigin,
+-        isCuban: c.isCuban,
+-        retailers: requestedRetailers,
+-      });
+-
+       try {
+         const cigarLabel = `${c.brand} ${c.name || c.line || ""}`.trim();
+         const grounded = await groundedWebResearch(
+           `Search for current UK retail prices in GBP for the cigar "${cigarLabel}". ` +
++            (requestedRetailers.length
++              ? `Check these UK tobacconists specifically: ${requestedRetailers.join(", ")}. `
++              : '') +
+             `Only report prices you actually find via search, for retailers that genuinely stock it.`,
+           "You are a research assistant checking real UK cigar retailer websites. Only report prices you actually find."
+         );
+@@ -1933,12 +1769,8 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
+         if (parsed.quotes && parsed.quotes.length > 0) {
+           const today = new Date().toISOString().split("T")[0];
+           const quotes = parsed.quotes.map((q: any) => {
+-            const matchedSource = grounded.sources.find(
+-              (src) =>
+-                src.title.toLowerCase().includes(String(q.vendor).toLowerCase().split(" ")[0]) ||
+-                src.uri.toLowerCase().includes(String(q.vendor).toLowerCase().replace(/\s+/g, ""))
+-            );
+-            return { ...q, currency: "£", lastUpdated: today, url: matchedSource?.uri };
++            const matchedSource = findSourceForVendor(grounded.sources, q.vendor);
++            return { ...q, currency: "£", recordedAt: today, lastUpdated: today, url: matchedSource?.uri };
+           });
+           return {
+             id: c.id,
+@@ -1951,16 +1783,19 @@ app.post("/api/research/batch-retailer-prices", async (req, res) => {
+           };
+         }
+       } catch {
+-        // fall through to reference data below
++        // No verified live price found for this cigar -- fall through below.
+       }
+ 
++      // Report honestly rather than inventing a plausible-looking number: a
++      // fabricated "estimate" is indistinguishable from a real, verified
++      // retailer quote once it's in the UI, which is worse than no data.
+       return {
+         id: c.id,
+         brand: c.brand,
+         name: c.name || c.line,
+-        quotes: fallbackQuotes,
+-        bestPrice: Math.min(...fallbackQuotes.map((q) => q.price)),
+-        bestVendor: fallbackQuotes.reduce((prev, curr) => (curr.price < prev.price ? curr : prev)).vendor,
++        quotes: [],
++        bestPrice: null,
++        bestVendor: null,
+         grounded: false,
+       };
+     }
+diff --git a/src/.DS_Store b/src/.DS_Store
+deleted file mode 100644
+index cefeef5771b8d0ac2bd74530332996c55de34d79..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 6148
+zcmeHKOG?B*5Um~~j5>>1y37IG%vKQE5H|{f%mwBXQ6ZTG#@XjAp2Vex@B*&AfUmlm
+zkWMDxLPVqrs$ZwNs$b_Nq|-!Xl3g|<niA0%&Nw<kv&VRxy=NmInE;KOqofVp!=Gu}
+z%hteORDhq|F|Dbjf-1Dl^UEJ*^L1HNZqbvAyP>?IOw(0ft}u?5q`ujly<HCHX5Y@O
+z9^3q{n35vOXo+`g8LZ7D=k2l1dfu;PJxy&<25abz2fSv%yoa;{>l5X)4Vgc0!_f}+
+z$BS^c>O1UvG6MdQ1%a9>pbDr0Kdu1wY_{=<pth=jDxeB93h?(KhBI1^wV?ZSpm9e4
+zV1%$U^!Y5oHL*wQu@=M#%t$FvN{v5a7%4|Q_IcK0Ehyz=95d$e%*LNkjAKVUcIjlS
+zpth=jDiA7gAeU3#|F4G6|6!3{sRF9Nzf!<N={!wvOMY+d-5l?=F?<1M<Gfn1DM80=
+g#mMEY_!RC8@t8Y6>#-I@1g1X%P6lmMfnQbN3-|G7K>z>%
+
+diff --git a/src/App.tsx b/src/App.tsx
+index a8260c7..1ecf858 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -48,12 +48,13 @@ import {
+ import { deduplicateHumidorCigars, syncGlobalCigarPrice } from './utils/humidorUtils';
+ import { generateId } from './utils/idUtils';
+ import { DEFAULT_APP_SETTINGS, APP_VERSION } from './data/versionHistory';
++import { STORAGE_KEYS } from './utils/storageKeys';
+ 
+ export function App() {
+   // App-wide Customization Settings State with LocalStorage persistence
+   const [settings, setSettings] = useState<AppSettings>(() => {
+     try {
+-      const saved = localStorage.getItem('cedar_ash_settings');
++      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshSettings);
+       if (saved) {
+         const parsed = JSON.parse(saved);
+         return {
+@@ -76,7 +77,7 @@ export function App() {
+   // Primary state with localStorage persistence and resilient error handling
+   const [cigars, setCigars] = useState<Cigar[]>(() => {
+     try {
+-      const saved = localStorage.getItem('cedar_ash_cigars');
++      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshCigars);
+       if (saved) {
+         const parsed = JSON.parse(saved);
+         if (Array.isArray(parsed)) return parsed;
+@@ -89,7 +90,7 @@ export function App() {
+ 
+   const [humidors, setHumidors] = useState<Humidor[]>(() => {
+     try {
+-      const saved = localStorage.getItem('cedar_ash_humidors');
++      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshHumidors);
+       if (saved) {
+         const parsed = JSON.parse(saved);
+         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+@@ -102,7 +103,7 @@ export function App() {
+ 
+   const [smokeLogs, setSmokeLogs] = useState<SmokeLog[]>(() => {
+     try {
+-      const saved = localStorage.getItem('cedar_ash_smokelogs');
++      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshSmokelogs);
+       if (saved) {
+         const parsed = JSON.parse(saved);
+         if (Array.isArray(parsed)) return parsed;
+@@ -115,7 +116,7 @@ export function App() {
+ 
+   const [wishlist, setWishlist] = useState<WishlistItem[]>(() => {
+     try {
+-      const saved = localStorage.getItem('cedar_ash_wishlist');
++      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshWishlist);
+       if (saved) {
+         const parsed = JSON.parse(saved);
+         if (Array.isArray(parsed)) return parsed;
+@@ -129,7 +130,7 @@ export function App() {
+   // Local Searchable Cigar Research Database
+   const [researchDatabase, setResearchDatabase] = useState<CigarResearchItem[]>(() => {
+     try {
+-      const saved = localStorage.getItem('cedar_ash_research_db');
++      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshResearchDb);
+       if (saved) {
+         const parsed = JSON.parse(saved);
+         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+@@ -151,27 +152,27 @@ export function App() {
+ 
+   // Sync to localStorage
+   useEffect(() => {
+-    safeSetItem('cedar_ash_cigars', JSON.stringify(cigars));
++    safeSetItem(STORAGE_KEYS.cedarAshCigars, JSON.stringify(cigars));
+   }, [cigars]);
+ 
+   useEffect(() => {
+-    safeSetItem('cedar_ash_humidors', JSON.stringify(humidors));
++    safeSetItem(STORAGE_KEYS.cedarAshHumidors, JSON.stringify(humidors));
+   }, [humidors]);
+ 
+   useEffect(() => {
+-    safeSetItem('cedar_ash_smokelogs', JSON.stringify(smokeLogs));
++    safeSetItem(STORAGE_KEYS.cedarAshSmokelogs, JSON.stringify(smokeLogs));
+   }, [smokeLogs]);
+ 
+   useEffect(() => {
+-    safeSetItem('cedar_ash_wishlist', JSON.stringify(wishlist));
++    safeSetItem(STORAGE_KEYS.cedarAshWishlist, JSON.stringify(wishlist));
+   }, [wishlist]);
+ 
+   useEffect(() => {
+-    safeSetItem('cedar_ash_research_db', JSON.stringify(researchDatabase));
++    safeSetItem(STORAGE_KEYS.cedarAshResearchDb, JSON.stringify(researchDatabase));
+   }, [researchDatabase]);
+ 
+   useEffect(() => {
+-    safeSetItem('cedar_ash_settings', JSON.stringify(settings));
++    safeSetItem(STORAGE_KEYS.cedarAshSettings, JSON.stringify(settings));
+   }, [settings]);
+ 
+   // Initial auto-migration & enrichment: ensure accurate multi-source consensus smoke times across all cigars
+@@ -196,7 +197,7 @@ export function App() {
+   // Navigation tab state with persistence
+   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_active_tab');
++      const saved = localStorage.getItem(STORAGE_KEYS.activeTab);
+       if (saved && ['dashboard', 'inventory', 'journal', 'research', 'wishlist', 'export'].includes(saved)) {
+         return saved as ActiveTab;
+       }
+@@ -206,7 +207,7 @@ export function App() {
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_active_tab', activeTab);
++      localStorage.setItem(STORAGE_KEYS.activeTab, activeTab);
+     } catch {}
+   }, [activeTab]);
+ 
+diff --git a/src/components/AddCigarModal.tsx b/src/components/AddCigarModal.tsx
+index aee47f9..4739ed9 100644
+--- a/src/components/AddCigarModal.tsx
++++ b/src/components/AddCigarModal.tsx
+@@ -16,6 +16,7 @@ import { Cigar, Humidor, StrengthRating, CigarStatus, WishlistItem, CigarResearc
+ import { FLAVOR_CATEGORIES } from '../data/initialData';
+ import { DEFAULT_CURRENCY } from '../utils/currencyUtils';
+ import { suggestVitolaDimensions, areCigarsMatching } from '../utils/researchUtils';
++import { STORAGE_KEYS } from '../utils/storageKeys';
+ 
+ interface AddCigarModalProps {
+   isOpen: boolean;
+@@ -185,7 +186,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
+   // Auto add every import to research automatically toggle
+   const [autoAddToResearch, setAutoAddToResearch] = useState<boolean>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_auto_add_import_to_research');
++      const saved = localStorage.getItem(STORAGE_KEYS.autoAddImportToResearch);
+       return saved !== 'false';
+     } catch {
+       return true;
+diff --git a/src/components/AppSettingsModal.tsx b/src/components/AppSettingsModal.tsx
+index 7d37d34..98f0292 100644
+--- a/src/components/AppSettingsModal.tsx
++++ b/src/components/AppSettingsModal.tsx
+@@ -22,7 +22,6 @@ import {
+   Maximize2,
+   Minimize2,
+   Store,
+-  RefreshCw,
+   Globe,
+   Star,
+   Tag,
+@@ -30,9 +29,15 @@ import {
+   MapPin,
+   Activity,
+   SlidersHorizontal,
++  ChevronDown,
++  ChevronsDownUp,
++  ChevronsUpDown,
++  Search,
+ } from 'lucide-react';
+ import { AppSettings } from '../types';
+ import { DEFAULT_APP_SETTINGS } from '../data/versionHistory';
++import { DEFAULT_QUICK_QUOTE_RETAILERS } from '../data/retailers';
++import { STORAGE_KEYS } from '../utils/storageKeys';
+ 
+ interface AppSettingsModalProps {
+   isOpen: boolean;
+@@ -41,12 +46,116 @@ interface AppSettingsModalProps {
+   onUpdateSettings: (newSettings: AppSettings) => void;
+ }
+ 
++type SectionId =
++  | 'nav-tabs' | 'retailer-pricing' | 'dashboard' | 'cigar-fields'
++  | 'wishlist-fields' | 'humidor-fields' | 'journal-fields' | 'export-suite';
++
++const SECTION_NAV: Array<{ id: SectionId; icon: React.ComponentType<{ className?: string }>; label: string }> = [
++  { id: 'nav-tabs', icon: LayoutGrid, label: 'Tabs' },
++  { id: 'retailer-pricing', icon: Store, label: 'Pricing' },
++  { id: 'dashboard', icon: Layers, label: 'Dashboard' },
++  { id: 'cigar-fields', icon: Flame, label: 'Cigar Cards' },
++  { id: 'wishlist-fields', icon: Bookmark, label: 'Wishlist' },
++  { id: 'humidor-fields', icon: Archive, label: 'Humidor' },
++  { id: 'journal-fields', icon: Wine, label: 'Journal' },
++  { id: 'export-suite', icon: BarChart3, label: 'Export' },
++];
++
+ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+   isOpen,
+   onClose,
+   settings,
+   onUpdateSettings,
+ }) => {
++  const [searchQuery, setSearchQuery] = React.useState('');
++  const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>(() => {
++    try {
++      const saved = localStorage.getItem(STORAGE_KEYS.settingsCollapsedSections);
++      if (saved) return JSON.parse(saved);
++    } catch {
++      // Corrupt or inaccessible storage -- every section just starts expanded.
++    }
++    return {};
++  });
++
++  const toggleCollapsed = (id: SectionId) => {
++    setCollapsed((current) => {
++      const next = { ...current, [id]: !current[id] };
++      try {
++        localStorage.setItem(STORAGE_KEYS.settingsCollapsedSections, JSON.stringify(next));
++      } catch {
++        // Best-effort persistence; the in-memory state still updates.
++      }
++      return next;
++    });
++  };
++
++  const setAllCollapsed = (value: boolean) => {
++    const next = Object.fromEntries(SECTION_NAV.map((s) => [s.id, value]));
++    setCollapsed(next);
++    try {
++      localStorage.setItem(STORAGE_KEYS.settingsCollapsedSections, JSON.stringify(next));
++    } catch {
++      // Best-effort persistence; the in-memory state still updates.
++    }
++  };
++
++  const jumpToSection = (id: SectionId) => {
++    if (collapsed[id]) toggleCollapsed(id);
++    requestAnimationFrame(() => {
++      document.getElementById(`settings-section-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
++    });
++  };
++
++  /**
++   * One collapsible section wrapper, used by every section below. It owns
++   * the clickable header (title, description, chevron) and the "hidden when
++   * collapsed or filtered out by search" body -- previously each of the 8
++   * sections had its own hand-written, always-expanded header with no way
++   * to collapse it or jump to it directly from a long, single scrolling list.
++   */
++  function Section({
++    id,
++    icon: Icon,
++    title,
++    description,
++    searchTerms,
++    children,
++  }: {
++    id: SectionId;
++    icon: React.ComponentType<{ className?: string }>;
++    title: string;
++    description: string;
++    searchTerms: string[];
++    children: React.ReactNode;
++  }) {
++    const query = searchQuery.trim().toLowerCase();
++    const matchesSearch = !query || [title, description, ...searchTerms]
++      .some((t) => t.toLowerCase().includes(query));
++    if (!matchesSearch) return null;
++
++    const isCollapsed = Boolean(collapsed[id]) && !query; // never collapse a section actively matching a search
++    return (
++      <div id={`settings-section-${id}`} className="space-y-3 scroll-mt-3">
++        <button
++          type="button"
++          onClick={() => toggleCollapsed(id)}
++          className="w-full flex items-center justify-between gap-3 text-left group"
++        >
++          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
++            <Icon className="w-3.5 h-3.5 text-gold" />
++            <span>{title}</span>
++          </h3>
++          <div className="flex items-center gap-2">
++            <span className="text-[11px] text-text-muted hidden sm:inline">{description}</span>
++            <ChevronDown className={`w-4 h-4 text-text-muted group-hover:text-white transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
++          </div>
++        </button>
++        {!isCollapsed && children}
++      </div>
++    );
++  }
++
+   if (!isOpen) return null;
+ 
+   const toggleTab = (tabKey: keyof AppSettings['visibleTabs']) => {
+@@ -117,6 +226,114 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+     });
+   };
+ 
++  const setAllCigarFields = (keys: Array<keyof AppSettings['cigarFieldVisibility']>, value: boolean) => {
++    const next = { ...settings.cigarFieldVisibility };
++    keys.forEach((k) => { next[k] = value; });
++    onUpdateSettings({ ...settings, cigarFieldVisibility: next });
++  };
++
++  const setAllWishlistFields = (keys: Array<keyof NonNullable<AppSettings['wishlistFieldVisibility']>>, value: boolean) => {
++    const current = settings.wishlistFieldVisibility || DEFAULT_APP_SETTINGS.wishlistFieldVisibility!;
++    const next = { ...current };
++    keys.forEach((k) => { next[k] = value; });
++    onUpdateSettings({ ...settings, wishlistFieldVisibility: next });
++  };
++
++  const setAllHumidorFields = (keys: Array<keyof NonNullable<AppSettings['humidorFieldVisibility']>>, value: boolean) => {
++    const current = settings.humidorFieldVisibility || DEFAULT_APP_SETTINGS.humidorFieldVisibility!;
++    const next = { ...current };
++    keys.forEach((k) => { next[k] = value; });
++    onUpdateSettings({ ...settings, humidorFieldVisibility: next });
++  };
++
++  const setAllJournalFields = (keys: Array<keyof NonNullable<AppSettings['journalFieldVisibility']>>, value: boolean) => {
++    const current = settings.journalFieldVisibility || DEFAULT_APP_SETTINGS.journalFieldVisibility!;
++    const next = { ...current };
++    keys.forEach((k) => { next[k] = value; });
++    onUpdateSettings({ ...settings, journalFieldVisibility: next });
++  };
++
++  const setAllVisibleTabs = (keys: Array<keyof AppSettings['visibleTabs']>, value: boolean) => {
++    const next = { ...settings.visibleTabs };
++    keys.forEach((k) => { next[k] = value; });
++    onUpdateSettings({ ...settings, visibleTabs: next });
++  };
++
++  const setAllDashboardSections = (keys: Array<keyof AppSettings['dashboardSections']>, value: boolean) => {
++    const next = { ...settings.dashboardSections };
++    keys.forEach((k) => { next[k] = value; });
++    onUpdateSettings({ ...settings, dashboardSections: next });
++  };
++
++  /**
++   * Shared renderer for every "grid of on/off field toggles" section
++   * (Cigar Detail Cards, Wishlist, Humidor, Journal, Dashboard Modules).
++   * These five sections used to each hand-roll an identical grid of toggle
++   * buttons -- same markup, same classes, same Check/Off treatment -- with
++   * no way to turn a whole section on or off at once. One render function
++   * now backs all five, and adds that bulk action for free.
++   */
++  function renderToggleGrid<K extends string>(
++    items: Array<{ key: K; label: string; icon?: React.ComponentType<{ className?: string }> }>,
++    isVisible: (key: K) => boolean,
++    onToggle: (key: K) => void,
++    onSetAll: (keys: K[], value: boolean) => void,
++    columns: string = 'grid-cols-2 sm:grid-cols-4',
++  ) {
++    const allKeys = items.map((i) => i.key);
++    const visibleCount = items.filter((i) => isVisible(i.key)).length;
++    return (
++      <>
++        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider shrink-0">
++          <span className="text-text-muted">{visibleCount}/{items.length} shown</span>
++          <button
++            type="button"
++            onClick={() => onSetAll(allKeys, true)}
++            disabled={visibleCount === items.length}
++            className="text-gold hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
++          >
++            All
++          </button>
++          <span className="text-line">/</span>
++          <button
++            type="button"
++            onClick={() => onSetAll(allKeys, false)}
++            disabled={visibleCount === 0}
++            className="text-gold hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
++          >
++            None
++          </button>
++        </div>
++        <div className={`grid ${columns} gap-2`}>
++          {items.map(({ key, label, icon: Icon }) => {
++            const visible = isVisible(key);
++            return (
++              <button
++                key={key}
++                onClick={() => onToggle(key)}
++                className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
++                  visible
++                    ? 'bg-section-header border-gold/40 text-white'
++                    : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
++                }`}
++              >
++                <div className="flex items-center gap-2 min-w-0">
++                  {Icon && <Icon className={`w-3.5 h-3.5 shrink-0 ${visible ? 'text-gold' : 'text-text-muted'}`} />}
++                  <span className="text-xs font-semibold truncate">{label}</span>
++                </div>
++                {visible ? (
++                  <Check className="w-3.5 h-3.5 text-gold shrink-0" />
++                ) : (
++                  <span className="text-[10px] text-text-muted">{Icon ? 'Off' : 'Hidden'}</span>
++                )}
++              </button>
++            );
++          })}
++        </div>
++      </>
++    );
++  }
++
+   const toggleExportSuiteOption = (optKey: string) => {
+     const currentOptions = settings.exportSuiteOptions || {
+       showResearchExport: true,
+@@ -230,16 +447,7 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+           flavorsAndNotes: false,
+           burnAndDraw: false,
+         },
+-        quickQuoteRetailers: [
+-          'C.Gars Ltd',
+-          'Havana House',
+-          'Smoke King',
+-          'Sautter London',
+-          'Neptune',
+-          'Fox Cigar',
+-          'Davidoff London',
+-          "Holt's",
+-        ],
++        quickQuoteRetailers: DEFAULT_QUICK_QUOTE_RETAILERS,
+         exportSuiteOptions: {
+           showResearchExport: true,
+           showMasterJson: true,
+@@ -302,6 +510,50 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+           </button>
+         </div>
+ 
++        {/* Search + section jump + expand/collapse all */}
++        <div className="px-5 py-3 border-b border-line bg-surface space-y-2.5">
++          <div className="relative">
++            <Search className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
++            <input
++              type="text"
++              value={searchQuery}
++              onChange={(e) => setSearchQuery(e.target.value)}
++              placeholder="Search settings…"
++              className="w-full pl-9 pr-3 py-2 bg-modal border border-line rounded-lg text-xs text-white placeholder:text-text-muted focus:outline-none focus:border-gold/50"
++            />
++          </div>
++          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
++            {SECTION_NAV.map(({ id, icon: Icon, label }) => (
++              <button
++                key={id}
++                type="button"
++                onClick={() => jumpToSection(id)}
++                className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-line bg-modal hover:border-gold/50 text-[11px] font-semibold text-text-muted hover:text-white transition"
++              >
++                <Icon className="w-3 h-3" />
++                {label}
++              </button>
++            ))}
++            <span className="shrink-0 w-px h-5 bg-line mx-1" />
++            <button
++              type="button"
++              onClick={() => setAllCollapsed(false)}
++              className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-line bg-modal hover:border-gold/50 text-[11px] font-semibold text-text-muted hover:text-white transition"
++            >
++              <ChevronsUpDown className="w-3 h-3" />
++              Expand all
++            </button>
++            <button
++              type="button"
++              onClick={() => setAllCollapsed(true)}
++              className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-line bg-modal hover:border-gold/50 text-[11px] font-semibold text-text-muted hover:text-white transition"
++            >
++              <ChevronsDownUp className="w-3 h-3" />
++              Collapse all
++            </button>
++          </div>
++        </div>
++
+         {/* Content */}
+         <div className="p-5 space-y-6 max-h-[75vh] overflow-y-auto">
+           {/* Quick Presets */}
+@@ -363,18 +615,15 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+             </div>
+           </div>
+ 
+-          {/* Section 1: Navigation Tabs */}
+-          <div className="space-y-3">
+-            <div className="flex items-center justify-between">
+-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+-                <LayoutGrid className="w-3.5 h-3.5 text-gold" />
+-                <span>Primary Navigation Tabs</span>
+-              </h3>
+-              <span className="text-[11px] text-text-muted">Toggle which views appear in your top bar</span>
+-            </div>
+-
+-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+-              {[
++          <Section
++            id="nav-tabs"
++            icon={LayoutGrid}
++            title="Primary Navigation Tabs"
++            description="Toggle which views appear in your top bar"
++            searchTerms={['dashboard', 'humidors', 'cigars', 'tasting log', 'research', 'wishlist', 'analytics']}
++          >
++            {renderToggleGrid(
++              [
+                 { key: 'dashboard' as const, label: 'Dashboard', icon: Layers },
+                 { key: 'humidors' as const, label: 'Humidor Vaults', icon: Archive },
+                 { key: 'cigars' as const, label: 'Cigar Inventory', icon: Flame },
+@@ -382,43 +631,20 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+                 { key: 'research' as const, label: 'Research Library', icon: BookOpen },
+                 { key: 'wishlist' as const, label: 'Wishlist & Hunt', icon: Bookmark },
+                 { key: 'analytics' as const, label: 'Cellar Analytics', icon: BarChart3 },
+-              ].map(({ key, label, icon: Icon }) => {
+-                const isVisible = settings.visibleTabs[key];
+-                return (
+-                  <button
+-                    key={key}
+-                    onClick={() => toggleTab(key)}
+-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
+-                      isVisible
+-                        ? 'bg-section-header border-gold/40 text-white'
+-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
+-                    }`}
+-                  >
+-                    <div className="flex items-center gap-2 min-w-0">
+-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
+-                      <span className="text-xs font-semibold truncate">{label}</span>
+-                    </div>
+-                    {isVisible ? (
+-                      <Eye className="w-3.5 h-3.5 text-gold shrink-0" />
+-                    ) : (
+-                      <EyeOff className="w-3.5 h-3.5 text-text-muted shrink-0" />
+-                    )}
+-                  </button>
+-                );
+-              })}
+-            </div>
+-          </div>
+-
+-          {/* Section 2: Global Retailer Pricing & Multi-Shop Deduplication */}
+-          <div className="space-y-3">
+-            <div className="flex items-center justify-between">
+-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+-                <Store className="w-3.5 h-3.5 text-gold" />
+-                <span>Retailer Pricing, Currency & Site-Wide Sync Rules</span>
+-              </h3>
+-              <span className="text-[11px] text-text-muted">Configure automatic price propagation</span>
+-            </div>
+-
++              ],
++              (key) => settings.visibleTabs[key],
++              toggleTab,
++              setAllVisibleTabs,
++            )}
++          </Section>
++
++          <Section
++            id="retailer-pricing"
++            icon={Store}
++            title="Retailer Pricing, Currency & Site-Wide Sync Rules"
++            description="Configure automatic price propagation"
++            searchTerms={['currency', 'sync', 'merge', 'quick quote', 'retailers']}
++          >
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+               {[
+                 {
+@@ -474,7 +700,7 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+                 );
+               })}
+             </div>
+-          </div>
++          </Section>
+ 
+           {/* Section 3: Dashboard Modules */}
+           <div className="space-y-3">
+@@ -486,36 +712,20 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+               <span className="text-[11px] text-text-muted">Control widgets on the main dashboard</span>
+             </div>
+ 
+-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+-              {[
++            {renderToggleGrid(
++              [
+                 { key: 'quickStats' as const, label: 'Vault Valuation & Stick Counters' },
+                 { key: 'agingAlerts' as const, label: 'Peak Smoking Window Alerts' },
+                 { key: 'dailyRecommendation' as const, label: 'AI Sommelier Cigar Pick' },
+                 { key: 'quickSmokeBanner' as const, label: 'Express Tasting Log Bar' },
+                 { key: 'recentSmokes' as const, label: 'Recent Smokes Timeline' },
+                 { key: 'humidorOverview' as const, label: 'Humidor Vault Humidity Gauges' },
+-              ].map(({ key, label }) => {
+-                const isVisible = settings.dashboardSections[key];
+-                return (
+-                  <button
+-                    key={key}
+-                    onClick={() => toggleDashboardSection(key)}
+-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
+-                      isVisible
+-                        ? 'bg-section-header border-gold/40 text-white'
+-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
+-                    }`}
+-                  >
+-                    <span className="text-xs font-medium">{label}</span>
+-                    {isVisible ? (
+-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
+-                    ) : (
+-                      <span className="text-[10px] text-text-muted">Hidden</span>
+-                    )}
+-                  </button>
+-                );
+-              })}
+-            </div>
++              ],
++              (key) => settings.dashboardSections[key],
++              toggleDashboardSection,
++              setAllDashboardSections,
++              'grid-cols-1 sm:grid-cols-3',
++            )}
+           </div>
+ 
+           {/* Section 4: Cigar Detail Card Fields */}
+@@ -528,8 +738,8 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+               <span className="text-[11px] text-text-muted">Show/hide analytical sections on cigar dossiers</span>
+             </div>
+ 
+-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+-              {[
++            {renderToggleGrid(
++              [
+                 { key: 'flavorProfiles' as const, label: 'Flavor Descriptors', icon: Sparkles },
+                 { key: 'tastingProgression' as const, label: '3-Thirds Evolution', icon: Wine },
+                 { key: 'vendorPriceComparison' as const, label: 'Retailer Price Grid', icon: DollarSign },
+@@ -538,31 +748,11 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+                 { key: 'agingTimeline' as const, label: 'Resting Timeline', icon: Clock },
+                 { key: 'factoryDetails' as const, label: 'Wrapper & Factory Blend', icon: Archive },
+                 { key: 'dimensions' as const, label: 'Ring Gauge & Length', icon: Sliders },
+-              ].map(({ key, label, icon: Icon }) => {
+-                const isVisible = settings.cigarFieldVisibility[key];
+-                return (
+-                  <button
+-                    key={key}
+-                    onClick={() => toggleCigarField(key)}
+-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
+-                      isVisible
+-                        ? 'bg-section-header border-gold/40 text-white'
+-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
+-                    }`}
+-                  >
+-                    <div className="flex items-center gap-2 min-w-0">
+-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
+-                      <span className="text-xs font-semibold truncate">{label}</span>
+-                    </div>
+-                    {isVisible ? (
+-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
+-                    ) : (
+-                      <span className="text-[10px] text-text-muted">Off</span>
+-                    )}
+-                  </button>
+-                );
+-              })}
+-            </div>
++              ],
++              (key) => settings.cigarFieldVisibility[key],
++              toggleCigarField,
++              setAllCigarFields,
++            )}
+           </div>
+ 
+           {/* Section 5: Wishlist & Hunt View Display Fields */}
+@@ -575,8 +765,8 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+               <span className="text-[11px] text-text-muted">Configure columns and card items in Wishlist</span>
+             </div>
+ 
+-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+-              {[
++            {renderToggleGrid(
++              [
+                 { key: 'rating' as const, label: 'Critic & Panel Rating', icon: Star },
+                 { key: 'priority' as const, label: 'Priority Badge', icon: Flame },
+                 { key: 'targetPrice' as const, label: 'Target Max Price', icon: DollarSign },
+@@ -584,31 +774,11 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+                 { key: 'smokeTime' as const, label: 'Smoke Duration', icon: Clock },
+                 { key: 'vitolaSpecs' as const, label: 'Vitola Dimensions', icon: SlidersHorizontal },
+                 { key: 'notes' as const, label: 'Hunter Notes', icon: Tag },
+-              ].map(({ key, label, icon: Icon }) => {
+-                const isVisible = wishlistVisibility[key] ?? true;
+-                return (
+-                  <button
+-                    key={key}
+-                    onClick={() => toggleWishlistField(key)}
+-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
+-                      isVisible
+-                        ? 'bg-section-header border-gold/40 text-white'
+-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
+-                    }`}
+-                  >
+-                    <div className="flex items-center gap-2 min-w-0">
+-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
+-                      <span className="text-xs font-semibold truncate">{label}</span>
+-                    </div>
+-                    {isVisible ? (
+-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
+-                    ) : (
+-                      <span className="text-[10px] text-text-muted">Off</span>
+-                    )}
+-                  </button>
+-                );
+-              })}
+-            </div>
++              ],
++              (key) => wishlistVisibility[key] ?? true,
++              toggleWishlistField,
++              setAllWishlistFields,
++            )}
+           </div>
+ 
+           {/* Section 6: Humidor Inventory Display Fields */}
+@@ -621,8 +791,8 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+               <span className="text-[11px] text-text-muted">Configure columns and card data in Humidor</span>
+             </div>
+ 
+-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+-              {[
++            {renderToggleGrid(
++              [
+                 { key: 'rating' as const, label: 'Personal Rating', icon: Star },
+                 { key: 'humidorResting' as const, label: 'Vault & Aging Status', icon: Clock },
+                 { key: 'pricing' as const, label: 'Purchase Valuation', icon: DollarSign },
+@@ -633,31 +803,12 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+                 { key: 'strength' as const, label: 'Strength Gauge', icon: Flame },
+                 { key: 'flavorTags' as const, label: 'Flavor Descriptors', icon: Sparkles },
+                 { key: 'notes' as const, label: 'Notes & Quotes', icon: Tag },
+-              ].map(({ key, label, icon: Icon }) => {
+-                const isVisible = humidorVisibility[key] ?? true;
+-                return (
+-                  <button
+-                    key={key}
+-                    onClick={() => toggleHumidorField(key)}
+-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
+-                      isVisible
+-                        ? 'bg-section-header border-gold/40 text-white'
+-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
+-                    }`}
+-                  >
+-                    <div className="flex items-center gap-1.5 min-w-0">
+-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
+-                      <span className="text-xs font-semibold truncate">{label}</span>
+-                    </div>
+-                    {isVisible ? (
+-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
+-                    ) : (
+-                      <span className="text-[10px] text-text-muted">Off</span>
+-                    )}
+-                  </button>
+-                );
+-              })}
+-            </div>
++              ],
++              (key) => humidorVisibility[key] ?? true,
++              toggleHumidorField,
++              setAllHumidorFields,
++              'grid-cols-2 sm:grid-cols-5',
++            )}
+           </div>
+ 
+           {/* Section 7: Tasting Journal (Smoked) Display Fields */}
+@@ -670,8 +821,8 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+               <span className="text-[11px] text-text-muted">Configure card and table fields in Tasting Journal</span>
+             </div>
+ 
+-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+-              {[
++            {renderToggleGrid(
++              [
+                 { key: 'scoreAndStars' as const, label: '100-Pt Score & Stars', icon: Star },
+                 { key: 'dateAndLocation' as const, label: 'Smoke Date & Location', icon: Calendar },
+                 { key: 'vitolaAndWrapper' as const, label: 'Vitola & Wrapper Specs', icon: Sliders },
+@@ -680,31 +831,11 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
+                 { key: 'rebuyVerdict' as const, label: 'Rebuy / Box Verdict', icon: Award },
+                 { key: 'flavorsAndNotes' as const, label: '3-Thirds Flavors & Notes', icon: Sparkles },
+                 { key: 'burnAndDraw' as const, label: 'Burn & Draw Metrics', icon: Activity },
+-              ].map(({ key, label, icon: Icon }) => {
+-                const isVisible = journalVisibility[key] ?? true;
+-                return (
+-                  <button
+-                    key={key}
+-                    onClick={() => toggleJournalField(key)}
+-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
+-                      isVisible
+-                        ? 'bg-section-header border-gold/40 text-white'
+-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
+-                    }`}
+-                  >
+-                    <div className="flex items-center gap-2 min-w-0">
+-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
+-                      <span className="text-xs font-semibold truncate">{label}</span>
+-                    </div>
+-                    {isVisible ? (
+-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
+-                    ) : (
+-                      <span className="text-[10px] text-text-muted">Off</span>
+-                    )}
+-                  </button>
+-                );
+-              })}
+-            </div>
++              ],
++              (key) => journalVisibility[key] ?? true,
++              toggleJournalField,
++              setAllJournalFields,
++            )}
+           </div>
+ 
+           {/* Section 8: Export Suite Customization */}
+diff --git a/src/components/CigarResearchHub.tsx b/src/components/CigarResearchHub.tsx
+index e80cc5b..c9256f7 100644
+--- a/src/components/CigarResearchHub.tsx
++++ b/src/components/CigarResearchHub.tsx
+@@ -57,6 +57,7 @@ import {
+   STRENGTH_LEVELS,
+ } from '../types';
+ import { formatDateShort } from '../utils/dateUtils';
++import { DEFAULT_QUICK_QUOTE_RETAILERS } from '../data/retailers';
+ import { generateId } from '../utils/idUtils';
+ import { formatCurrency } from '../utils/currencyUtils';
+ import {
+@@ -68,6 +69,7 @@ import {
+   suggestVitolaDimensions,
+ } from '../utils/researchUtils';
+ import { PersonalReviewModal } from './PersonalReviewModal';
++import { STORAGE_KEYS } from '../utils/storageKeys';
+ 
+ // Clean and format error messages to avoid raw JSON dumps
+ function cleanErrorMessage(raw: any, fallback = 'Unable to complete request.'): string {
+@@ -154,7 +156,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+   // Main view tab with persistence
+   const [activeMainTab, setActiveMainTab] = useState<'database' | 'dossier' | 'sommelier'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_research_active_tab');
++      const saved = localStorage.getItem(STORAGE_KEYS.researchActiveTab);
+       if (saved === 'database' || saved === 'dossier' || saved === 'sommelier') return saved;
+     } catch {}
+     return 'database';
+@@ -164,7 +166,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+   const [searchTerm, setSearchTerm] = useState<string>(() => {
+     if (initialResearchQuery) return initialResearchQuery;
+     try {
+-      return localStorage.getItem('the_humidor_research_search_term') || '';
++      return localStorage.getItem(STORAGE_KEYS.researchSearchTerm) || '';
+     } catch {
+       return '';
+     }
+@@ -172,7 +174,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [selectedBrand, setSelectedBrand] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_research_brand') || 'ALL';
++      return localStorage.getItem(STORAGE_KEYS.researchBrand) || 'ALL';
+     } catch {
+       return 'ALL';
+     }
+@@ -180,7 +182,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [selectedOrigin, setSelectedOrigin] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_research_origin') || 'ALL';
++      return localStorage.getItem(STORAGE_KEYS.researchOrigin) || 'ALL';
+     } catch {
+       return 'ALL';
+     }
+@@ -188,7 +190,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [selectedWrapperType, setSelectedWrapperType] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_research_wrapper') || 'ALL';
++      return localStorage.getItem(STORAGE_KEYS.researchWrapper) || 'ALL';
+     } catch {
+       return 'ALL';
+     }
+@@ -196,7 +198,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [selectedStrength, setSelectedStrength] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_research_strength') || 'ALL';
++      return localStorage.getItem(STORAGE_KEYS.researchStrength) || 'ALL';
+     } catch {
+       return 'ALL';
+     }
+@@ -204,7 +206,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [selectedPriceFilter, setSelectedPriceFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_research_price_filter') || 'ALL';
++      return localStorage.getItem(STORAGE_KEYS.researchPriceFilter) || 'ALL';
+     } catch {
+       return 'ALL';
+     }
+@@ -212,7 +214,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [selectedVitola, setSelectedVitola] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_research_vitola') || 'ALL';
++      return localStorage.getItem(STORAGE_KEYS.researchVitola) || 'ALL';
+     } catch {
+       return 'ALL';
+     }
+@@ -220,7 +222,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [selectedSmokeTime, setSelectedSmokeTime] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_research_smoke_time') || 'ALL';
++      return localStorage.getItem(STORAGE_KEYS.researchSmokeTime) || 'ALL';
+     } catch {
+       return 'ALL';
+     }
+@@ -228,7 +230,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [sortBy, setSortBy] = useState<'criticRating' | 'personalRating' | 'priceAsc' | 'priceDesc' | 'brand' | 'smokeDesc' | 'smokeAsc'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_research_sort_by');
++      const saved = localStorage.getItem(STORAGE_KEYS.researchSortBy);
+       if (saved && ['criticRating', 'personalRating', 'priceAsc', 'priceDesc', 'brand', 'smokeDesc', 'smokeAsc'].includes(saved)) {
+         return saved as any;
+       }
+@@ -238,7 +240,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [quickFilter, setQuickFilter] = useState<'all' | 'myNotes' | 'favorites' | 'cuban' | 'nicaragua' | 'dominican'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_research_quick_filter');
++      const saved = localStorage.getItem(STORAGE_KEYS.researchQuickFilter);
+       if (saved && ['all', 'myNotes', 'favorites', 'cuban', 'nicaragua', 'dominican'].includes(saved)) {
+         return saved as any;
+       }
+@@ -249,7 +251,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+   // View Mode: Grid (card view) or Table with persistence
+   const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_research_view_mode');
++      const saved = localStorage.getItem(STORAGE_KEYS.researchViewMode);
+       if (saved === 'grid' || saved === 'table') return saved;
+     } catch {}
+     return 'grid';
+@@ -258,7 +260,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+   // Inline Display Customization Toggles with persistence
+   const [showReviews, setShowReviews] = useState<boolean>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_research_show_reviews');
++      const saved = localStorage.getItem(STORAGE_KEYS.researchShowReviews);
+       if (saved !== null) return saved === 'true';
+     } catch {}
+     return true;
+@@ -266,7 +268,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [showFlavorProfile, setShowFlavorProfile] = useState<boolean>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_research_show_flavor_profile');
++      const saved = localStorage.getItem(STORAGE_KEYS.researchShowFlavorProfile);
+       if (saved !== null) return saved === 'true';
+     } catch {}
+     return true;
+@@ -274,7 +276,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [showRetailerQuotes, setShowRetailerQuotes] = useState<boolean>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_research_show_retailer_quotes');
++      const saved = localStorage.getItem(STORAGE_KEYS.researchShowRetailerQuotes);
+       if (saved !== null) return saved === 'true';
+     } catch {}
+     return true;
+@@ -282,7 +284,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [showPersonalNotes, setShowPersonalNotes] = useState<boolean>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_research_show_personal_notes');
++      const saved = localStorage.getItem(STORAGE_KEYS.researchShowPersonalNotes);
+       if (saved !== null) return saved === 'true';
+     } catch {}
+     return true;
+@@ -290,7 +292,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [showPairings, setShowPairings] = useState<boolean>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_research_show_pairings');
++      const saved = localStorage.getItem(STORAGE_KEYS.researchShowPairings);
+       if (saved !== null) return saved === 'true';
+     } catch {}
+     return true;
+@@ -298,7 +300,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   const [showDisplayOptions, setShowDisplayOptions] = useState<boolean>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_research_show_display_options') === 'true';
++      return localStorage.getItem(STORAGE_KEYS.researchShowDisplayOptions) === 'true';
+     } catch {
+       return false;
+     }
+@@ -307,109 +309,109 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+   // Sync all research filters to localStorage
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_active_tab', activeMainTab);
++      localStorage.setItem(STORAGE_KEYS.researchActiveTab, activeMainTab);
+     } catch {}
+   }, [activeMainTab]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_search_term', searchTerm);
++      localStorage.setItem(STORAGE_KEYS.researchSearchTerm, searchTerm);
+     } catch {}
+   }, [searchTerm]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_brand', selectedBrand);
++      localStorage.setItem(STORAGE_KEYS.researchBrand, selectedBrand);
+     } catch {}
+   }, [selectedBrand]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_origin', selectedOrigin);
++      localStorage.setItem(STORAGE_KEYS.researchOrigin, selectedOrigin);
+     } catch {}
+   }, [selectedOrigin]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_wrapper', selectedWrapperType);
++      localStorage.setItem(STORAGE_KEYS.researchWrapper, selectedWrapperType);
+     } catch {}
+   }, [selectedWrapperType]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_strength', selectedStrength);
++      localStorage.setItem(STORAGE_KEYS.researchStrength, selectedStrength);
+     } catch {}
+   }, [selectedStrength]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_price_filter', selectedPriceFilter);
++      localStorage.setItem(STORAGE_KEYS.researchPriceFilter, selectedPriceFilter);
+     } catch {}
+   }, [selectedPriceFilter]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_vitola', selectedVitola);
++      localStorage.setItem(STORAGE_KEYS.researchVitola, selectedVitola);
+     } catch {}
+   }, [selectedVitola]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_smoke_time', selectedSmokeTime);
++      localStorage.setItem(STORAGE_KEYS.researchSmokeTime, selectedSmokeTime);
+     } catch {}
+   }, [selectedSmokeTime]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_sort_by', sortBy);
++      localStorage.setItem(STORAGE_KEYS.researchSortBy, sortBy);
+     } catch {}
+   }, [sortBy]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_quick_filter', quickFilter);
++      localStorage.setItem(STORAGE_KEYS.researchQuickFilter, quickFilter);
+     } catch {}
+   }, [quickFilter]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_view_mode', viewMode);
++      localStorage.setItem(STORAGE_KEYS.researchViewMode, viewMode);
+     } catch {}
+   }, [viewMode]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_show_reviews', String(showReviews));
++      localStorage.setItem(STORAGE_KEYS.researchShowReviews, String(showReviews));
+     } catch {}
+   }, [showReviews]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_show_flavor_profile', String(showFlavorProfile));
++      localStorage.setItem(STORAGE_KEYS.researchShowFlavorProfile, String(showFlavorProfile));
+     } catch {}
+   }, [showFlavorProfile]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_show_retailer_quotes', String(showRetailerQuotes));
++      localStorage.setItem(STORAGE_KEYS.researchShowRetailerQuotes, String(showRetailerQuotes));
+     } catch {}
+   }, [showRetailerQuotes]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_show_personal_notes', String(showPersonalNotes));
++      localStorage.setItem(STORAGE_KEYS.researchShowPersonalNotes, String(showPersonalNotes));
+     } catch {}
+   }, [showPersonalNotes]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_show_pairings', String(showPairings));
++      localStorage.setItem(STORAGE_KEYS.researchShowPairings, String(showPairings));
+     } catch {}
+   }, [showPairings]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_research_show_display_options', String(showDisplayOptions));
++      localStorage.setItem(STORAGE_KEYS.researchShowDisplayOptions, String(showDisplayOptions));
+     } catch {}
+   }, [showDisplayOptions]);
+ 
+@@ -794,7 +796,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+         }),
+       });
+       const data = await res.json();
+-      if (res.ok && data.success && data.data?.retailerQuotes) {
++      if (res.ok && data.success && data.data?.retailerQuotes?.length > 0) {
+         const quotes: VendorPriceEntry[] = data.data.retailerQuotes.map((q: any) => ({
+           id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+           vendor: canonicalizeVendorName(q.vendor),
+@@ -839,10 +841,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+         showFeedback(`Scanned UK Retailers (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff): Best price £${data.data.bestPrice.toFixed(2)} at ${data.data.bestVendor}!`);
+       } else {
+-        showFeedback(`UK market price scan complete for "${cigar.brand} ${cigar.line}".`);
++        showFeedback(`No verified UK retailer prices found for "${cigar.brand} ${cigar.line}".`);
+       }
+     } catch (err: any) {
+-      showFeedback(`Scan complete using UK market price intelligence.`);
++      showFeedback(`Price scan failed — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?`);
+     } finally {
+       setScanningPriceCigarId(null);
+     }
+@@ -870,7 +872,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+         let updatedCount = 0;
+         data.data.results.forEach((r: any) => {
+           const cigar = researchDatabase.find((c) => c.id === r.id);
+-          if (cigar && r.quotes) {
++          if (cigar && r.quotes && r.quotes.length > 0) {
+             const quotes: VendorPriceEntry[] = r.quotes.map((q: any) => ({
+               id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+               vendor: canonicalizeVendorName(q.vendor),
+@@ -1026,28 +1028,28 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+   // Sommelier state with persistence
+   const [mood, setMood] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_sommelier_mood') || 'Relaxing on backyard deck after dinner';
++      return localStorage.getItem(STORAGE_KEYS.sommelierMood) || 'Relaxing on backyard deck after dinner';
+     } catch {
+       return 'Relaxing on backyard deck after dinner';
+     }
+   });
+   const [availableTime, setAvailableTime] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_sommelier_time') || '60-75 minutes';
++      return localStorage.getItem(STORAGE_KEYS.sommelierTime) || '60-75 minutes';
+     } catch {
+       return '60-75 minutes';
+     }
+   });
+   const [drinkPairing, setDrinkPairing] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_sommelier_drink') || 'Bourbon (Double Oaked) or Espresso';
++      return localStorage.getItem(STORAGE_KEYS.sommelierDrink) || 'Bourbon (Double Oaked) or Espresso';
+     } catch {
+       return 'Bourbon (Double Oaked) or Espresso';
+     }
+   });
+   const [preferenceNotes, setPreferenceNotes] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_sommelier_notes') || 'Looking for rich chocolate, cedar and cream flavors with medium-full body';
++      return localStorage.getItem(STORAGE_KEYS.sommelierNotes) || 'Looking for rich chocolate, cedar and cream flavors with medium-full body';
+     } catch {
+       return 'Looking for rich chocolate, cedar and cream flavors with medium-full body';
+     }
+@@ -1055,25 +1057,25 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_sommelier_mood', mood);
++      localStorage.setItem(STORAGE_KEYS.sommelierMood, mood);
+     } catch {}
+   }, [mood]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_sommelier_time', availableTime);
++      localStorage.setItem(STORAGE_KEYS.sommelierTime, availableTime);
+     } catch {}
+   }, [availableTime]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_sommelier_drink', drinkPairing);
++      localStorage.setItem(STORAGE_KEYS.sommelierDrink, drinkPairing);
+     } catch {}
+   }, [drinkPairing]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_sommelier_notes', preferenceNotes);
++      localStorage.setItem(STORAGE_KEYS.sommelierNotes, preferenceNotes);
+     } catch {}
+   }, [preferenceNotes]);
+   const [loadingSommelier, setLoadingSommelier] = useState(false);
+@@ -2618,7 +2620,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+                         {/* Quick Retailer Preset Buttons */}
+                         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                           <span className="text-[10px] text-text-muted">Quick quote:</span>
+-                          {['C.Gars Ltd', 'Havana House', 'Smoke King', 'Sautter London', 'Neptune'].map((vName) => {
++                          {DEFAULT_QUICK_QUOTE_RETAILERS.map((vName) => {
+                             const hasPriceFromVendor = (cigar.vendorPrices || []).some(
+                               (vp) => vp.vendor.toLowerCase().includes(vName.toLowerCase().split(' ')[0])
+                             );
+diff --git a/src/components/DashboardOverview.tsx b/src/components/DashboardOverview.tsx
+index 2057f84..489dc58 100644
+--- a/src/components/DashboardOverview.tsx
++++ b/src/components/DashboardOverview.tsx
+@@ -34,6 +34,7 @@ import { formatDate } from '../utils/dateUtils';
+ import { calculateRestDays } from '../utils/exportUtils';
+ import { formatCurrency } from '../utils/currencyUtils';
+ import { estimateAccurateSmokeTime } from '../utils/researchUtils';
++import { STORAGE_KEYS } from '../utils/storageKeys';
+ 
+ export interface DashboardDisplaySections {
+   dailyRecommendation: boolean;
+@@ -87,7 +88,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
+   // Local customizable display settings state with persistence
+   const [sections, setSections] = useState<DashboardDisplaySections>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_dashboard_sections');
++      const saved = localStorage.getItem(STORAGE_KEYS.dashboardSections);
+       if (saved) {
+         return { ...DEFAULT_DASHBOARD_SECTIONS, ...JSON.parse(saved) };
+       }
+@@ -111,7 +112,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
+ 
+   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_dashboard_customize_open') === 'true';
++      return localStorage.getItem(STORAGE_KEYS.dashboardCustomizeOpen) === 'true';
+     } catch {
+       return false;
+     }
+@@ -119,7 +120,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_dashboard_customize_open', String(isSettingsOpen));
++      localStorage.setItem(STORAGE_KEYS.dashboardCustomizeOpen, String(isSettingsOpen));
+     } catch {}
+   }, [isSettingsOpen]);
+   const [editingHumidorId, setEditingHumidorId] = useState<string | null>(null);
+@@ -139,7 +140,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_dashboard_sections', JSON.stringify(sections));
++      localStorage.setItem(STORAGE_KEYS.dashboardSections, JSON.stringify(sections));
+     } catch {
+       // ignore
+     }
+diff --git a/src/components/ErrorBoundary.tsx b/src/components/ErrorBoundary.tsx
+index bc10b5e..71409a7 100644
+--- a/src/components/ErrorBoundary.tsx
++++ b/src/components/ErrorBoundary.tsx
+@@ -1,5 +1,6 @@
+ import React from 'react';
+ import { AlertTriangle, RefreshCw, Trash2 } from 'lucide-react';
++import { STORAGE_KEYS } from '../utils/storageKeys';
+ 
+ interface Props {
+   children: React.ReactNode;
+@@ -29,11 +30,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
+ 
+   private handleResetStorage = () => {
+     try {
+-      localStorage.removeItem('cedar_ash_cigars');
+-      localStorage.removeItem('cedar_ash_humidors');
+-      localStorage.removeItem('cedar_ash_smokelogs');
+-      localStorage.removeItem('cedar_ash_wishlist');
+-      localStorage.removeItem('cedar_ash_research_db');
++      localStorage.removeItem(STORAGE_KEYS.cedarAshCigars);
++      localStorage.removeItem(STORAGE_KEYS.cedarAshHumidors);
++      localStorage.removeItem(STORAGE_KEYS.cedarAshSmokelogs);
++      localStorage.removeItem(STORAGE_KEYS.cedarAshWishlist);
++      localStorage.removeItem(STORAGE_KEYS.cedarAshResearchDb);
+     } catch (e) {
+       console.error(e);
+     }
+diff --git a/src/components/GlobalPriceEditorModal.tsx b/src/components/GlobalPriceEditorModal.tsx
+index cefa68f..3b99551 100644
+--- a/src/components/GlobalPriceEditorModal.tsx
++++ b/src/components/GlobalPriceEditorModal.tsx
+@@ -15,6 +15,7 @@ import {
+ } from 'lucide-react';
+ import { VendorPriceEntry } from '../types';
+ import { formatCurrency, DEFAULT_CURRENCY } from '../utils/currencyUtils';
++import { useQuickQuoteRetailers } from '../utils/useQuickQuoteRetailers';
+ 
+ interface GlobalPriceEditorModalProps {
+   isOpen: boolean;
+@@ -130,49 +131,19 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
+     );
+   };
+ 
+-  const [quickQuoteTags, setQuickQuoteTags] = useState<string[]>(() => {
+-    try {
+-      const saved = localStorage.getItem('cigar_quick_quote_retailers');
+-      if (saved) {
+-        const parsed = JSON.parse(saved);
+-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+-      }
+-    } catch {}
+-    return [
+-      'C.Gars Ltd',
+-      'Havana House',
+-      'Smoke King',
+-      'Sautter London',
+-      'Neptune',
+-      'Fox Cigar',
+-      'Davidoff London',
+-      "Holt's",
+-    ];
+-  });
++  const { tags: quickQuoteTags, addTag: addQuickQuoteTag, removeTag: removeQuickQuoteTag } = useQuickQuoteRetailers();
+   const [showAddTagInput, setShowAddTagInput] = useState(false);
+   const [newCustomTagName, setNewCustomTagName] = useState('');
+ 
+   const handleAddNewQuickTag = () => {
+-    if (!newCustomTagName.trim()) return;
+-    const trimmed = newCustomTagName.trim();
+-    if (!quickQuoteTags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
+-      const updated = [...quickQuoteTags, trimmed];
+-      setQuickQuoteTags(updated);
+-      try {
+-        localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(updated));
+-      } catch {}
+-    }
+-    setNewVendor(trimmed);
++    const added = addQuickQuoteTag(newCustomTagName);
++    if (added) setNewVendor(added);
+     setNewCustomTagName('');
+     setShowAddTagInput(false);
+   };
+ 
+   const handleDeleteQuickTag = (tagToDelete: string) => {
+-    const updated = quickQuoteTags.filter((t) => t !== tagToDelete);
+-    setQuickQuoteTags(updated);
+-    try {
+-      localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(updated));
+-    } catch {}
++    removeQuickQuoteTag(tagToDelete);
+   };
+ 
+   const handleQuickAddKnownRetailer = (name: string, defaultPriceOffset = 0) => {
+diff --git a/src/components/HumidorInventory.tsx b/src/components/HumidorInventory.tsx
+index 61fcd8f..2d2377f 100644
+--- a/src/components/HumidorInventory.tsx
++++ b/src/components/HumidorInventory.tsx
+@@ -31,6 +31,9 @@ import { generateId } from '../utils/idUtils';
+ import { calculateRestDays } from '../utils/exportUtils';
+ import { formatCurrency } from '../utils/currencyUtils';
+ import { canonicalizeVendorName, estimateAccurateSmokeTime } from '../utils/researchUtils';
++import { STORAGE_KEYS } from '../utils/storageKeys';
++import { useQuickQuoteRetailers } from '../utils/useQuickQuoteRetailers';
++import { DEFAULT_QUICK_QUOTE_RETAILERS } from '../data/retailers';
+ 
+ interface HumidorInventoryProps {
+   cigars: Cigar[];
+@@ -78,7 +81,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+   // Persistent Filter & Display States
+   const [selectedHumidorId, setSelectedHumidorId] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_selected_humidor') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.inventorySelectedHumidor) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -86,7 +89,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [searchQuery, setSearchQuery] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_search') || '';
++      return localStorage.getItem(STORAGE_KEYS.inventorySearch) || '';
+     } catch {
+       return '';
+     }
+@@ -94,7 +97,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [statusFilter, setStatusFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_status') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.inventoryStatus) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -102,7 +105,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [strengthFilter, setStrengthFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_strength') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.inventoryStrength) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -110,7 +113,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [brandFilter, setBrandFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_brand') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.inventoryBrand) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -118,7 +121,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [wrapperFilter, setWrapperFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_wrapper') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.inventoryWrapper) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -126,7 +129,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [vitolaFilter, setVitolaFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_vitola') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.inventoryVitola) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -134,7 +137,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [smokeTimeFilter, setSmokeTimeFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_smoke_time') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.inventorySmokeTime) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -142,7 +145,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [originFilter, setOriginFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_origin') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.inventoryOrigin) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -150,7 +153,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [activePillCategory, setActivePillCategory] = useState<'wrapper' | 'vitola' | 'smokeTime' | 'strength' | 'status'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_inventory_pill_category');
++      const saved = localStorage.getItem(STORAGE_KEYS.inventoryPillCategory);
+       if (saved === 'wrapper' || saved === 'vitola' || saved === 'smokeTime' || saved === 'strength' || saved === 'status') return saved;
+     } catch {}
+     return 'wrapper';
+@@ -158,7 +161,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [showQuickPillBar, setShowQuickPillBar] = useState<boolean>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_inventory_show_pills');
++      const saved = localStorage.getItem(STORAGE_KEYS.inventoryShowPills);
+       return saved !== null ? saved === 'true' : true;
+     } catch {
+       return true;
+@@ -167,7 +170,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [sortBy, setSortBy] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_sort') || 'rating-desc';
++      return localStorage.getItem(STORAGE_KEYS.inventorySort) || 'rating-desc';
+     } catch {
+       return 'rating-desc';
+     }
+@@ -175,7 +178,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_inventory_view_mode');
++      const saved = localStorage.getItem(STORAGE_KEYS.inventoryViewMode);
+       if (saved === 'grid' || saved === 'table') return saved;
+     } catch {}
+     return 'grid';
+@@ -217,7 +220,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+   // Inline Display Settings & Presets with persistence
+   const [showDisplayOptions, setShowDisplayOptions] = useState<boolean>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_inventory_show_display_options') === 'true';
++      return localStorage.getItem(STORAGE_KEYS.inventoryShowDisplayOptions) === 'true';
+     } catch {
+       return false;
+     }
+@@ -237,7 +240,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+       rating: settings?.humidorFieldVisibility?.rating ?? true,
+     };
+     try {
+-      const saved = localStorage.getItem('the_humidor_inventory_display_fields');
++      const saved = localStorage.getItem(STORAGE_KEYS.inventoryDisplayFields);
+       if (saved) {
+         return { ...defaultFields, ...JSON.parse(saved) };
+       }
+@@ -248,85 +251,85 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+   // Sync state changes to localStorage
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_selected_humidor', selectedHumidorId);
++      localStorage.setItem(STORAGE_KEYS.inventorySelectedHumidor, selectedHumidorId);
+     } catch {}
+   }, [selectedHumidorId]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_search', searchQuery);
++      localStorage.setItem(STORAGE_KEYS.inventorySearch, searchQuery);
+     } catch {}
+   }, [searchQuery]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_status', statusFilter);
++      localStorage.setItem(STORAGE_KEYS.inventoryStatus, statusFilter);
+     } catch {}
+   }, [statusFilter]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_strength', strengthFilter);
++      localStorage.setItem(STORAGE_KEYS.inventoryStrength, strengthFilter);
+     } catch {}
+   }, [strengthFilter]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_brand', brandFilter);
++      localStorage.setItem(STORAGE_KEYS.inventoryBrand, brandFilter);
+     } catch {}
+   }, [brandFilter]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_wrapper', wrapperFilter);
++      localStorage.setItem(STORAGE_KEYS.inventoryWrapper, wrapperFilter);
+     } catch {}
+   }, [wrapperFilter]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_vitola', vitolaFilter);
++      localStorage.setItem(STORAGE_KEYS.inventoryVitola, vitolaFilter);
+     } catch {}
+   }, [vitolaFilter]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_smoke_time', smokeTimeFilter);
++      localStorage.setItem(STORAGE_KEYS.inventorySmokeTime, smokeTimeFilter);
+     } catch {}
+   }, [smokeTimeFilter]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_origin', originFilter);
++      localStorage.setItem(STORAGE_KEYS.inventoryOrigin, originFilter);
+     } catch {}
+   }, [originFilter]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_pill_category', activePillCategory);
++      localStorage.setItem(STORAGE_KEYS.inventoryPillCategory, activePillCategory);
+     } catch {}
+   }, [activePillCategory]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_show_pills', String(showQuickPillBar));
++      localStorage.setItem(STORAGE_KEYS.inventoryShowPills, String(showQuickPillBar));
+     } catch {}
+   }, [showQuickPillBar]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_sort', sortBy);
++      localStorage.setItem(STORAGE_KEYS.inventorySort, sortBy);
+     } catch {}
+   }, [sortBy]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_view_mode', viewMode);
++      localStorage.setItem(STORAGE_KEYS.inventoryViewMode, viewMode);
+     } catch {}
+   }, [viewMode]);
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_show_display_options', String(showDisplayOptions));
++      localStorage.setItem(STORAGE_KEYS.inventoryShowDisplayOptions, String(showDisplayOptions));
+     } catch {}
+   }, [showDisplayOptions]);
+ 
+@@ -342,7 +345,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_inventory_display_fields', JSON.stringify(displayFields));
++      localStorage.setItem(STORAGE_KEYS.inventoryDisplayFields, JSON.stringify(displayFields));
+     } catch {}
+   }, [displayFields]);
+ 
+@@ -417,45 +420,26 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
+ 
+   // Inline Quick Quote state for Humidor cards
+   const [quickQuoteCigarId, setQuickQuoteCigarId] = useState<string | null>(null);
+-  const [quickQuoteVendor, setQuickQuoteVendor] = useState<string>('C.Gars Ltd');
++  const [quickQuoteVendor, setQuickQuoteVendor] = useState<string>(DEFAULT_QUICK_QUOTE_RETAILERS[0]);
+   const [quickQuoteValue, setQuickQuoteValue] = useState<string>('');
+   const [quickQuoteCurrency, setQuickQuoteCurrency] = useState<string>('£');
+ 
+   // Configurable quick shop tags
+-  const [quickQuoteTags, setQuickQuoteTags] = useState<string[]>(() => {
+-    try {
+-      const saved = localStorage.getItem('cigar_quick_quote_retailers');
+-      if (saved) {
+-        const parsed = JSON.parse(saved);
+-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+-      }
+-    } catch {}
+-    return ['C.Gars Ltd', 'Havana House', 'Smoke King', 'Sautter London', 'Neptune', 'Fox Cigar', 'Davidoff London', "Holt's"];
+-  });
++  const { tags: quickQuoteTags, addTag: addQuickQuoteTag, removeTag: removeQuickQuoteTag } = useQuickQuoteRetailers();
+   const [showAddTagInput, setShowAddTagInput] = useState(false);
+   const [newCustomTag, setNewCustomTag] = useState('');
+ 
+   const handleAddNewQuickTag = () => {
+-    const trimmed = newCustomTag.trim();
+-    if (!trimmed) return;
+-    if (!quickQuoteTags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
+-      const updated = [...quickQuoteTags, trimmed];
+-      setQuickQuoteTags(updated);
+-      try {
+-        localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(updated));
+-      } catch {}
++    const added = addQuickQuoteTag(newCustomTag);
++    if (added) {
++      setQuickQuoteVendor(added);
++      setNewCustomTag('');
++      setShowAddTagInput(false);
+     }
+-    setQuickQuoteVendor(trimmed);
+-    setNewCustomTag('');
+-    setShowAddTagInput(false);
+   };
+ 
+   const handleDeleteQuickTag = (tag: string) => {
+-    const updated = quickQuoteTags.filter((t) => t !== tag);
+-    setQuickQuoteTags(updated);
+-    try {
+-      localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(updated));
+-    } catch {}
++    removeQuickQuoteTag(tag);
+   };
+ 
+   const showNotice = (msg: string) => {
+diff --git a/src/components/LogSmokeModal.tsx b/src/components/LogSmokeModal.tsx
+index f59f437..10abf36 100644
+--- a/src/components/LogSmokeModal.tsx
++++ b/src/components/LogSmokeModal.tsx
+@@ -23,6 +23,7 @@ import {
+ import { Cigar, SmokeLog } from '../types';
+ import { FLAVOR_CATEGORIES } from '../data/initialData';
+ import confetti from 'canvas-confetti';
++import { STORAGE_KEYS } from '../utils/storageKeys';
+ 
+ interface LogSmokeModalProps {
+   isOpen: boolean;
+@@ -118,7 +119,7 @@ export const LogSmokeModal: React.FC<LogSmokeModalProps> = ({
+     detailedReview: boolean;
+   }>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_log_smoke_sections');
++      const saved = localStorage.getItem(STORAGE_KEYS.logSmokeSections);
+       if (saved) {
+         return JSON.parse(saved);
+       }
+@@ -136,7 +137,7 @@ export const LogSmokeModal: React.FC<LogSmokeModalProps> = ({
+ 
+   useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_log_smoke_sections', JSON.stringify(openSections));
++      localStorage.setItem(STORAGE_KEYS.logSmokeSections, JSON.stringify(openSections));
+     } catch {}
+   }, [openSections]);
+ 
+diff --git a/src/components/SmokeJournal.tsx b/src/components/SmokeJournal.tsx
+index a3f2bb6..4af0665 100644
+--- a/src/components/SmokeJournal.tsx
++++ b/src/components/SmokeJournal.tsx
+@@ -26,6 +26,7 @@ import {
+ } from 'lucide-react';
+ import { SmokeLog, Cigar, AppSettings } from '../types';
+ import { formatDate } from '../utils/dateUtils';
++import { STORAGE_KEYS } from '../utils/storageKeys';
+ 
+ interface SmokeJournalProps {
+   logs: SmokeLog[];
+@@ -49,7 +50,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+   // Search and filter states with persistence
+   const [searchQuery, setSearchQuery] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_search') || '';
++      return localStorage.getItem(STORAGE_KEYS.journalSearch) || '';
+     } catch {
+       return '';
+     }
+@@ -57,7 +58,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+ 
+   const [ratingFilter, setRatingFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_rating_filter') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.journalRatingFilter) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -65,7 +66,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+ 
+   const [rebuyFilter, setRebuyFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_rebuy_filter') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.journalRebuyFilter) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -73,7 +74,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+ 
+   const [brandFilter, setBrandFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_brand_filter') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.journalBrandFilter) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -81,7 +82,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+ 
+   const [vitolaFilter, setVitolaFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_vitola_filter') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.journalVitolaFilter) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -89,7 +90,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+ 
+   const [wrapperFilter, setWrapperFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_wrapper_filter') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.journalWrapperFilter) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -97,7 +98,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+ 
+   const [durationFilter, setDurationFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_duration_filter') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.journalDurationFilter) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -105,7 +106,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+ 
+   const [cutTypeFilter, setCutTypeFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_cut_filter') || 'all';
++      return localStorage.getItem(STORAGE_KEYS.journalCutFilter) || 'all';
+     } catch {
+       return 'all';
+     }
+@@ -113,7 +114,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+ 
+   const [sortBy, setSortBy] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_sort_by') || 'date-desc';
++      return localStorage.getItem(STORAGE_KEYS.journalSortBy) || 'date-desc';
+     } catch {
+       return 'date-desc';
+     }
+@@ -125,7 +126,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+   // View Mode: Cards or Database Table with persistence
+   const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_journal_view_mode');
++      const saved = localStorage.getItem(STORAGE_KEYS.journalViewMode);
+       if (saved === 'cards' || saved === 'table') return saved;
+     } catch {}
+     return 'cards';
+@@ -134,7 +135,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+   // Inline Display Settings with persistence
+   const [showDisplayOptions, setShowDisplayOptions] = useState<boolean>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_journal_show_display_options') === 'true';
++      return localStorage.getItem(STORAGE_KEYS.journalShowDisplayOptions) === 'true';
+     } catch {
+       return false;
+     }
+@@ -152,7 +153,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+       burnAndDraw: settings?.journalFieldVisibility?.burnAndDraw ?? true,
+     };
+     try {
+-      const saved = localStorage.getItem('the_humidor_journal_display_fields');
++      const saved = localStorage.getItem(STORAGE_KEYS.journalDisplayFields);
+       if (saved) {
+         return { ...defaultFields, ...JSON.parse(saved) };
+       }
+@@ -173,73 +174,73 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
+   // Sync state to localStorage
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_search', searchQuery);
++      localStorage.setItem(STORAGE_KEYS.journalSearch, searchQuery);
+     } catch {}
+   }, [searchQuery]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_rating_filter', ratingFilter);
++      localStorage.setItem(STORAGE_KEYS.journalRatingFilter, ratingFilter);
+     } catch {}
+   }, [ratingFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_rebuy_filter', rebuyFilter);
++      localStorage.setItem(STORAGE_KEYS.journalRebuyFilter, rebuyFilter);
+     } catch {}
+   }, [rebuyFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_brand_filter', brandFilter);
++      localStorage.setItem(STORAGE_KEYS.journalBrandFilter, brandFilter);
+     } catch {}
+   }, [brandFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_vitola_filter', vitolaFilter);
++      localStorage.setItem(STORAGE_KEYS.journalVitolaFilter, vitolaFilter);
+     } catch {}
+   }, [vitolaFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_wrapper_filter', wrapperFilter);
++      localStorage.setItem(STORAGE_KEYS.journalWrapperFilter, wrapperFilter);
+     } catch {}
+   }, [wrapperFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_duration_filter', durationFilter);
++      localStorage.setItem(STORAGE_KEYS.journalDurationFilter, durationFilter);
+     } catch {}
+   }, [durationFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_cut_filter', cutTypeFilter);
++      localStorage.setItem(STORAGE_KEYS.journalCutFilter, cutTypeFilter);
+     } catch {}
+   }, [cutTypeFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_sort_by', sortBy);
++      localStorage.setItem(STORAGE_KEYS.journalSortBy, sortBy);
+     } catch {}
+   }, [sortBy]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_view_mode', viewMode);
++      localStorage.setItem(STORAGE_KEYS.journalViewMode, viewMode);
+     } catch {}
+   }, [viewMode]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_show_display_options', String(showDisplayOptions));
++      localStorage.setItem(STORAGE_KEYS.journalShowDisplayOptions, String(showDisplayOptions));
+     } catch {}
+   }, [showDisplayOptions]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_journal_display_fields', JSON.stringify(displayFields));
++      localStorage.setItem(STORAGE_KEYS.journalDisplayFields, JSON.stringify(displayFields));
+     } catch {}
+   }, [displayFields]);
+ 
+diff --git a/src/components/WishlistHunting.tsx b/src/components/WishlistHunting.tsx
+index 0a3bfc6..81f070d 100644
+--- a/src/components/WishlistHunting.tsx
++++ b/src/components/WishlistHunting.tsx
+@@ -36,6 +36,9 @@ import {
+ } from 'lucide-react';
+ import { WishlistItem, Cigar, AppSettings, VendorPriceEntry, CigarResearchItem, ReviewScoreEntry, WishlistBasketItem } from '../types';
+ import { formatCurrency, DEFAULT_CURRENCY } from '../utils/currencyUtils';
++import { STORAGE_KEYS } from '../utils/storageKeys';
++import { DEFAULT_QUICK_QUOTE_RETAILERS } from '../data/retailers';
++import { useQuickQuoteRetailers } from '../utils/useQuickQuoteRetailers';
+ import {
+   estimateAccurateSmokeTime,
+   canonicalizeVendorName,
+@@ -43,19 +46,6 @@ import {
+   areCigarsMatching,
+ } from '../utils/researchUtils';
+ 
+-const DEFAULT_QUICK_RETAILERS = [
+-  'C.Gars Ltd',
+-  'Havana House',
+-  'Smoke King',
+-  'Sautter London',
+-  'JJ Fox',
+-  'Davidoff London',
+-  'Neptune Cigars',
+-  'Famous Smoke',
+-  'Atlantic Cigar',
+-  'Fox Cigar',
+-];
+-
+ interface WishlistHuntingProps {
+   wishlist: WishlistItem[];
+   onAddWishlistItem: (item: Omit<WishlistItem, 'id' | 'createdAt'>) => void;
+@@ -124,7 +114,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+   // Search & Filter state with persistence
+   const [searchTerm, setSearchTerm] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_wishlist_search') || '';
++      return localStorage.getItem(STORAGE_KEYS.wishlistSearch) || '';
+     } catch {
+       return '';
+     }
+@@ -132,7 +122,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+ 
+   const [priorityFilter, setPriorityFilter] = useState<'ALL' | 'High' | 'Medium' | 'Low'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_wishlist_priority_filter');
++      const saved = localStorage.getItem(STORAGE_KEYS.wishlistPriorityFilter);
+       if (saved === 'ALL' || saved === 'High' || saved === 'Medium' || saved === 'Low') return saved;
+     } catch {}
+     return 'ALL';
+@@ -140,7 +130,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+ 
+   const [smokeTimeFilter, setSmokeTimeFilter] = useState<'ALL' | 'quick' | 'medium' | 'long'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_wishlist_smoke_time_filter');
++      const saved = localStorage.getItem(STORAGE_KEYS.wishlistSmokeTimeFilter);
+       if (saved === 'ALL' || saved === 'quick' || saved === 'medium' || saved === 'long') return saved;
+     } catch {}
+     return 'ALL';
+@@ -148,7 +138,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+ 
+   const [brandFilter, setBrandFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_wishlist_brand_filter') || 'ALL';
++      return localStorage.getItem(STORAGE_KEYS.wishlistBrandFilter) || 'ALL';
+     } catch {
+       return 'ALL';
+     }
+@@ -157,7 +147,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+   // Shop / Retailer Filter & Best-Price-Only Filter with persistence
+   const [selectedShopFilter, setSelectedShopFilter] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_wishlist_shop_filter') || 'ALL';
++      return localStorage.getItem(STORAGE_KEYS.wishlistShopFilter) || 'ALL';
+     } catch {
+       return 'ALL';
+     }
+@@ -165,7 +155,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+ 
+   const [shopBestPriceOnly, setShopBestPriceOnly] = useState<boolean>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_wishlist_shop_best_only') === 'true';
++      return localStorage.getItem(STORAGE_KEYS.wishlistShopBestOnly) === 'true';
+     } catch {
+       return false;
+     }
+@@ -174,7 +164,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+   // Shopping Basket State with persistence
+   const [basket, setBasket] = useState<WishlistBasketItem[]>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_wishlist_basket');
++      const saved = localStorage.getItem(STORAGE_KEYS.wishlistBasket);
+       if (saved) return JSON.parse(saved);
+     } catch {}
+     return [];
+@@ -185,7 +175,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+   // View Mode: Grid (Cards) or Table (Database view) with persistence
+   const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+     try {
+-      const saved = localStorage.getItem('the_humidor_wishlist_view_mode');
++      const saved = localStorage.getItem(STORAGE_KEYS.wishlistViewMode);
+       if (saved === 'grid' || saved === 'table') return saved;
+     } catch {}
+     return 'grid';
+@@ -194,7 +184,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+   // Display Settings state with persistence
+   const [showDisplayOptions, setShowDisplayOptions] = useState<boolean>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_wishlist_show_display_options') === 'true';
++      return localStorage.getItem(STORAGE_KEYS.wishlistShowDisplayOptions) === 'true';
+     } catch {
+       return false;
+     }
+@@ -202,7 +192,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+ 
+   const [sortBy, setSortBy] = useState<string>(() => {
+     try {
+-      return localStorage.getItem('the_humidor_wishlist_sort') || 'priority-desc';
++      return localStorage.getItem(STORAGE_KEYS.wishlistSort) || 'priority-desc';
+     } catch {
+       return 'priority-desc';
+     }
+@@ -219,7 +209,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+       rating: settings?.wishlistFieldVisibility?.rating ?? true,
+     };
+     try {
+-      const saved = localStorage.getItem('the_humidor_wishlist_display_fields');
++      const saved = localStorage.getItem(STORAGE_KEYS.wishlistDisplayFields);
+       if (saved) {
+         return { ...defaultFields, ...JSON.parse(saved) };
+       }
+@@ -356,7 +346,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+     });
+ 
+     // Merge default quick retailers
+-    DEFAULT_QUICK_RETAILERS.forEach((r) => {
++    DEFAULT_QUICK_QUOTE_RETAILERS.forEach((r) => {
+       const c = canonicalizeVendorName(r);
+       if (!shopMap.has(c)) {
+         shopMap.set(c, { totalQuotes: 0, bestPriceCount: 0 });
+@@ -420,67 +410,67 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+   // Sync states to localStorage
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_search', searchTerm);
++      localStorage.setItem(STORAGE_KEYS.wishlistSearch, searchTerm);
+     } catch {}
+   }, [searchTerm]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_priority_filter', priorityFilter);
++      localStorage.setItem(STORAGE_KEYS.wishlistPriorityFilter, priorityFilter);
+     } catch {}
+   }, [priorityFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_smoke_time_filter', smokeTimeFilter);
++      localStorage.setItem(STORAGE_KEYS.wishlistSmokeTimeFilter, smokeTimeFilter);
+     } catch {}
+   }, [smokeTimeFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_brand_filter', brandFilter);
++      localStorage.setItem(STORAGE_KEYS.wishlistBrandFilter, brandFilter);
+     } catch {}
+   }, [brandFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_shop_filter', selectedShopFilter);
++      localStorage.setItem(STORAGE_KEYS.wishlistShopFilter, selectedShopFilter);
+     } catch {}
+   }, [selectedShopFilter]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_shop_best_only', String(shopBestPriceOnly));
++      localStorage.setItem(STORAGE_KEYS.wishlistShopBestOnly, String(shopBestPriceOnly));
+     } catch {}
+   }, [shopBestPriceOnly]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_basket', JSON.stringify(basket));
++      localStorage.setItem(STORAGE_KEYS.wishlistBasket, JSON.stringify(basket));
+     } catch {}
+   }, [basket]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_view_mode', viewMode);
++      localStorage.setItem(STORAGE_KEYS.wishlistViewMode, viewMode);
+     } catch {}
+   }, [viewMode]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_sort', sortBy);
++      localStorage.setItem(STORAGE_KEYS.wishlistSort, sortBy);
+     } catch {}
+   }, [sortBy]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_show_display_options', String(showDisplayOptions));
++      localStorage.setItem(STORAGE_KEYS.wishlistShowDisplayOptions, String(showDisplayOptions));
+     } catch {}
+   }, [showDisplayOptions]);
+ 
+   React.useEffect(() => {
+     try {
+-      localStorage.setItem('the_humidor_wishlist_display_fields', JSON.stringify(displayFields));
++      localStorage.setItem(STORAGE_KEYS.wishlistDisplayFields, JSON.stringify(displayFields));
+     } catch {}
+   }, [displayFields]);
+ 
+@@ -685,16 +675,10 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+ 
+   // Quick Inline Retailer Quote state
+   const [quickQuoteItemId, setQuickQuoteItemId] = useState<string | null>(null);
+-  const [quickQuoteVendor, setQuickQuoteVendor] = useState('C.Gars Ltd');
++  const [quickQuoteVendor, setQuickQuoteVendor] = useState(DEFAULT_QUICK_QUOTE_RETAILERS[0]);
+   const [quickQuotePrice, setQuickQuotePrice] = useState('');
+   const [quickQuoteCurrency, setQuickQuoteCurrency] = useState('£');
+-  const [quickQuoteCustomTags, setQuickQuoteCustomTags] = useState<string[]>(() => {
+-    try {
+-      const saved = localStorage.getItem('cigar_quick_quote_retailers');
+-      if (saved) return JSON.parse(saved);
+-    } catch {}
+-    return DEFAULT_QUICK_RETAILERS;
+-  });
++  const { tags: quickQuoteCustomTags, addTag: addQuickQuoteTag, removeTag: removeQuickQuoteTag } = useQuickQuoteRetailers();
+   const [newTagInput, setNewTagInput] = useState('');
+   const [isAddingTag, setIsAddingTag] = useState(false);
+ 
+@@ -785,7 +769,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+       }
+ 
+       const data = await response.json();
+-      const scannedPrices: VendorPriceEntry[] = data.prices || [];
++      const scannedPrices: VendorPriceEntry[] = data?.data?.retailerQuotes || data?.data?.quotes || [];
+ 
+       if (scannedPrices.length > 0) {
+         const currentQuotes = item.vendorPrices || [];
+@@ -839,11 +823,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+           `🇬🇧 Updated shop quotes for ${item.brand} ${item.name}! Best quote: £${minPrice.toFixed(2)} at ${bestVendor}.`
+         );
+       } else {
+-        setFeedbackNotice(`Scanned UK retailers — no direct matches found for ${item.brand} ${item.name}.`);
++        setFeedbackNotice(`Scanned UK retailers — no verified prices found for ${item.brand} ${item.name}.`);
+       }
+     } catch (err) {
+       console.error('Error scanning retailer prices:', err);
+-      setFeedbackNotice(`Price scan completed for ${item.brand} ${item.name}.`);
++      setFeedbackNotice(`Price scan failed for ${item.brand} ${item.name} — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?`);
+     } finally {
+       setScanningItemId(null);
+     }
+@@ -875,18 +859,18 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+       }
+ 
+       const data = await response.json();
+-      const results: Array<{ id: string; brand: string; name: string; prices: VendorPriceEntry[] }> = data.results || [];
++      const results: Array<{ id: string; brand: string; name: string; quotes: VendorPriceEntry[] }> = data?.data?.results || [];
+       let updatedCount = 0;
+ 
+       results.forEach((res) => {
+         const item = wishlist.find(
+           (w) => w.id === res.id || areCigarsMatching(w, { brand: res.brand, name: res.name, line: res.name })
+         );
+-        if (item && res.prices && res.prices.length > 0) {
++        if (item && res.quotes && res.quotes.length > 0) {
+           const currentQuotes = item.vendorPrices || [];
+           const merged = [...currentQuotes];
+ 
+-          res.prices.forEach((sp) => {
++          res.quotes.forEach((sp) => {
+             const cVendor = canonicalizeVendorName(sp.vendor);
+             const idx = merged.findIndex((q) => canonicalizeVendorName(q.vendor) === cVendor);
+             const formatted: VendorPriceEntry = {
+@@ -937,7 +921,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+       );
+     } catch (err) {
+       console.error('Batch scan error:', err);
+-      setFeedbackNotice('Completed batch scan across UK retailers.');
++      setFeedbackNotice('Batch price scan failed — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?');
+     } finally {
+       setIsBatchScanning(false);
+     }
+@@ -987,29 +971,20 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+   };
+ 
+   const handleAddCustomTag = () => {
+-    const trimmed = newTagInput.trim();
+-    if (!trimmed) return;
+-    if (!quickQuoteCustomTags.includes(trimmed)) {
+-      const nextTags = [...quickQuoteCustomTags, trimmed];
+-      setQuickQuoteCustomTags(nextTags);
+-      try {
+-        localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(nextTags));
+-      } catch {}
++    const added = addQuickQuoteTag(newTagInput);
++    if (added) {
++      setQuickQuoteVendor(added);
++      setNewTagInput('');
++      setIsAddingTag(false);
+     }
+-    setQuickQuoteVendor(trimmed);
+-    setNewTagInput('');
+-    setIsAddingTag(false);
+   };
+ 
+   const handleDeleteCustomTag = (tagToDelete: string, e: React.MouseEvent) => {
+     e.stopPropagation();
+-    const nextTags = quickQuoteCustomTags.filter((t) => t !== tagToDelete);
+-    setQuickQuoteCustomTags(nextTags);
+-    try {
+-      localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(nextTags));
+-    } catch {}
++    removeQuickQuoteTag(tagToDelete);
+     if (quickQuoteVendor === tagToDelete) {
+-      setQuickQuoteVendor(nextTags[0] || 'C.Gars Ltd');
++      const remaining = quickQuoteCustomTags.filter((t) => t !== tagToDelete);
++      setQuickQuoteVendor(remaining[0] || DEFAULT_QUICK_QUOTE_RETAILERS[0]);
+     }
+   };
+ 
+diff --git a/src/data/retailers.test.ts b/src/data/retailers.test.ts
+new file mode 100644
+index 0000000..ef2a32b
+--- /dev/null
++++ b/src/data/retailers.test.ts
+@@ -0,0 +1,13 @@
++import { describe, expect, it } from 'vitest';
++import { DEFAULT_QUICK_QUOTE_RETAILERS } from './retailers';
++
++describe('DEFAULT_QUICK_QUOTE_RETAILERS', () => {
++  it('has no duplicate entries', () => {
++    const lower = DEFAULT_QUICK_QUOTE_RETAILERS.map((r) => r.toLowerCase());
++    expect(new Set(lower).size).toBe(lower.length);
++  });
++
++  it('is non-empty', () => {
++    expect(DEFAULT_QUICK_QUOTE_RETAILERS.length).toBeGreaterThan(0);
++  });
++});
+diff --git a/src/data/retailers.ts b/src/data/retailers.ts
+new file mode 100644
+index 0000000..b881efc
+--- /dev/null
++++ b/src/data/retailers.ts
+@@ -0,0 +1,22 @@
++/**
++ * Single source of truth for UK cigar retailer names used across quick-quote
++ * pickers, settings defaults, and price entry forms.
++ *
++ * Before this file existed, this exact list (and the "start typing a vendor
++ * name" state/load/save logic around it) was hand-copied into
++ * WishlistHunting.tsx, CigarResearchHub.tsx, HumidorInventory.tsx,
++ * GlobalPriceEditorModal.tsx, AppSettingsModal.tsx and versionHistory.ts.
++ * Editing the list meant finding and updating every copy by hand, and they
++ * had already drifted out of sync in places. Import from here instead of
++ * inlining the list again.
++ */
++export const DEFAULT_QUICK_QUOTE_RETAILERS: string[] = [
++  'C.Gars Ltd',
++  'Havana House',
++  'Smoke King',
++  'Sautter London',
++  'Neptune',
++  'Fox Cigar',
++  'Davidoff London',
++  "Holt's",
++];
+diff --git a/src/data/versionHistory.ts b/src/data/versionHistory.ts
+index 00a1e13..a2ca266 100644
+--- a/src/data/versionHistory.ts
++++ b/src/data/versionHistory.ts
+@@ -1,4 +1,5 @@
+ import { VersionHistoryEntry, AppSettings } from '../types';
++import { DEFAULT_QUICK_QUOTE_RETAILERS } from './retailers';
+ 
+ export const APP_VERSION = 'v2.13.3';
+ 
+@@ -61,16 +62,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
+     flavorsAndNotes: true,
+     burnAndDraw: true,
+   },
+-  quickQuoteRetailers: [
+-    'C.Gars Ltd',
+-    'Havana House',
+-    'Smoke King',
+-    'Sautter London',
+-    'Neptune',
+-    'Fox Cigar',
+-    'Davidoff London',
+-    "Holt's",
+-  ],
++  quickQuoteRetailers: DEFAULT_QUICK_QUOTE_RETAILERS,
+   exportSuiteOptions: {
+     showResearchExport: true,
+     showMasterJson: true,
+diff --git a/src/index.css b/src/index.css
+index 61ef632..8f16182 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -81,3 +81,11 @@
+   background: var(--color-cedar);
+ }
+ 
++
++.no-scrollbar::-webkit-scrollbar {
++  display: none;
++}
++.no-scrollbar {
++  -ms-overflow-style: none;
++  scrollbar-width: none;
++}
+diff --git a/src/utils/storageKeys.test.ts b/src/utils/storageKeys.test.ts
+new file mode 100644
+index 0000000..53e3437
+--- /dev/null
++++ b/src/utils/storageKeys.test.ts
+@@ -0,0 +1,19 @@
++import { describe, expect, it } from 'vitest';
++import { STORAGE_KEYS } from './storageKeys';
++
++describe('STORAGE_KEYS', () => {
++  it('has no two properties pointing at the same underlying storage key', () => {
++    // The whole point of this file is to prevent two different parts of the
++    // app from silently sharing (or typo-diverging from) the same
++    // localStorage slot. A duplicate value here would defeat that.
++    const values = Object.values(STORAGE_KEYS);
++    expect(new Set(values).size).toBe(values.length);
++  });
++
++  it('every key is a non-empty string', () => {
++    for (const value of Object.values(STORAGE_KEYS)) {
++      expect(typeof value).toBe('string');
++      expect(value.length).toBeGreaterThan(0);
++    }
++  });
++});
+diff --git a/src/utils/storageKeys.ts b/src/utils/storageKeys.ts
+new file mode 100644
+index 0000000..f875415
+--- /dev/null
++++ b/src/utils/storageKeys.ts
+@@ -0,0 +1,89 @@
++/**
++ * Single source of truth for every localStorage key this app uses.
++ *
++ * Before this file existed, each of these ~72 keys was a raw string
++ * literal typed out separately everywhere it was read or written --
++ * across 8+ files -- with no single place to see the full list or
++ * catch a typo (a single mistyped character silently creates a second,
++ * disconnected storage slot instead of erroring). Import STORAGE_KEYS
++ * and reference a property instead of typing the string again.
++ *
++ * The property names are new; the string VALUES are unchanged from
++ * before, so existing persisted data in a person's browser is read
++ * exactly as before -- this is a pure refactor, not a data migration.
++ */
++export const STORAGE_KEYS = {
++  settingsCollapsedSections: 'the_humidor_settings_collapsed_sections',
++  cigarQuickQuoteRetailers: 'cigar_quick_quote_retailers',
++  activeTab: 'the_humidor_active_tab',
++  autoAddImportToResearch: 'the_humidor_auto_add_import_to_research',
++  dashboardCustomizeOpen: 'the_humidor_dashboard_customize_open',
++  dashboardSections: 'the_humidor_dashboard_sections',
++  inventoryBrand: 'the_humidor_inventory_brand',
++  inventoryDisplayFields: 'the_humidor_inventory_display_fields',
++  inventoryOrigin: 'the_humidor_inventory_origin',
++  inventoryPillCategory: 'the_humidor_inventory_pill_category',
++  inventorySearch: 'the_humidor_inventory_search',
++  inventorySelectedHumidor: 'the_humidor_inventory_selected_humidor',
++  inventoryShowDisplayOptions: 'the_humidor_inventory_show_display_options',
++  inventoryShowPills: 'the_humidor_inventory_show_pills',
++  inventorySmokeTime: 'the_humidor_inventory_smoke_time',
++  inventorySort: 'the_humidor_inventory_sort',
++  inventoryStatus: 'the_humidor_inventory_status',
++  inventoryStrength: 'the_humidor_inventory_strength',
++  inventoryViewMode: 'the_humidor_inventory_view_mode',
++  inventoryVitola: 'the_humidor_inventory_vitola',
++  inventoryWrapper: 'the_humidor_inventory_wrapper',
++  journalBrandFilter: 'the_humidor_journal_brand_filter',
++  journalCutFilter: 'the_humidor_journal_cut_filter',
++  journalDisplayFields: 'the_humidor_journal_display_fields',
++  journalDurationFilter: 'the_humidor_journal_duration_filter',
++  journalRatingFilter: 'the_humidor_journal_rating_filter',
++  journalRebuyFilter: 'the_humidor_journal_rebuy_filter',
++  journalSearch: 'the_humidor_journal_search',
++  journalShowDisplayOptions: 'the_humidor_journal_show_display_options',
++  journalSortBy: 'the_humidor_journal_sort_by',
++  journalViewMode: 'the_humidor_journal_view_mode',
++  journalVitolaFilter: 'the_humidor_journal_vitola_filter',
++  journalWrapperFilter: 'the_humidor_journal_wrapper_filter',
++  logSmokeSections: 'the_humidor_log_smoke_sections',
++  researchActiveTab: 'the_humidor_research_active_tab',
++  researchBrand: 'the_humidor_research_brand',
++  researchOrigin: 'the_humidor_research_origin',
++  researchPriceFilter: 'the_humidor_research_price_filter',
++  researchQuickFilter: 'the_humidor_research_quick_filter',
++  researchSearchTerm: 'the_humidor_research_search_term',
++  researchShowDisplayOptions: 'the_humidor_research_show_display_options',
++  researchShowFlavorProfile: 'the_humidor_research_show_flavor_profile',
++  researchShowPairings: 'the_humidor_research_show_pairings',
++  researchShowPersonalNotes: 'the_humidor_research_show_personal_notes',
++  researchShowRetailerQuotes: 'the_humidor_research_show_retailer_quotes',
++  researchShowReviews: 'the_humidor_research_show_reviews',
++  researchSmokeTime: 'the_humidor_research_smoke_time',
++  researchSortBy: 'the_humidor_research_sort_by',
++  researchStrength: 'the_humidor_research_strength',
++  researchViewMode: 'the_humidor_research_view_mode',
++  researchVitola: 'the_humidor_research_vitola',
++  researchWrapper: 'the_humidor_research_wrapper',
++  sommelierDrink: 'the_humidor_sommelier_drink',
++  sommelierMood: 'the_humidor_sommelier_mood',
++  sommelierNotes: 'the_humidor_sommelier_notes',
++  sommelierTime: 'the_humidor_sommelier_time',
++  wishlistBasket: 'the_humidor_wishlist_basket',
++  wishlistBrandFilter: 'the_humidor_wishlist_brand_filter',
++  wishlistDisplayFields: 'the_humidor_wishlist_display_fields',
++  wishlistPriorityFilter: 'the_humidor_wishlist_priority_filter',
++  wishlistSearch: 'the_humidor_wishlist_search',
++  wishlistShopBestOnly: 'the_humidor_wishlist_shop_best_only',
++  wishlistShopFilter: 'the_humidor_wishlist_shop_filter',
++  wishlistShowDisplayOptions: 'the_humidor_wishlist_show_display_options',
++  wishlistSmokeTimeFilter: 'the_humidor_wishlist_smoke_time_filter',
++  wishlistSort: 'the_humidor_wishlist_sort',
++  wishlistViewMode: 'the_humidor_wishlist_view_mode',
++  cedarAshCigars: 'cedar_ash_cigars',
++  cedarAshHumidors: 'cedar_ash_humidors',
++  cedarAshResearchDb: 'cedar_ash_research_db',
++  cedarAshSettings: 'cedar_ash_settings',
++  cedarAshSmokelogs: 'cedar_ash_smokelogs',
++  cedarAshWishlist: 'cedar_ash_wishlist',
++} as const;
+diff --git a/src/utils/useQuickQuoteRetailers.ts b/src/utils/useQuickQuoteRetailers.ts
+new file mode 100644
+index 0000000..97ed2b6
+--- /dev/null
++++ b/src/utils/useQuickQuoteRetailers.ts
+@@ -0,0 +1,67 @@
++import { useState, useCallback } from 'react';
++import { DEFAULT_QUICK_QUOTE_RETAILERS } from '../data/retailers';
++import { STORAGE_KEYS } from './storageKeys';
++
++/**
++ * The user-customizable list of "quick quote" retailer shortcut tags shown
++ * when adding a price to a cigar (Humidor, Wishlist, Research Hub cards).
++ *
++ * This list and its load/save/add/remove logic used to be hand-copied into
++ * three different components against the same localStorage key, with each
++ * copy behaving slightly differently (e.g. only one of the three compared
++ * new tags case-insensitively before adding). This hook is the one place
++ * that reads, persists, and mutates that list now.
++ */
++export function useQuickQuoteRetailers() {
++  const [tags, setTags] = useState<string[]>(() => {
++    try {
++      const saved = localStorage.getItem(STORAGE_KEYS.cigarQuickQuoteRetailers);
++      if (saved) {
++        const parsed = JSON.parse(saved);
++        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
++      }
++    } catch {
++      // Corrupt or inaccessible storage -- fall through to the default list.
++    }
++    return DEFAULT_QUICK_QUOTE_RETAILERS;
++  });
++
++  const persist = useCallback((next: string[]) => {
++    setTags(next);
++    try {
++      localStorage.setItem(STORAGE_KEYS.cigarQuickQuoteRetailers, JSON.stringify(next));
++    } catch {
++      // Best-effort persistence; the in-memory list still updates.
++    }
++  }, []);
++
++  const addTag = useCallback((rawTag: string): string | null => {
++    const trimmed = rawTag.trim();
++    if (!trimmed) return null;
++    setTags((current) => {
++      if (current.some((t) => t.toLowerCase() === trimmed.toLowerCase())) return current;
++      const next = [...current, trimmed];
++      try {
++        localStorage.setItem(STORAGE_KEYS.cigarQuickQuoteRetailers, JSON.stringify(next));
++      } catch {
++        // Best-effort persistence; the in-memory list still updates.
++      }
++      return next;
++    });
++    return trimmed;
++  }, []);
++
++  const removeTag = useCallback((tagToRemove: string) => {
++    setTags((current) => {
++      const next = current.filter((t) => t !== tagToRemove);
++      try {
++        localStorage.setItem(STORAGE_KEYS.cigarQuickQuoteRetailers, JSON.stringify(next));
++      } catch {
++        // Best-effort persistence; the in-memory list still updates.
++      }
++      return next;
++    });
++  }, []);
++
++  return { tags, setTags: persist, addTag, removeTag };
++}
