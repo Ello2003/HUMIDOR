@@ -1,4 +1,5 @@
 import { VersionHistoryEntry, AppSettings } from '../types';
+import { DEFAULT_QUICK_QUOTE_RETAILERS } from './retailers';
 
 export const APP_VERSION = 'v2.13.3';
 
@@ -61,16 +62,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     flavorsAndNotes: true,
     burnAndDraw: true,
   },
-  quickQuoteRetailers: [
-    'C.Gars Ltd',
-    'Havana House',
-    'Smoke King',
-    'Sautter London',
-    'Neptune',
-    'Fox Cigar',
-    'Davidoff London',
-    "Holt's",
-  ],
+  quickQuoteRetailers: DEFAULT_QUICK_QUOTE_RETAILERS,
   exportSuiteOptions: {
     showResearchExport: true,
     showMasterJson: true,

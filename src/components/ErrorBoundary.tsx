@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, Trash2 } from 'lucide-react';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 interface Props {
   children: React.ReactNode;
@@ -29,11 +30,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   private handleResetStorage = () => {
     try {
-      localStorage.removeItem('cedar_ash_cigars');
-      localStorage.removeItem('cedar_ash_humidors');
-      localStorage.removeItem('cedar_ash_smokelogs');
-      localStorage.removeItem('cedar_ash_wishlist');
-      localStorage.removeItem('cedar_ash_research_db');
+      localStorage.removeItem(STORAGE_KEYS.cedarAshCigars);
+      localStorage.removeItem(STORAGE_KEYS.cedarAshHumidors);
+      localStorage.removeItem(STORAGE_KEYS.cedarAshSmokelogs);
+      localStorage.removeItem(STORAGE_KEYS.cedarAshWishlist);
+      localStorage.removeItem(STORAGE_KEYS.cedarAshResearchDb);
     } catch (e) {
       console.error(e);
     }

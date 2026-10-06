@@ -34,6 +34,7 @@ import { formatDate } from '../utils/dateUtils';
 import { calculateRestDays } from '../utils/exportUtils';
 import { formatCurrency } from '../utils/currencyUtils';
 import { estimateAccurateSmokeTime } from '../utils/researchUtils';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 export interface DashboardDisplaySections {
   dailyRecommendation: boolean;
@@ -87,7 +88,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   // Local customizable display settings state with persistence
   const [sections, setSections] = useState<DashboardDisplaySections>(() => {
     try {
-      const saved = localStorage.getItem('the_humidor_dashboard_sections');
+      const saved = localStorage.getItem(STORAGE_KEYS.dashboardSections);
       if (saved) {
         return { ...DEFAULT_DASHBOARD_SECTIONS, ...JSON.parse(saved) };
       }
@@ -111,7 +112,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('the_humidor_dashboard_customize_open') === 'true';
+      return localStorage.getItem(STORAGE_KEYS.dashboardCustomizeOpen) === 'true';
     } catch {
       return false;
     }
@@ -119,7 +120,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_dashboard_customize_open', String(isSettingsOpen));
+      localStorage.setItem(STORAGE_KEYS.dashboardCustomizeOpen, String(isSettingsOpen));
     } catch {}
   }, [isSettingsOpen]);
   const [editingHumidorId, setEditingHumidorId] = useState<string | null>(null);
@@ -139,7 +140,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_dashboard_sections', JSON.stringify(sections));
+      localStorage.setItem(STORAGE_KEYS.dashboardSections, JSON.stringify(sections));
     } catch {
       // ignore
     }

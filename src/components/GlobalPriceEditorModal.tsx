@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { VendorPriceEntry } from '../types';
 import { formatCurrency, DEFAULT_CURRENCY } from '../utils/currencyUtils';
+import { useQuickQuoteRetailers } from '../utils/useQuickQuoteRetailers';
 
 interface GlobalPriceEditorModalProps {
   isOpen: boolean;
@@ -130,49 +131,19 @@ export const GlobalPriceEditorModal: React.FC<GlobalPriceEditorModalProps> = ({
     );
   };
 
-  const [quickQuoteTags, setQuickQuoteTags] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('cigar_quick_quote_retailers');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return [
-      'C.Gars Ltd',
-      'Havana House',
-      'Smoke King',
-      'Sautter London',
-      'Neptune',
-      'Fox Cigar',
-      'Davidoff London',
-      "Holt's",
-    ];
-  });
+  const { tags: quickQuoteTags, addTag: addQuickQuoteTag, removeTag: removeQuickQuoteTag } = useQuickQuoteRetailers();
   const [showAddTagInput, setShowAddTagInput] = useState(false);
   const [newCustomTagName, setNewCustomTagName] = useState('');
 
   const handleAddNewQuickTag = () => {
-    if (!newCustomTagName.trim()) return;
-    const trimmed = newCustomTagName.trim();
-    if (!quickQuoteTags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
-      const updated = [...quickQuoteTags, trimmed];
-      setQuickQuoteTags(updated);
-      try {
-        localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(updated));
-      } catch {}
-    }
-    setNewVendor(trimmed);
+    const added = addQuickQuoteTag(newCustomTagName);
+    if (added) setNewVendor(added);
     setNewCustomTagName('');
     setShowAddTagInput(false);
   };
 
   const handleDeleteQuickTag = (tagToDelete: string) => {
-    const updated = quickQuoteTags.filter((t) => t !== tagToDelete);
-    setQuickQuoteTags(updated);
-    try {
-      localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(updated));
-    } catch {}
+    removeQuickQuoteTag(tagToDelete);
   };
 
   const handleQuickAddKnownRetailer = (name: string, defaultPriceOffset = 0) => {

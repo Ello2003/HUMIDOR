@@ -31,6 +31,9 @@ import { generateId } from '../utils/idUtils';
 import { calculateRestDays } from '../utils/exportUtils';
 import { formatCurrency } from '../utils/currencyUtils';
 import { canonicalizeVendorName, estimateAccurateSmokeTime } from '../utils/researchUtils';
+import { STORAGE_KEYS } from '../utils/storageKeys';
+import { useQuickQuoteRetailers } from '../utils/useQuickQuoteRetailers';
+import { DEFAULT_QUICK_QUOTE_RETAILERS } from '../data/retailers';
 
 interface HumidorInventoryProps {
   cigars: Cigar[];
@@ -78,7 +81,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
   // Persistent Filter & Display States
   const [selectedHumidorId, setSelectedHumidorId] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_selected_humidor') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.inventorySelectedHumidor) || 'all';
     } catch {
       return 'all';
     }
@@ -86,7 +89,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [searchQuery, setSearchQuery] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_search') || '';
+      return localStorage.getItem(STORAGE_KEYS.inventorySearch) || '';
     } catch {
       return '';
     }
@@ -94,7 +97,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [statusFilter, setStatusFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_status') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.inventoryStatus) || 'all';
     } catch {
       return 'all';
     }
@@ -102,7 +105,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [strengthFilter, setStrengthFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_strength') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.inventoryStrength) || 'all';
     } catch {
       return 'all';
     }
@@ -110,7 +113,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [brandFilter, setBrandFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_brand') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.inventoryBrand) || 'all';
     } catch {
       return 'all';
     }
@@ -118,7 +121,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [wrapperFilter, setWrapperFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_wrapper') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.inventoryWrapper) || 'all';
     } catch {
       return 'all';
     }
@@ -126,7 +129,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [vitolaFilter, setVitolaFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_vitola') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.inventoryVitola) || 'all';
     } catch {
       return 'all';
     }
@@ -134,7 +137,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [smokeTimeFilter, setSmokeTimeFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_smoke_time') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.inventorySmokeTime) || 'all';
     } catch {
       return 'all';
     }
@@ -142,7 +145,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [originFilter, setOriginFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_origin') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.inventoryOrigin) || 'all';
     } catch {
       return 'all';
     }
@@ -150,7 +153,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [activePillCategory, setActivePillCategory] = useState<'wrapper' | 'vitola' | 'smokeTime' | 'strength' | 'status'>(() => {
     try {
-      const saved = localStorage.getItem('the_humidor_inventory_pill_category');
+      const saved = localStorage.getItem(STORAGE_KEYS.inventoryPillCategory);
       if (saved === 'wrapper' || saved === 'vitola' || saved === 'smokeTime' || saved === 'strength' || saved === 'status') return saved;
     } catch {}
     return 'wrapper';
@@ -158,7 +161,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [showQuickPillBar, setShowQuickPillBar] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem('the_humidor_inventory_show_pills');
+      const saved = localStorage.getItem(STORAGE_KEYS.inventoryShowPills);
       return saved !== null ? saved === 'true' : true;
     } catch {
       return true;
@@ -167,7 +170,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [sortBy, setSortBy] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_sort') || 'rating-desc';
+      return localStorage.getItem(STORAGE_KEYS.inventorySort) || 'rating-desc';
     } catch {
       return 'rating-desc';
     }
@@ -175,7 +178,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
     try {
-      const saved = localStorage.getItem('the_humidor_inventory_view_mode');
+      const saved = localStorage.getItem(STORAGE_KEYS.inventoryViewMode);
       if (saved === 'grid' || saved === 'table') return saved;
     } catch {}
     return 'grid';
@@ -217,7 +220,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
   // Inline Display Settings & Presets with persistence
   const [showDisplayOptions, setShowDisplayOptions] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('the_humidor_inventory_show_display_options') === 'true';
+      return localStorage.getItem(STORAGE_KEYS.inventoryShowDisplayOptions) === 'true';
     } catch {
       return false;
     }
@@ -237,7 +240,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
       rating: settings?.humidorFieldVisibility?.rating ?? true,
     };
     try {
-      const saved = localStorage.getItem('the_humidor_inventory_display_fields');
+      const saved = localStorage.getItem(STORAGE_KEYS.inventoryDisplayFields);
       if (saved) {
         return { ...defaultFields, ...JSON.parse(saved) };
       }
@@ -248,85 +251,85 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
   // Sync state changes to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_selected_humidor', selectedHumidorId);
+      localStorage.setItem(STORAGE_KEYS.inventorySelectedHumidor, selectedHumidorId);
     } catch {}
   }, [selectedHumidorId]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_search', searchQuery);
+      localStorage.setItem(STORAGE_KEYS.inventorySearch, searchQuery);
     } catch {}
   }, [searchQuery]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_status', statusFilter);
+      localStorage.setItem(STORAGE_KEYS.inventoryStatus, statusFilter);
     } catch {}
   }, [statusFilter]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_strength', strengthFilter);
+      localStorage.setItem(STORAGE_KEYS.inventoryStrength, strengthFilter);
     } catch {}
   }, [strengthFilter]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_brand', brandFilter);
+      localStorage.setItem(STORAGE_KEYS.inventoryBrand, brandFilter);
     } catch {}
   }, [brandFilter]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_wrapper', wrapperFilter);
+      localStorage.setItem(STORAGE_KEYS.inventoryWrapper, wrapperFilter);
     } catch {}
   }, [wrapperFilter]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_vitola', vitolaFilter);
+      localStorage.setItem(STORAGE_KEYS.inventoryVitola, vitolaFilter);
     } catch {}
   }, [vitolaFilter]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_smoke_time', smokeTimeFilter);
+      localStorage.setItem(STORAGE_KEYS.inventorySmokeTime, smokeTimeFilter);
     } catch {}
   }, [smokeTimeFilter]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_origin', originFilter);
+      localStorage.setItem(STORAGE_KEYS.inventoryOrigin, originFilter);
     } catch {}
   }, [originFilter]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_pill_category', activePillCategory);
+      localStorage.setItem(STORAGE_KEYS.inventoryPillCategory, activePillCategory);
     } catch {}
   }, [activePillCategory]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_show_pills', String(showQuickPillBar));
+      localStorage.setItem(STORAGE_KEYS.inventoryShowPills, String(showQuickPillBar));
     } catch {}
   }, [showQuickPillBar]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_sort', sortBy);
+      localStorage.setItem(STORAGE_KEYS.inventorySort, sortBy);
     } catch {}
   }, [sortBy]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_view_mode', viewMode);
+      localStorage.setItem(STORAGE_KEYS.inventoryViewMode, viewMode);
     } catch {}
   }, [viewMode]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_show_display_options', String(showDisplayOptions));
+      localStorage.setItem(STORAGE_KEYS.inventoryShowDisplayOptions, String(showDisplayOptions));
     } catch {}
   }, [showDisplayOptions]);
 
@@ -342,7 +345,7 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_inventory_display_fields', JSON.stringify(displayFields));
+      localStorage.setItem(STORAGE_KEYS.inventoryDisplayFields, JSON.stringify(displayFields));
     } catch {}
   }, [displayFields]);
 
@@ -417,45 +420,26 @@ export const HumidorInventory: React.FC<HumidorInventoryProps> = ({
 
   // Inline Quick Quote state for Humidor cards
   const [quickQuoteCigarId, setQuickQuoteCigarId] = useState<string | null>(null);
-  const [quickQuoteVendor, setQuickQuoteVendor] = useState<string>('C.Gars Ltd');
+  const [quickQuoteVendor, setQuickQuoteVendor] = useState<string>(DEFAULT_QUICK_QUOTE_RETAILERS[0]);
   const [quickQuoteValue, setQuickQuoteValue] = useState<string>('');
   const [quickQuoteCurrency, setQuickQuoteCurrency] = useState<string>('£');
 
   // Configurable quick shop tags
-  const [quickQuoteTags, setQuickQuoteTags] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('cigar_quick_quote_retailers');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return ['C.Gars Ltd', 'Havana House', 'Smoke King', 'Sautter London', 'Neptune', 'Fox Cigar', 'Davidoff London', "Holt's"];
-  });
+  const { tags: quickQuoteTags, addTag: addQuickQuoteTag, removeTag: removeQuickQuoteTag } = useQuickQuoteRetailers();
   const [showAddTagInput, setShowAddTagInput] = useState(false);
   const [newCustomTag, setNewCustomTag] = useState('');
 
   const handleAddNewQuickTag = () => {
-    const trimmed = newCustomTag.trim();
-    if (!trimmed) return;
-    if (!quickQuoteTags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
-      const updated = [...quickQuoteTags, trimmed];
-      setQuickQuoteTags(updated);
-      try {
-        localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(updated));
-      } catch {}
+    const added = addQuickQuoteTag(newCustomTag);
+    if (added) {
+      setQuickQuoteVendor(added);
+      setNewCustomTag('');
+      setShowAddTagInput(false);
     }
-    setQuickQuoteVendor(trimmed);
-    setNewCustomTag('');
-    setShowAddTagInput(false);
   };
 
   const handleDeleteQuickTag = (tag: string) => {
-    const updated = quickQuoteTags.filter((t) => t !== tag);
-    setQuickQuoteTags(updated);
-    try {
-      localStorage.setItem('cigar_quick_quote_retailers', JSON.stringify(updated));
-    } catch {}
+    removeQuickQuoteTag(tag);
   };
 
   const showNotice = (msg: string) => {

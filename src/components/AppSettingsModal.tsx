@@ -22,7 +22,6 @@ import {
   Maximize2,
   Minimize2,
   Store,
-  RefreshCw,
   Globe,
   Star,
   Tag,
@@ -30,9 +29,15 @@ import {
   MapPin,
   Activity,
   SlidersHorizontal,
+  ChevronDown,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Search,
 } from 'lucide-react';
 import { AppSettings } from '../types';
 import { DEFAULT_APP_SETTINGS } from '../data/versionHistory';
+import { DEFAULT_QUICK_QUOTE_RETAILERS } from '../data/retailers';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 interface AppSettingsModalProps {
   isOpen: boolean;
@@ -41,12 +46,116 @@ interface AppSettingsModalProps {
   onUpdateSettings: (newSettings: AppSettings) => void;
 }
 
+type SectionId =
+  | 'nav-tabs' | 'retailer-pricing' | 'dashboard' | 'cigar-fields'
+  | 'wishlist-fields' | 'humidor-fields' | 'journal-fields' | 'export-suite';
+
+const SECTION_NAV: Array<{ id: SectionId; icon: React.ComponentType<{ className?: string }>; label: string }> = [
+  { id: 'nav-tabs', icon: LayoutGrid, label: 'Tabs' },
+  { id: 'retailer-pricing', icon: Store, label: 'Pricing' },
+  { id: 'dashboard', icon: Layers, label: 'Dashboard' },
+  { id: 'cigar-fields', icon: Flame, label: 'Cigar Cards' },
+  { id: 'wishlist-fields', icon: Bookmark, label: 'Wishlist' },
+  { id: 'humidor-fields', icon: Archive, label: 'Humidor' },
+  { id: 'journal-fields', icon: Wine, label: 'Journal' },
+  { id: 'export-suite', icon: BarChart3, label: 'Export' },
+];
+
 export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
   isOpen,
   onClose,
   settings,
   onUpdateSettings,
 }) => {
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.settingsCollapsedSections);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // Corrupt or inaccessible storage -- every section just starts expanded.
+    }
+    return {};
+  });
+
+  const toggleCollapsed = (id: SectionId) => {
+    setCollapsed((current) => {
+      const next = { ...current, [id]: !current[id] };
+      try {
+        localStorage.setItem(STORAGE_KEYS.settingsCollapsedSections, JSON.stringify(next));
+      } catch {
+        // Best-effort persistence; the in-memory state still updates.
+      }
+      return next;
+    });
+  };
+
+  const setAllCollapsed = (value: boolean) => {
+    const next = Object.fromEntries(SECTION_NAV.map((s) => [s.id, value]));
+    setCollapsed(next);
+    try {
+      localStorage.setItem(STORAGE_KEYS.settingsCollapsedSections, JSON.stringify(next));
+    } catch {
+      // Best-effort persistence; the in-memory state still updates.
+    }
+  };
+
+  const jumpToSection = (id: SectionId) => {
+    if (collapsed[id]) toggleCollapsed(id);
+    requestAnimationFrame(() => {
+      document.getElementById(`settings-section-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  /**
+   * One collapsible section wrapper, used by every section below. It owns
+   * the clickable header (title, description, chevron) and the "hidden when
+   * collapsed or filtered out by search" body -- previously each of the 8
+   * sections had its own hand-written, always-expanded header with no way
+   * to collapse it or jump to it directly from a long, single scrolling list.
+   */
+  function Section({
+    id,
+    icon: Icon,
+    title,
+    description,
+    searchTerms,
+    children,
+  }: {
+    id: SectionId;
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    description: string;
+    searchTerms: string[];
+    children: React.ReactNode;
+  }) {
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = !query || [title, description, ...searchTerms]
+      .some((t) => t.toLowerCase().includes(query));
+    if (!matchesSearch) return null;
+
+    const isCollapsed = Boolean(collapsed[id]) && !query; // never collapse a section actively matching a search
+    return (
+      <div id={`settings-section-${id}`} className="space-y-3 scroll-mt-3">
+        <button
+          type="button"
+          onClick={() => toggleCollapsed(id)}
+          className="w-full flex items-center justify-between gap-3 text-left group"
+        >
+          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <Icon className="w-3.5 h-3.5 text-gold" />
+            <span>{title}</span>
+          </h3>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-text-muted hidden sm:inline">{description}</span>
+            <ChevronDown className={`w-4 h-4 text-text-muted group-hover:text-white transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+          </div>
+        </button>
+        {!isCollapsed && children}
+      </div>
+    );
+  }
+
   if (!isOpen) return null;
 
   const toggleTab = (tabKey: keyof AppSettings['visibleTabs']) => {
@@ -116,6 +225,114 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
       },
     });
   };
+
+  const setAllCigarFields = (keys: Array<keyof AppSettings['cigarFieldVisibility']>, value: boolean) => {
+    const next = { ...settings.cigarFieldVisibility };
+    keys.forEach((k) => { next[k] = value; });
+    onUpdateSettings({ ...settings, cigarFieldVisibility: next });
+  };
+
+  const setAllWishlistFields = (keys: Array<keyof NonNullable<AppSettings['wishlistFieldVisibility']>>, value: boolean) => {
+    const current = settings.wishlistFieldVisibility || DEFAULT_APP_SETTINGS.wishlistFieldVisibility!;
+    const next = { ...current };
+    keys.forEach((k) => { next[k] = value; });
+    onUpdateSettings({ ...settings, wishlistFieldVisibility: next });
+  };
+
+  const setAllHumidorFields = (keys: Array<keyof NonNullable<AppSettings['humidorFieldVisibility']>>, value: boolean) => {
+    const current = settings.humidorFieldVisibility || DEFAULT_APP_SETTINGS.humidorFieldVisibility!;
+    const next = { ...current };
+    keys.forEach((k) => { next[k] = value; });
+    onUpdateSettings({ ...settings, humidorFieldVisibility: next });
+  };
+
+  const setAllJournalFields = (keys: Array<keyof NonNullable<AppSettings['journalFieldVisibility']>>, value: boolean) => {
+    const current = settings.journalFieldVisibility || DEFAULT_APP_SETTINGS.journalFieldVisibility!;
+    const next = { ...current };
+    keys.forEach((k) => { next[k] = value; });
+    onUpdateSettings({ ...settings, journalFieldVisibility: next });
+  };
+
+  const setAllVisibleTabs = (keys: Array<keyof AppSettings['visibleTabs']>, value: boolean) => {
+    const next = { ...settings.visibleTabs };
+    keys.forEach((k) => { next[k] = value; });
+    onUpdateSettings({ ...settings, visibleTabs: next });
+  };
+
+  const setAllDashboardSections = (keys: Array<keyof AppSettings['dashboardSections']>, value: boolean) => {
+    const next = { ...settings.dashboardSections };
+    keys.forEach((k) => { next[k] = value; });
+    onUpdateSettings({ ...settings, dashboardSections: next });
+  };
+
+  /**
+   * Shared renderer for every "grid of on/off field toggles" section
+   * (Cigar Detail Cards, Wishlist, Humidor, Journal, Dashboard Modules).
+   * These five sections used to each hand-roll an identical grid of toggle
+   * buttons -- same markup, same classes, same Check/Off treatment -- with
+   * no way to turn a whole section on or off at once. One render function
+   * now backs all five, and adds that bulk action for free.
+   */
+  function renderToggleGrid<K extends string>(
+    items: Array<{ key: K; label: string; icon?: React.ComponentType<{ className?: string }> }>,
+    isVisible: (key: K) => boolean,
+    onToggle: (key: K) => void,
+    onSetAll: (keys: K[], value: boolean) => void,
+    columns: string = 'grid-cols-2 sm:grid-cols-4',
+  ) {
+    const allKeys = items.map((i) => i.key);
+    const visibleCount = items.filter((i) => isVisible(i.key)).length;
+    return (
+      <>
+        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider shrink-0">
+          <span className="text-text-muted">{visibleCount}/{items.length} shown</span>
+          <button
+            type="button"
+            onClick={() => onSetAll(allKeys, true)}
+            disabled={visibleCount === items.length}
+            className="text-gold hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >
+            All
+          </button>
+          <span className="text-line">/</span>
+          <button
+            type="button"
+            onClick={() => onSetAll(allKeys, false)}
+            disabled={visibleCount === 0}
+            className="text-gold hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >
+            None
+          </button>
+        </div>
+        <div className={`grid ${columns} gap-2`}>
+          {items.map(({ key, label, icon: Icon }) => {
+            const visible = isVisible(key);
+            return (
+              <button
+                key={key}
+                onClick={() => onToggle(key)}
+                className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
+                  visible
+                    ? 'bg-section-header border-gold/40 text-white'
+                    : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  {Icon && <Icon className={`w-3.5 h-3.5 shrink-0 ${visible ? 'text-gold' : 'text-text-muted'}`} />}
+                  <span className="text-xs font-semibold truncate">{label}</span>
+                </div>
+                {visible ? (
+                  <Check className="w-3.5 h-3.5 text-gold shrink-0" />
+                ) : (
+                  <span className="text-[10px] text-text-muted">{Icon ? 'Off' : 'Hidden'}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
 
   const toggleExportSuiteOption = (optKey: string) => {
     const currentOptions = settings.exportSuiteOptions || {
@@ -230,16 +447,7 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           flavorsAndNotes: false,
           burnAndDraw: false,
         },
-        quickQuoteRetailers: [
-          'C.Gars Ltd',
-          'Havana House',
-          'Smoke King',
-          'Sautter London',
-          'Neptune',
-          'Fox Cigar',
-          'Davidoff London',
-          "Holt's",
-        ],
+        quickQuoteRetailers: DEFAULT_QUICK_QUOTE_RETAILERS,
         exportSuiteOptions: {
           showResearchExport: true,
           showMasterJson: true,
@@ -300,6 +508,50 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Search + section jump + expand/collapse all */}
+        <div className="px-5 py-3 border-b border-line bg-surface space-y-2.5">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search settings…"
+              className="w-full pl-9 pr-3 py-2 bg-modal border border-line rounded-lg text-xs text-white placeholder:text-text-muted focus:outline-none focus:border-gold/50"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {SECTION_NAV.map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => jumpToSection(id)}
+                className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-line bg-modal hover:border-gold/50 text-[11px] font-semibold text-text-muted hover:text-white transition"
+              >
+                <Icon className="w-3 h-3" />
+                {label}
+              </button>
+            ))}
+            <span className="shrink-0 w-px h-5 bg-line mx-1" />
+            <button
+              type="button"
+              onClick={() => setAllCollapsed(false)}
+              className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-line bg-modal hover:border-gold/50 text-[11px] font-semibold text-text-muted hover:text-white transition"
+            >
+              <ChevronsUpDown className="w-3 h-3" />
+              Expand all
+            </button>
+            <button
+              type="button"
+              onClick={() => setAllCollapsed(true)}
+              className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-line bg-modal hover:border-gold/50 text-[11px] font-semibold text-text-muted hover:text-white transition"
+            >
+              <ChevronsDownUp className="w-3 h-3" />
+              Collapse all
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -363,18 +615,15 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Section 1: Navigation Tabs */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <LayoutGrid className="w-3.5 h-3.5 text-gold" />
-                <span>Primary Navigation Tabs</span>
-              </h3>
-              <span className="text-[11px] text-text-muted">Toggle which views appear in your top bar</span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
+          <Section
+            id="nav-tabs"
+            icon={LayoutGrid}
+            title="Primary Navigation Tabs"
+            description="Toggle which views appear in your top bar"
+            searchTerms={['dashboard', 'humidors', 'cigars', 'tasting log', 'research', 'wishlist', 'analytics']}
+          >
+            {renderToggleGrid(
+              [
                 { key: 'dashboard' as const, label: 'Dashboard', icon: Layers },
                 { key: 'humidors' as const, label: 'Humidor Vaults', icon: Archive },
                 { key: 'cigars' as const, label: 'Cigar Inventory', icon: Flame },
@@ -382,43 +631,20 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                 { key: 'research' as const, label: 'Research Library', icon: BookOpen },
                 { key: 'wishlist' as const, label: 'Wishlist & Hunt', icon: Bookmark },
                 { key: 'analytics' as const, label: 'Cellar Analytics', icon: BarChart3 },
-              ].map(({ key, label, icon: Icon }) => {
-                const isVisible = settings.visibleTabs[key];
-                return (
-                  <button
-                    key={key}
-                    onClick={() => toggleTab(key)}
-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
-                      isVisible
-                        ? 'bg-section-header border-gold/40 text-white'
-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
-                      <span className="text-xs font-semibold truncate">{label}</span>
-                    </div>
-                    {isVisible ? (
-                      <Eye className="w-3.5 h-3.5 text-gold shrink-0" />
-                    ) : (
-                      <EyeOff className="w-3.5 h-3.5 text-text-muted shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+              ],
+              (key) => settings.visibleTabs[key],
+              toggleTab,
+              setAllVisibleTabs,
+            )}
+          </Section>
 
-          {/* Section 2: Global Retailer Pricing & Multi-Shop Deduplication */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Store className="w-3.5 h-3.5 text-gold" />
-                <span>Retailer Pricing, Currency & Site-Wide Sync Rules</span>
-              </h3>
-              <span className="text-[11px] text-text-muted">Configure automatic price propagation</span>
-            </div>
-
+          <Section
+            id="retailer-pricing"
+            icon={Store}
+            title="Retailer Pricing, Currency & Site-Wide Sync Rules"
+            description="Configure automatic price propagation"
+            searchTerms={['currency', 'sync', 'merge', 'quick quote', 'retailers']}
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 {
@@ -474,7 +700,7 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                 );
               })}
             </div>
-          </div>
+          </Section>
 
           {/* Section 3: Dashboard Modules */}
           <div className="space-y-3">
@@ -486,36 +712,20 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               <span className="text-[11px] text-text-muted">Control widgets on the main dashboard</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {[
+            {renderToggleGrid(
+              [
                 { key: 'quickStats' as const, label: 'Vault Valuation & Stick Counters' },
                 { key: 'agingAlerts' as const, label: 'Peak Smoking Window Alerts' },
                 { key: 'dailyRecommendation' as const, label: 'AI Sommelier Cigar Pick' },
                 { key: 'quickSmokeBanner' as const, label: 'Express Tasting Log Bar' },
                 { key: 'recentSmokes' as const, label: 'Recent Smokes Timeline' },
                 { key: 'humidorOverview' as const, label: 'Humidor Vault Humidity Gauges' },
-              ].map(({ key, label }) => {
-                const isVisible = settings.dashboardSections[key];
-                return (
-                  <button
-                    key={key}
-                    onClick={() => toggleDashboardSection(key)}
-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
-                      isVisible
-                        ? 'bg-section-header border-gold/40 text-white'
-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
-                    }`}
-                  >
-                    <span className="text-xs font-medium">{label}</span>
-                    {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
-                    ) : (
-                      <span className="text-[10px] text-text-muted">Hidden</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              ],
+              (key) => settings.dashboardSections[key],
+              toggleDashboardSection,
+              setAllDashboardSections,
+              'grid-cols-1 sm:grid-cols-3',
+            )}
           </div>
 
           {/* Section 4: Cigar Detail Card Fields */}
@@ -528,8 +738,8 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               <span className="text-[11px] text-text-muted">Show/hide analytical sections on cigar dossiers</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
+            {renderToggleGrid(
+              [
                 { key: 'flavorProfiles' as const, label: 'Flavor Descriptors', icon: Sparkles },
                 { key: 'tastingProgression' as const, label: '3-Thirds Evolution', icon: Wine },
                 { key: 'vendorPriceComparison' as const, label: 'Retailer Price Grid', icon: DollarSign },
@@ -538,31 +748,11 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                 { key: 'agingTimeline' as const, label: 'Resting Timeline', icon: Clock },
                 { key: 'factoryDetails' as const, label: 'Wrapper & Factory Blend', icon: Archive },
                 { key: 'dimensions' as const, label: 'Ring Gauge & Length', icon: Sliders },
-              ].map(({ key, label, icon: Icon }) => {
-                const isVisible = settings.cigarFieldVisibility[key];
-                return (
-                  <button
-                    key={key}
-                    onClick={() => toggleCigarField(key)}
-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
-                      isVisible
-                        ? 'bg-section-header border-gold/40 text-white'
-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
-                      <span className="text-xs font-semibold truncate">{label}</span>
-                    </div>
-                    {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
-                    ) : (
-                      <span className="text-[10px] text-text-muted">Off</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              ],
+              (key) => settings.cigarFieldVisibility[key],
+              toggleCigarField,
+              setAllCigarFields,
+            )}
           </div>
 
           {/* Section 5: Wishlist & Hunt View Display Fields */}
@@ -575,8 +765,8 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               <span className="text-[11px] text-text-muted">Configure columns and card items in Wishlist</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
+            {renderToggleGrid(
+              [
                 { key: 'rating' as const, label: 'Critic & Panel Rating', icon: Star },
                 { key: 'priority' as const, label: 'Priority Badge', icon: Flame },
                 { key: 'targetPrice' as const, label: 'Target Max Price', icon: DollarSign },
@@ -584,31 +774,11 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                 { key: 'smokeTime' as const, label: 'Smoke Duration', icon: Clock },
                 { key: 'vitolaSpecs' as const, label: 'Vitola Dimensions', icon: SlidersHorizontal },
                 { key: 'notes' as const, label: 'Hunter Notes', icon: Tag },
-              ].map(({ key, label, icon: Icon }) => {
-                const isVisible = wishlistVisibility[key] ?? true;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => toggleWishlistField(key)}
-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
-                      isVisible
-                        ? 'bg-section-header border-gold/40 text-white'
-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
-                      <span className="text-xs font-semibold truncate">{label}</span>
-                    </div>
-                    {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
-                    ) : (
-                      <span className="text-[10px] text-text-muted">Off</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              ],
+              (key) => wishlistVisibility[key] ?? true,
+              toggleWishlistField,
+              setAllWishlistFields,
+            )}
           </div>
 
           {/* Section 6: Humidor Inventory Display Fields */}
@@ -621,8 +791,8 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               <span className="text-[11px] text-text-muted">Configure columns and card data in Humidor</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              {[
+            {renderToggleGrid(
+              [
                 { key: 'rating' as const, label: 'Personal Rating', icon: Star },
                 { key: 'humidorResting' as const, label: 'Vault & Aging Status', icon: Clock },
                 { key: 'pricing' as const, label: 'Purchase Valuation', icon: DollarSign },
@@ -633,31 +803,12 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                 { key: 'strength' as const, label: 'Strength Gauge', icon: Flame },
                 { key: 'flavorTags' as const, label: 'Flavor Descriptors', icon: Sparkles },
                 { key: 'notes' as const, label: 'Notes & Quotes', icon: Tag },
-              ].map(({ key, label, icon: Icon }) => {
-                const isVisible = humidorVisibility[key] ?? true;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => toggleHumidorField(key)}
-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
-                      isVisible
-                        ? 'bg-section-header border-gold/40 text-white'
-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
-                      <span className="text-xs font-semibold truncate">{label}</span>
-                    </div>
-                    {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
-                    ) : (
-                      <span className="text-[10px] text-text-muted">Off</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              ],
+              (key) => humidorVisibility[key] ?? true,
+              toggleHumidorField,
+              setAllHumidorFields,
+              'grid-cols-2 sm:grid-cols-5',
+            )}
           </div>
 
           {/* Section 7: Tasting Journal (Smoked) Display Fields */}
@@ -670,8 +821,8 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               <span className="text-[11px] text-text-muted">Configure card and table fields in Tasting Journal</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
+            {renderToggleGrid(
+              [
                 { key: 'scoreAndStars' as const, label: '100-Pt Score & Stars', icon: Star },
                 { key: 'dateAndLocation' as const, label: 'Smoke Date & Location', icon: Calendar },
                 { key: 'vitolaAndWrapper' as const, label: 'Vitola & Wrapper Specs', icon: Sliders },
@@ -680,31 +831,11 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                 { key: 'rebuyVerdict' as const, label: 'Rebuy / Box Verdict', icon: Award },
                 { key: 'flavorsAndNotes' as const, label: '3-Thirds Flavors & Notes', icon: Sparkles },
                 { key: 'burnAndDraw' as const, label: 'Burn & Draw Metrics', icon: Activity },
-              ].map(({ key, label, icon: Icon }) => {
-                const isVisible = journalVisibility[key] ?? true;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => toggleJournalField(key)}
-                    className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-center justify-between ${
-                      isVisible
-                        ? 'bg-section-header border-gold/40 text-white'
-                        : 'bg-surface border-line text-text-muted opacity-50 hover:opacity-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isVisible ? 'text-gold' : 'text-text-muted'}`} />
-                      <span className="text-xs font-semibold truncate">{label}</span>
-                    </div>
-                    {isVisible ? (
-                      <Check className="w-3.5 h-3.5 text-gold shrink-0" />
-                    ) : (
-                      <span className="text-[10px] text-text-muted">Off</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              ],
+              (key) => journalVisibility[key] ?? true,
+              toggleJournalField,
+              setAllJournalFields,
+            )}
           </div>
 
           {/* Section 8: Export Suite Customization */}

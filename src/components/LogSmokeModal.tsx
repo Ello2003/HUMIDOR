@@ -23,6 +23,7 @@ import {
 import { Cigar, SmokeLog } from '../types';
 import { FLAVOR_CATEGORIES } from '../data/initialData';
 import confetti from 'canvas-confetti';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 interface LogSmokeModalProps {
   isOpen: boolean;
@@ -118,7 +119,7 @@ export const LogSmokeModal: React.FC<LogSmokeModalProps> = ({
     detailedReview: boolean;
   }>(() => {
     try {
-      const saved = localStorage.getItem('the_humidor_log_smoke_sections');
+      const saved = localStorage.getItem(STORAGE_KEYS.logSmokeSections);
       if (saved) {
         return JSON.parse(saved);
       }
@@ -136,7 +137,7 @@ export const LogSmokeModal: React.FC<LogSmokeModalProps> = ({
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_log_smoke_sections', JSON.stringify(openSections));
+      localStorage.setItem(STORAGE_KEYS.logSmokeSections, JSON.stringify(openSections));
     } catch {}
   }, [openSections]);
 

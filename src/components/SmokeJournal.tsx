@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { SmokeLog, Cigar, AppSettings } from '../types';
 import { formatDate } from '../utils/dateUtils';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 interface SmokeJournalProps {
   logs: SmokeLog[];
@@ -49,7 +50,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
   // Search and filter states with persistence
   const [searchQuery, setSearchQuery] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_search') || '';
+      return localStorage.getItem(STORAGE_KEYS.journalSearch) || '';
     } catch {
       return '';
     }
@@ -57,7 +58,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
   const [ratingFilter, setRatingFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_rating_filter') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.journalRatingFilter) || 'all';
     } catch {
       return 'all';
     }
@@ -65,7 +66,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
   const [rebuyFilter, setRebuyFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_rebuy_filter') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.journalRebuyFilter) || 'all';
     } catch {
       return 'all';
     }
@@ -73,7 +74,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
   const [brandFilter, setBrandFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_brand_filter') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.journalBrandFilter) || 'all';
     } catch {
       return 'all';
     }
@@ -81,7 +82,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
   const [vitolaFilter, setVitolaFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_vitola_filter') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.journalVitolaFilter) || 'all';
     } catch {
       return 'all';
     }
@@ -89,7 +90,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
   const [wrapperFilter, setWrapperFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_wrapper_filter') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.journalWrapperFilter) || 'all';
     } catch {
       return 'all';
     }
@@ -97,7 +98,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
   const [durationFilter, setDurationFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_duration_filter') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.journalDurationFilter) || 'all';
     } catch {
       return 'all';
     }
@@ -105,7 +106,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
   const [cutTypeFilter, setCutTypeFilter] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_cut_filter') || 'all';
+      return localStorage.getItem(STORAGE_KEYS.journalCutFilter) || 'all';
     } catch {
       return 'all';
     }
@@ -113,7 +114,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
 
   const [sortBy, setSortBy] = useState<string>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_sort_by') || 'date-desc';
+      return localStorage.getItem(STORAGE_KEYS.journalSortBy) || 'date-desc';
     } catch {
       return 'date-desc';
     }
@@ -125,7 +126,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
   // View Mode: Cards or Database Table with persistence
   const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
     try {
-      const saved = localStorage.getItem('the_humidor_journal_view_mode');
+      const saved = localStorage.getItem(STORAGE_KEYS.journalViewMode);
       if (saved === 'cards' || saved === 'table') return saved;
     } catch {}
     return 'cards';
@@ -134,7 +135,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
   // Inline Display Settings with persistence
   const [showDisplayOptions, setShowDisplayOptions] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('the_humidor_journal_show_display_options') === 'true';
+      return localStorage.getItem(STORAGE_KEYS.journalShowDisplayOptions) === 'true';
     } catch {
       return false;
     }
@@ -152,7 +153,7 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
       burnAndDraw: settings?.journalFieldVisibility?.burnAndDraw ?? true,
     };
     try {
-      const saved = localStorage.getItem('the_humidor_journal_display_fields');
+      const saved = localStorage.getItem(STORAGE_KEYS.journalDisplayFields);
       if (saved) {
         return { ...defaultFields, ...JSON.parse(saved) };
       }
@@ -173,73 +174,73 @@ export const SmokeJournal: React.FC<SmokeJournalProps> = ({
   // Sync state to localStorage
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_search', searchQuery);
+      localStorage.setItem(STORAGE_KEYS.journalSearch, searchQuery);
     } catch {}
   }, [searchQuery]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_rating_filter', ratingFilter);
+      localStorage.setItem(STORAGE_KEYS.journalRatingFilter, ratingFilter);
     } catch {}
   }, [ratingFilter]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_rebuy_filter', rebuyFilter);
+      localStorage.setItem(STORAGE_KEYS.journalRebuyFilter, rebuyFilter);
     } catch {}
   }, [rebuyFilter]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_brand_filter', brandFilter);
+      localStorage.setItem(STORAGE_KEYS.journalBrandFilter, brandFilter);
     } catch {}
   }, [brandFilter]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_vitola_filter', vitolaFilter);
+      localStorage.setItem(STORAGE_KEYS.journalVitolaFilter, vitolaFilter);
     } catch {}
   }, [vitolaFilter]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_wrapper_filter', wrapperFilter);
+      localStorage.setItem(STORAGE_KEYS.journalWrapperFilter, wrapperFilter);
     } catch {}
   }, [wrapperFilter]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_duration_filter', durationFilter);
+      localStorage.setItem(STORAGE_KEYS.journalDurationFilter, durationFilter);
     } catch {}
   }, [durationFilter]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_cut_filter', cutTypeFilter);
+      localStorage.setItem(STORAGE_KEYS.journalCutFilter, cutTypeFilter);
     } catch {}
   }, [cutTypeFilter]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_sort_by', sortBy);
+      localStorage.setItem(STORAGE_KEYS.journalSortBy, sortBy);
     } catch {}
   }, [sortBy]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_view_mode', viewMode);
+      localStorage.setItem(STORAGE_KEYS.journalViewMode, viewMode);
     } catch {}
   }, [viewMode]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_show_display_options', String(showDisplayOptions));
+      localStorage.setItem(STORAGE_KEYS.journalShowDisplayOptions, String(showDisplayOptions));
     } catch {}
   }, [showDisplayOptions]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_journal_display_fields', JSON.stringify(displayFields));
+      localStorage.setItem(STORAGE_KEYS.journalDisplayFields, JSON.stringify(displayFields));
     } catch {}
   }, [displayFields]);
 

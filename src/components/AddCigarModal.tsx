@@ -16,6 +16,7 @@ import { Cigar, Humidor, StrengthRating, CigarStatus, WishlistItem, CigarResearc
 import { FLAVOR_CATEGORIES } from '../data/initialData';
 import { DEFAULT_CURRENCY } from '../utils/currencyUtils';
 import { suggestVitolaDimensions, areCigarsMatching } from '../utils/researchUtils';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 interface AddCigarModalProps {
   isOpen: boolean;
@@ -185,7 +186,7 @@ export const AddCigarModal: React.FC<AddCigarModalProps> = ({
   // Auto add every import to research automatically toggle
   const [autoAddToResearch, setAutoAddToResearch] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem('the_humidor_auto_add_import_to_research');
+      const saved = localStorage.getItem(STORAGE_KEYS.autoAddImportToResearch);
       return saved !== 'false';
     } catch {
       return true;

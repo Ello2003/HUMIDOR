@@ -48,12 +48,13 @@ import {
 import { deduplicateHumidorCigars, syncGlobalCigarPrice } from './utils/humidorUtils';
 import { generateId } from './utils/idUtils';
 import { DEFAULT_APP_SETTINGS, APP_VERSION } from './data/versionHistory';
+import { STORAGE_KEYS } from './utils/storageKeys';
 
 export function App() {
   // App-wide Customization Settings State with LocalStorage persistence
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
-      const saved = localStorage.getItem('cedar_ash_settings');
+      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshSettings);
       if (saved) {
         const parsed = JSON.parse(saved);
         return {
@@ -76,7 +77,7 @@ export function App() {
   // Primary state with localStorage persistence and resilient error handling
   const [cigars, setCigars] = useState<Cigar[]>(() => {
     try {
-      const saved = localStorage.getItem('cedar_ash_cigars');
+      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshCigars);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -89,7 +90,7 @@ export function App() {
 
   const [humidors, setHumidors] = useState<Humidor[]>(() => {
     try {
-      const saved = localStorage.getItem('cedar_ash_humidors');
+      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshHumidors);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -102,7 +103,7 @@ export function App() {
 
   const [smokeLogs, setSmokeLogs] = useState<SmokeLog[]>(() => {
     try {
-      const saved = localStorage.getItem('cedar_ash_smokelogs');
+      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshSmokelogs);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -115,7 +116,7 @@ export function App() {
 
   const [wishlist, setWishlist] = useState<WishlistItem[]>(() => {
     try {
-      const saved = localStorage.getItem('cedar_ash_wishlist');
+      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshWishlist);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -129,7 +130,7 @@ export function App() {
   // Local Searchable Cigar Research Database
   const [researchDatabase, setResearchDatabase] = useState<CigarResearchItem[]>(() => {
     try {
-      const saved = localStorage.getItem('cedar_ash_research_db');
+      const saved = localStorage.getItem(STORAGE_KEYS.cedarAshResearchDb);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -151,27 +152,27 @@ export function App() {
 
   // Sync to localStorage
   useEffect(() => {
-    safeSetItem('cedar_ash_cigars', JSON.stringify(cigars));
+    safeSetItem(STORAGE_KEYS.cedarAshCigars, JSON.stringify(cigars));
   }, [cigars]);
 
   useEffect(() => {
-    safeSetItem('cedar_ash_humidors', JSON.stringify(humidors));
+    safeSetItem(STORAGE_KEYS.cedarAshHumidors, JSON.stringify(humidors));
   }, [humidors]);
 
   useEffect(() => {
-    safeSetItem('cedar_ash_smokelogs', JSON.stringify(smokeLogs));
+    safeSetItem(STORAGE_KEYS.cedarAshSmokelogs, JSON.stringify(smokeLogs));
   }, [smokeLogs]);
 
   useEffect(() => {
-    safeSetItem('cedar_ash_wishlist', JSON.stringify(wishlist));
+    safeSetItem(STORAGE_KEYS.cedarAshWishlist, JSON.stringify(wishlist));
   }, [wishlist]);
 
   useEffect(() => {
-    safeSetItem('cedar_ash_research_db', JSON.stringify(researchDatabase));
+    safeSetItem(STORAGE_KEYS.cedarAshResearchDb, JSON.stringify(researchDatabase));
   }, [researchDatabase]);
 
   useEffect(() => {
-    safeSetItem('cedar_ash_settings', JSON.stringify(settings));
+    safeSetItem(STORAGE_KEYS.cedarAshSettings, JSON.stringify(settings));
   }, [settings]);
 
   // Initial auto-migration & enrichment: ensure accurate multi-source consensus smoke times across all cigars
@@ -196,7 +197,7 @@ export function App() {
   // Navigation tab state with persistence
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     try {
-      const saved = localStorage.getItem('the_humidor_active_tab');
+      const saved = localStorage.getItem(STORAGE_KEYS.activeTab);
       if (saved && ['dashboard', 'inventory', 'journal', 'research', 'wishlist', 'export'].includes(saved)) {
         return saved as ActiveTab;
       }
@@ -206,7 +207,7 @@ export function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('the_humidor_active_tab', activeTab);
+      localStorage.setItem(STORAGE_KEYS.activeTab, activeTab);
     } catch {}
   }, [activeTab]);
 
