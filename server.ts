@@ -19,40 +19,47 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, service: "humidor" });
 });
 
-if (!isProduction) {
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: "spa",
+async function start() {
+  if (!isProduction) {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+
+    app.use(vite.middlewares);
+
+    app.use(async (req, res, next) => {
+      try {
+        const url = req.originalUrl;
+        const templatePath = path.resolve(__dirname, "index.html");
+        const template = await fs.readFile(templatePath, "utf-8");
+        const transformed = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(transformed);
+      } catch (error) {
+        next(error);
+      }
+    });
+  } else {
+    const distPath = path.resolve(__dirname, "dist");
+
+    app.use(express.static(distPath));
+
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+
+  app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error("[The Humidor] Server error:", err);
+    res.status(500).json({ error: "Internal server error" });
   });
 
-  app.use(vite.middlewares);
-
-  app.use(async (req, res, next) => {
-    try {
-      const url = req.originalUrl;
-      const templatePath = path.resolve(__dirname, "index.html");
-      const template = await fs.readFile(templatePath, "utf-8");
-      const transformed = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(transformed);
-    } catch (error) {
-      next(error);
-    }
-  });
-} else {
-  const distPath = path.resolve(__dirname, "dist");
-
-  app.use(express.static(distPath));
-
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[The Humidor] Server listening on http://0.0.0.0:${PORT}`);
   });
 }
 
-app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error("[The Humidor] Server error:", err);
-  res.status(500).json({ error: "Internal server error" });
-});
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`[The Humidor] Server listening on http://0.0.0.0:${PORT}`);
+start().catch((error) => {
+  console.error("[The Humidor] Failed to start server:", error);
+  process.exit(1);
 });
