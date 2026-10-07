@@ -1,7 +1,7 @@
 import { VersionHistoryEntry, AppSettings } from '../types';
 import { DEFAULT_QUICK_QUOTE_RETAILERS } from './retailers';
 
-export const APP_VERSION = 'v2.13.3';
+export const APP_VERSION = 'v2.14.0';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   visibleTabs: {
@@ -89,6 +89,20 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 };
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
+  {
+    version: 'v2.14.0',
+    releaseDate: 'October 2026',
+    title: 'Live Retailer Price Scan Fix, Single-Source Data & Settings Overhaul',
+    summary:
+      'Fixed the "Scan Live UK Retailer Prices" feature, which was silently returning fabricated placeholder prices instead of real search results due to a client/server data-format mismatch. Consolidated six duplicated copies of the retailer list and ~72 scattered storage-key strings into single shared files. Rebuilt Settings as a searchable, collapsible, section-by-section panel with "select all / none" per section.',
+    type: 'major',
+    highlights: [
+      'Live Price Scan Fixed: the Wishlist and Research Hub scan buttons now correctly read real search results instead of discarding them; when nothing verified is found, this is now reported honestly instead of a fabricated placeholder price.',
+      'Single Source of Truth: the UK retailer quick-quote list and every browser-storage key are now each defined in exactly one file (src/data/retailers.ts, src/utils/storageKeys.ts) instead of being retyped across 5+ components.',
+      'Settings Redesign: a search box to jump straight to any setting, a left-hand section index, collapsible sections, and a Select All / Select None toggle on every field-visibility group.',
+      'If you still see the old Settings layout or price-scan behavior after updating, check this version number first -- it should read v2.14.0 or later. If it does not, your browser or deployment has not picked up the latest build yet.',
+    ],
+  },
   {
     version: 'v2.13.3',
     releaseDate: 'August 2026',

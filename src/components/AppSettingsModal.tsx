@@ -702,16 +702,13 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
             </div>
           </Section>
 
-          {/* Section 3: Dashboard Modules */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Layers className="w-3.5 h-3.5 text-gold" />
-                <span>Dashboard Modules</span>
-              </h3>
-              <span className="text-[11px] text-text-muted">Control widgets on the main dashboard</span>
-            </div>
-
+          <Section
+            id="dashboard"
+            icon={Layers}
+            title="Dashboard Modules"
+            description="Control widgets on the main dashboard"
+            searchTerms={['vault valuation', 'aging alerts', 'sommelier', 'quick smoke', 'recent smokes', 'humidity']}
+          >
             {renderToggleGrid(
               [
                 { key: 'quickStats' as const, label: 'Vault Valuation & Stick Counters' },
@@ -726,18 +723,15 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               setAllDashboardSections,
               'grid-cols-1 sm:grid-cols-3',
             )}
-          </div>
+          </Section>
 
-          {/* Section 4: Cigar Detail Card Fields */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Flame className="w-3.5 h-3.5 text-gold" />
-                <span>Cigar Detail & Specification Cards</span>
-              </h3>
-              <span className="text-[11px] text-text-muted">Show/hide analytical sections on cigar dossiers</span>
-            </div>
-
+          <Section
+            id="cigar-fields"
+            icon={Flame}
+            title="Cigar Detail & Specification Cards"
+            description="Show/hide analytical sections on cigar dossiers"
+            searchTerms={['flavor', 'tasting', 'price', 'pairing', 'critic', 'aging', 'wrapper', 'dimensions']}
+          >
             {renderToggleGrid(
               [
                 { key: 'flavorProfiles' as const, label: 'Flavor Descriptors', icon: Sparkles },
@@ -753,18 +747,15 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               toggleCigarField,
               setAllCigarFields,
             )}
-          </div>
+          </Section>
 
-          {/* Section 5: Wishlist & Hunt View Display Fields */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Bookmark className="w-3.5 h-3.5 text-gold" />
-                <span>Wishlist & Cigar Hunting View Fields</span>
-              </h3>
-              <span className="text-[11px] text-text-muted">Configure columns and card items in Wishlist</span>
-            </div>
-
+          <Section
+            id="wishlist-fields"
+            icon={Bookmark}
+            title="Wishlist & Cigar Hunting View Fields"
+            description="Configure columns and card items in Wishlist"
+            searchTerms={['rating', 'priority', 'target price', 'shop quotes', 'smoke time', 'vitola', 'notes']}
+          >
             {renderToggleGrid(
               [
                 { key: 'rating' as const, label: 'Critic & Panel Rating', icon: Star },
@@ -779,18 +770,15 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               toggleWishlistField,
               setAllWishlistFields,
             )}
-          </div>
+          </Section>
 
-          {/* Section 6: Humidor Inventory Display Fields */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Archive className="w-3.5 h-3.5 text-gold" />
-                <span>Humidor Vault Inventory Columns</span>
-              </h3>
-              <span className="text-[11px] text-text-muted">Configure columns and card data in Humidor</span>
-            </div>
-
+          <Section
+            id="humidor-fields"
+            icon={Archive}
+            title="Humidor Vault Inventory Columns"
+            description="Configure columns and card data in Humidor"
+            searchTerms={['rating', 'resting', 'pricing', 'shop quotes', 'smoke time', 'vitola', 'wrapper', 'strength', 'flavor', 'notes']}
+          >
             {renderToggleGrid(
               [
                 { key: 'rating' as const, label: 'Personal Rating', icon: Star },
@@ -809,18 +797,15 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               setAllHumidorFields,
               'grid-cols-2 sm:grid-cols-5',
             )}
-          </div>
+          </Section>
 
-          {/* Section 7: Tasting Journal (Smoked) Display Fields */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Wine className="w-3.5 h-3.5 text-gold" />
-                <span>Tasting Journal (Smoked) Log Fields</span>
-              </h3>
-              <span className="text-[11px] text-text-muted">Configure card and table fields in Tasting Journal</span>
-            </div>
-
+          <Section
+            id="journal-fields"
+            icon={Wine}
+            title="Tasting Journal (Smoked) Log Fields"
+            description="Configure card and table fields in Tasting Journal"
+            searchTerms={['score', 'date', 'location', 'vitola', 'wrapper', 'duration', 'pairing', 'rebuy', 'flavors', 'burn', 'draw']}
+          >
             {renderToggleGrid(
               [
                 { key: 'scoreAndStars' as const, label: '100-Pt Score & Stars', icon: Star },
@@ -836,20 +821,15 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
               toggleJournalField,
               setAllJournalFields,
             )}
-          </div>
+          </Section>
 
-          {/* Section 8: Export Suite Customization */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <BarChart3 className="w-3.5 h-3.5 text-gold" />
-                <span>Export Suite Modules & Backup Formats</span>
-              </h3>
-              <span className="text-[11px] text-text-muted">
-                Choose which download formats & options appear in Export Suite
-              </span>
-            </div>
-
+          <Section
+            id="export-suite"
+            icon={BarChart3}
+            title="Export Suite Modules & Backup Formats"
+            description="Choose which download formats & options appear in Export Suite"
+            searchTerms={['research', 'master json', 'inventory csv', 'tasting csv', 'markdown', 'pdf', 'restore', 'backup']}
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 { key: 'showResearchExport', label: 'Cigar Research Library JSON', desc: 'Curated brand database with wrapper classifications & tasting dossiers' },
@@ -898,7 +878,7 @@ export const AppSettingsModal: React.FC<AppSettingsModalProps> = ({
                 );
               })}
             </div>
-          </div>
+          </Section>
         </div>
 
         {/* Footer */}
