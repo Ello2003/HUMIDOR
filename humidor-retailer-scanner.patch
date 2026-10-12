@@ -1,0 +1,3237 @@
+diff --git a/.github/workflows/scan-retailers.yml b/.github/workflows/scan-retailers.yml
+new file mode 100644
+index 0000000..4de67dc
+--- /dev/null
++++ b/.github/workflows/scan-retailers.yml
+@@ -0,0 +1,62 @@
++name: Scan retailer prices
++
++on:
++  schedule:
++    - cron: '17 6 * * *' # daily, 06:17 UTC
++  workflow_dispatch:
++
++permissions:
++  contents: write # commit public/data/retailer-prices.json
++  actions: write  # re-run the Pages deploy afterwards
++
++# Never run two scans at once (they would fight over the same commit).
++concurrency:
++  group: scan-retailers
++  cancel-in-progress: false
++
++jobs:
++  scan:
++    runs-on: ubuntu-latest
++    timeout-minutes: 30
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 20
++          cache: npm
++
++      # --ignore-scripts: skips the "postinstall" full app build, which the scanner doesn't need.
++      - name: Install dependencies
++        run: npm ci --ignore-scripts
++
++      - name: Unit tests
++        run: npm test
++
++      # Exits 0 even when retailers fail: the status file is the point, and it must be committed.
++      - name: Scan retailers
++        run: npm run scan
++
++      - name: Commit results
++        id: commit
++        run: |
++          git config user.name  "humidor-scanner[bot]"
++          git config user.email "humidor-scanner@users.noreply.github.com"
++          git add public/data/retailer-prices.json
++          if git diff --cached --quiet; then
++            echo "pushed=false" >> "$GITHUB_OUTPUT"
++            echo "No change in scan results."
++            exit 0
++          fi
++          git commit -m "chore(scan): update retailer prices"
++          # main may have moved while we were scanning
++          git pull --rebase origin "${GITHUB_REF_NAME}"
++          git push origin "HEAD:${GITHUB_REF_NAME}"
++          echo "pushed=true" >> "$GITHUB_OUTPUT"
++
++      # Pushes made with GITHUB_TOKEN do not trigger other workflows, so ask for the Pages deploy explicitly.
++      - name: Redeploy site with the new prices
++        if: steps.commit.outputs.pushed == 'true'
++        env:
++          GH_TOKEN: ${{ github.token }}
++        run: gh workflow run static.yml --ref "${GITHUB_REF_NAME}"
+diff --git a/package-lock.json b/package-lock.json
+index 503197d..07e37c8 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,13 @@
+ {
+   "name": "humidor",
+-  "version": "0.0.0",
++  "version": "1.0.0",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "humidor",
+-      "version": "0.0.0",
++      "version": "1.0.0",
++      "hasInstallScript": true,
+       "dependencies": {
+         "@google/genai": "^2.4.0",
+         "@tailwindcss/vite": "^4.1.14",
+@@ -14,11 +15,13 @@
+         "@vitejs/plugin-react": "^5.0.4",
+         "canvas-confetti": "^1.9.4",
+         "dotenv": "^17.2.3",
++        "esbuild": "^0.23.0",
+         "express": "^4.21.2",
+         "lucide-react": "^0.546.0",
+         "motion": "^12.23.24",
+         "react": "^19.0.1",
+         "react-dom": "^19.0.1",
++        "tailwindcss": "^4.1.14",
+         "vite": "^6.2.3"
+       },
+       "devDependencies": {
+@@ -26,10 +29,13 @@
+         "@types/node": "^22.14.0",
+         "@types/react": "^19.2.18",
+         "@types/react-dom": "^19.2.4",
+-        "tailwindcss": "^4.1.14",
++        "cheerio": "^1.2.0",
+         "tsx": "^4.21.0",
+         "typescript": "~5.8.2",
+         "vitest": "^5.0.1"
++      },
++      "engines": {
++        "node": ">=20.0.0"
+       }
+     },
+     "node_modules/@babel/code-frame": {
+@@ -296,9 +302,9 @@
+       }
+     },
+     "node_modules/@esbuild/aix-ppc64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/aix-ppc64/-/aix-ppc64-0.25.12.tgz",
+-      "integrity": "sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/aix-ppc64/-/aix-ppc64-0.23.1.tgz",
++      "integrity": "sha512-6VhYk1diRqrhBAqpJEdjASR/+WVRtfjpqKuNw11cLiaWpAT/Uu+nokB+UJnevzy/P9C/ty6AOe0dwueMrGh/iQ==",
+       "cpu": [
+         "ppc64"
+       ],
+@@ -312,9 +318,9 @@
+       }
+     },
+     "node_modules/@esbuild/android-arm": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/android-arm/-/android-arm-0.25.12.tgz",
+-      "integrity": "sha512-VJ+sKvNA/GE7Ccacc9Cha7bpS8nyzVv0jdVgwNDaR4gDMC/2TTRc33Ip8qrNYUcpkOHUT5OZ0bUcNNVZQ9RLlg==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm/-/android-arm-0.23.1.tgz",
++      "integrity": "sha512-uz6/tEy2IFm9RYOyvKl88zdzZfwEfKZmnX9Cj1BHjeSGNuGLuMD1kR8y5bteYmwqKm1tj8m4cb/aKEorr6fHWQ==",
+       "cpu": [
+         "arm"
+       ],
+@@ -328,9 +334,9 @@
+       }
+     },
+     "node_modules/@esbuild/android-arm64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/android-arm64/-/android-arm64-0.25.12.tgz",
+-      "integrity": "sha512-6AAmLG7zwD1Z159jCKPvAxZd4y/VTO0VkprYy+3N2FtJ8+BQWFXU+OxARIwA46c5tdD9SsKGZ/1ocqBS/gAKHg==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm64/-/android-arm64-0.23.1.tgz",
++      "integrity": "sha512-xw50ipykXcLstLeWH7WRdQuysJqejuAGPd30vd1i5zSyKK3WE+ijzHmLKxdiCMtH1pHz78rOg0BKSYOSB/2Khw==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -344,9 +350,9 @@
+       }
+     },
+     "node_modules/@esbuild/android-x64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/android-x64/-/android-x64-0.25.12.tgz",
+-      "integrity": "sha512-5jbb+2hhDHx5phYR2By8GTWEzn6I9UqR11Kwf22iKbNpYrsmRB18aX/9ivc5cabcUiAT/wM+YIZ6SG9QO6a8kg==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-x64/-/android-x64-0.23.1.tgz",
++      "integrity": "sha512-nlN9B69St9BwUoB+jkyU090bru8L0NA3yFvAd7k8dNsVH8bi9a8cUAUSEcEEgTp2z3dbEDGJGfP6VUnkQnlReg==",
+       "cpu": [
+         "x64"
+       ],
+@@ -360,9 +366,9 @@
+       }
+     },
+     "node_modules/@esbuild/darwin-arm64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.25.12.tgz",
+-      "integrity": "sha512-N3zl+lxHCifgIlcMUP5016ESkeQjLj/959RxxNYIthIg+CQHInujFuXeWbWMgnTo4cp5XVHqFPmpyu9J65C1Yg==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.23.1.tgz",
++      "integrity": "sha512-YsS2e3Wtgnw7Wq53XXBLcV6JhRsEq8hkfg91ESVadIrzr9wO6jJDMZnCQbHm1Guc5t/CdDiFSSfWP58FNuvT3Q==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -376,9 +382,9 @@
+       }
+     },
+     "node_modules/@esbuild/darwin-x64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.25.12.tgz",
+-      "integrity": "sha512-HQ9ka4Kx21qHXwtlTUVbKJOAnmG1ipXhdWTmNXiPzPfWKpXqASVcWdnf2bnL73wgjNrFXAa3yYvBSd9pzfEIpA==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.23.1.tgz",
++      "integrity": "sha512-aClqdgTDVPSEGgoCS8QDG37Gu8yc9lTHNAQlsztQ6ENetKEO//b8y31MMu2ZaPbn4kVsIABzVLXYLhCGekGDqw==",
+       "cpu": [
+         "x64"
+       ],
+@@ -392,9 +398,9 @@
+       }
+     },
+     "node_modules/@esbuild/freebsd-arm64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-arm64/-/freebsd-arm64-0.25.12.tgz",
+-      "integrity": "sha512-gA0Bx759+7Jve03K1S0vkOu5Lg/85dou3EseOGUes8flVOGxbhDDh/iZaoek11Y8mtyKPGF3vP8XhnkDEAmzeg==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-arm64/-/freebsd-arm64-0.23.1.tgz",
++      "integrity": "sha512-h1k6yS8/pN/NHlMl5+v4XPfikhJulk4G+tKGFIOwURBSFzE8bixw1ebjluLOjfwtLqY0kewfjLSrO6tN2MgIhA==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -408,9 +414,9 @@
+       }
+     },
+     "node_modules/@esbuild/freebsd-x64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-x64/-/freebsd-x64-0.25.12.tgz",
+-      "integrity": "sha512-TGbO26Yw2xsHzxtbVFGEXBFH0FRAP7gtcPE7P5yP7wGy7cXK2oO7RyOhL5NLiqTlBh47XhmIUXuGciXEqYFfBQ==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-x64/-/freebsd-x64-0.23.1.tgz",
++      "integrity": "sha512-lK1eJeyk1ZX8UklqFd/3A60UuZ/6UVfGT2LuGo3Wp4/z7eRTRYY+0xOu2kpClP+vMTi9wKOfXi2vjUpO1Ro76g==",
+       "cpu": [
+         "x64"
+       ],
+@@ -424,9 +430,9 @@
+       }
+     },
+     "node_modules/@esbuild/linux-arm": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm/-/linux-arm-0.25.12.tgz",
+-      "integrity": "sha512-lPDGyC1JPDou8kGcywY0YILzWlhhnRjdof3UlcoqYmS9El818LLfJJc3PXXgZHrHCAKs/Z2SeZtDJr5MrkxtOw==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm/-/linux-arm-0.23.1.tgz",
++      "integrity": "sha512-CXXkzgn+dXAPs3WBwE+Kvnrf4WECwBdfjfeYHpMeVxWE0EceB6vhWGShs6wi0IYEqMSIzdOF1XjQ/Mkm5d7ZdQ==",
+       "cpu": [
+         "arm"
+       ],
+@@ -440,9 +446,9 @@
+       }
+     },
+     "node_modules/@esbuild/linux-arm64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.25.12.tgz",
+-      "integrity": "sha512-8bwX7a8FghIgrupcxb4aUmYDLp8pX06rGh5HqDT7bB+8Rdells6mHvrFHHW2JAOPZUbnjUpKTLg6ECyzvas2AQ==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.23.1.tgz",
++      "integrity": "sha512-/93bf2yxencYDnItMYV/v116zff6UyTjo4EtEQjUBeGiVpMmffDNUyD9UN2zV+V3LRV3/on4xdZ26NKzn6754g==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -456,9 +462,9 @@
+       }
+     },
+     "node_modules/@esbuild/linux-ia32": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.25.12.tgz",
+-      "integrity": "sha512-0y9KrdVnbMM2/vG8KfU0byhUN+EFCny9+8g202gYqSSVMonbsCfLjUO+rCci7pM0WBEtz+oK/PIwHkzxkyharA==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.23.1.tgz",
++      "integrity": "sha512-VTN4EuOHwXEkXzX5nTvVY4s7E/Krz7COC8xkftbbKRYAl96vPiUssGkeMELQMOnLOJ8k3BY1+ZY52tttZnHcXQ==",
+       "cpu": [
+         "ia32"
+       ],
+@@ -472,9 +478,9 @@
+       }
+     },
+     "node_modules/@esbuild/linux-loong64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/linux-loong64/-/linux-loong64-0.25.12.tgz",
+-      "integrity": "sha512-h///Lr5a9rib/v1GGqXVGzjL4TMvVTv+s1DPoxQdz7l/AYv6LDSxdIwzxkrPW438oUXiDtwM10o9PmwS/6Z0Ng==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-loong64/-/linux-loong64-0.23.1.tgz",
++      "integrity": "sha512-Vx09LzEoBa5zDnieH8LSMRToj7ir/Jeq0Gu6qJ/1GcBq9GkfoEAoXvLiW1U9J1qE/Y/Oyaq33w5p2ZWrNNHNEw==",
+       "cpu": [
+         "loong64"
+       ],
+@@ -488,9 +494,9 @@
+       }
+     },
+     "node_modules/@esbuild/linux-mips64el": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/linux-mips64el/-/linux-mips64el-0.25.12.tgz",
+-      "integrity": "sha512-iyRrM1Pzy9GFMDLsXn1iHUm18nhKnNMWscjmp4+hpafcZjrr2WbT//d20xaGljXDBYHqRcl8HnxbX6uaA/eGVw==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-mips64el/-/linux-mips64el-0.23.1.tgz",
++      "integrity": "sha512-nrFzzMQ7W4WRLNUOU5dlWAqa6yVeI0P78WKGUo7lg2HShq/yx+UYkeNSE0SSfSure0SqgnsxPvmAUu/vu0E+3Q==",
+       "cpu": [
+         "mips64el"
+       ],
+@@ -504,9 +510,9 @@
+       }
+     },
+     "node_modules/@esbuild/linux-ppc64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/linux-ppc64/-/linux-ppc64-0.25.12.tgz",
+-      "integrity": "sha512-9meM/lRXxMi5PSUqEXRCtVjEZBGwB7P/D4yT8UG/mwIdze2aV4Vo6U5gD3+RsoHXKkHCfSxZKzmDssVlRj1QQA==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ppc64/-/linux-ppc64-0.23.1.tgz",
++      "integrity": "sha512-dKN8fgVqd0vUIjxuJI6P/9SSSe/mB9rvA98CSH2sJnlZ/OCZWO1DJvxj8jvKTfYUdGfcq2dDxoKaC6bHuTlgcw==",
+       "cpu": [
+         "ppc64"
+       ],
+@@ -520,9 +526,9 @@
+       }
+     },
+     "node_modules/@esbuild/linux-riscv64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/linux-riscv64/-/linux-riscv64-0.25.12.tgz",
+-      "integrity": "sha512-Zr7KR4hgKUpWAwb1f3o5ygT04MzqVrGEGXGLnj15YQDJErYu/BGg+wmFlIDOdJp0PmB0lLvxFIOXZgFRrdjR0w==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-riscv64/-/linux-riscv64-0.23.1.tgz",
++      "integrity": "sha512-5AV4Pzp80fhHL83JM6LoA6pTQVWgB1HovMBsLQ9OZWLDqVY8MVobBXNSmAJi//Csh6tcY7e7Lny2Hg1tElMjIA==",
+       "cpu": [
+         "riscv64"
+       ],
+@@ -536,9 +542,9 @@
+       }
+     },
+     "node_modules/@esbuild/linux-s390x": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/linux-s390x/-/linux-s390x-0.25.12.tgz",
+-      "integrity": "sha512-MsKncOcgTNvdtiISc/jZs/Zf8d0cl/t3gYWX8J9ubBnVOwlk65UIEEvgBORTiljloIWnBzLs4qhzPkJcitIzIg==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-s390x/-/linux-s390x-0.23.1.tgz",
++      "integrity": "sha512-9ygs73tuFCe6f6m/Tb+9LtYxWR4c9yg7zjt2cYkjDbDpV/xVn+68cQxMXCjUpYwEkze2RcU/rMnfIXNRFmSoDw==",
+       "cpu": [
+         "s390x"
+       ],
+@@ -552,9 +558,9 @@
+       }
+     },
+     "node_modules/@esbuild/linux-x64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.25.12.tgz",
+-      "integrity": "sha512-uqZMTLr/zR/ed4jIGnwSLkaHmPjOjJvnm6TVVitAa08SLS9Z0VM8wIRx7gWbJB5/J54YuIMInDquWyYvQLZkgw==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.23.1.tgz",
++      "integrity": "sha512-EV6+ovTsEXCPAp58g2dD68LxoP/wK5pRvgy0J/HxPGB009omFPv3Yet0HiaqvrIrgPTBuC6wCH1LTOY91EO5hQ==",
+       "cpu": [
+         "x64"
+       ],
+@@ -584,9 +590,9 @@
+       }
+     },
+     "node_modules/@esbuild/netbsd-x64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/netbsd-x64/-/netbsd-x64-0.25.12.tgz",
+-      "integrity": "sha512-Ld5pTlzPy3YwGec4OuHh1aCVCRvOXdH8DgRjfDy/oumVovmuSzWfnSJg+VtakB9Cm0gxNO9BzWkj6mtO1FMXkQ==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/netbsd-x64/-/netbsd-x64-0.23.1.tgz",
++      "integrity": "sha512-aevEkCNu7KlPRpYLjwmdcuNz6bDFiE7Z8XC4CPqExjTvrHugh28QzUXVOZtiYghciKUacNktqxdpymplil1beA==",
+       "cpu": [
+         "x64"
+       ],
+@@ -600,9 +606,9 @@
+       }
+     },
+     "node_modules/@esbuild/openbsd-arm64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-arm64/-/openbsd-arm64-0.25.12.tgz",
+-      "integrity": "sha512-fF96T6KsBo/pkQI950FARU9apGNTSlZGsv1jZBAlcLL1MLjLNIWPBkj5NlSz8aAzYKg+eNqknrUJ24QBybeR5A==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-arm64/-/openbsd-arm64-0.23.1.tgz",
++      "integrity": "sha512-3x37szhLexNA4bXhLrCC/LImN/YtWis6WXr1VESlfVtVeoFJBRINPJ3f0a/6LV8zpikqoUg4hyXw0sFBt5Cr+Q==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -616,9 +622,9 @@
+       }
+     },
+     "node_modules/@esbuild/openbsd-x64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-x64/-/openbsd-x64-0.25.12.tgz",
+-      "integrity": "sha512-MZyXUkZHjQxUvzK7rN8DJ3SRmrVrke8ZyRusHlP+kuwqTcfWLyqMOE3sScPPyeIXN/mDJIfGXvcMqCgYKekoQw==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-x64/-/openbsd-x64-0.23.1.tgz",
++      "integrity": "sha512-aY2gMmKmPhxfU+0EdnN+XNtGbjfQgwZj43k8G3fyrDM/UdZww6xrWxmDkuz2eCZchqVeABjV5BpildOrUbBTqA==",
+       "cpu": [
+         "x64"
+       ],
+@@ -648,9 +654,9 @@
+       }
+     },
+     "node_modules/@esbuild/sunos-x64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/sunos-x64/-/sunos-x64-0.25.12.tgz",
+-      "integrity": "sha512-3wGSCDyuTHQUzt0nV7bocDy72r2lI33QL3gkDNGkod22EsYl04sMf0qLb8luNKTOmgF/eDEDP5BFNwoBKH441w==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/sunos-x64/-/sunos-x64-0.23.1.tgz",
++      "integrity": "sha512-RBRT2gqEl0IKQABT4XTj78tpk9v7ehp+mazn2HbUeZl1YMdaGAQqhapjGTCe7uw7y0frDi4gS0uHzhvpFuI1sA==",
+       "cpu": [
+         "x64"
+       ],
+@@ -664,9 +670,9 @@
+       }
+     },
+     "node_modules/@esbuild/win32-arm64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.25.12.tgz",
+-      "integrity": "sha512-rMmLrur64A7+DKlnSuwqUdRKyd3UE7oPJZmnljqEptesKM8wx9J8gx5u0+9Pq0fQQW8vqeKebwNXdfOyP+8Bsg==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.23.1.tgz",
++      "integrity": "sha512-4O+gPR5rEBe2FpKOVyiJ7wNDPA8nGzDuJ6gN4okSA1gEOYZ67N8JPk58tkWtdtPeLz7lBnY6I5L3jdsr3S+A6A==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -680,9 +686,9 @@
+       }
+     },
+     "node_modules/@esbuild/win32-ia32": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.25.12.tgz",
+-      "integrity": "sha512-HkqnmmBoCbCwxUKKNPBixiWDGCpQGVsrQfJoVGYLPT41XWF8lHuE5N6WhVia2n4o5QK5M4tYr21827fNhi4byQ==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.23.1.tgz",
++      "integrity": "sha512-BcaL0Vn6QwCwre3Y717nVHZbAa4UBEigzFm6VdsVdT/MbZ38xoj1X9HPkZhbmaBGUD1W8vxAfffbDe8bA6AKnQ==",
+       "cpu": [
+         "ia32"
+       ],
+@@ -696,9 +702,9 @@
+       }
+     },
+     "node_modules/@esbuild/win32-x64": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz",
+-      "integrity": "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.23.1.tgz",
++      "integrity": "sha512-BHpFFeslkWrXWyUPnbKm+xYYVYruCinGcftSBaa8zoF9hZO4BcSCFUvHVTtzpIY6YzUnYtuEhZ+C9iEXjxnasg==",
+       "cpu": [
+         "x64"
+       ],
+@@ -1761,43 +1767,6 @@
+         "node": ">=12"
+       }
+     },
+-    "node_modules/autoprefixer": {
+-      "version": "10.6.0",
+-      "resolved": "https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.6.0.tgz",
+-      "integrity": "sha512-A26d6qs9kqGgkmImIXMYvXTzqb4Qv7AVgpY1NXzr9Y659J8qHHnLOO/zE8ewIGFMprOolAoRAQYDgNryXIJKBw==",
+-      "dev": true,
+-      "funding": [
+-        {
+-          "type": "opencollective",
+-          "url": "https://opencollective.com/postcss/"
+-        },
+-        {
+-          "type": "tidelift",
+-          "url": "https://tidelift.com/funding/github/npm/autoprefixer"
+-        },
+-        {
+-          "type": "github",
+-          "url": "https://github.com/sponsors/ai"
+-        }
+-      ],
+-      "license": "MIT",
+-      "dependencies": {
+-        "browserslist": "^4.28.9",
+-        "caniuse-lite": "^1.0.30001810",
+-        "fraction.js": "^5.3.4",
+-        "picocolors": "^1.1.1",
+-        "postcss-value-parser": "^4.2.0"
+-      },
+-      "bin": {
+-        "autoprefixer": "bin/autoprefixer"
+-      },
+-      "engines": {
+-        "node": "^10 || ^12 || >=14"
+-      },
+-      "peerDependencies": {
+-        "postcss": "^8.1.0"
+-      }
+-    },
+     "node_modules/base64-js": {
+       "version": "1.5.1",
+       "resolved": "https://registry.npmjs.org/base64-js/-/base64-js-1.5.1.tgz",
+@@ -1878,6 +1847,13 @@
+       "integrity": "sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==",
+       "license": "MIT"
+     },
++    "node_modules/boolbase": {
++      "version": "1.0.0",
++      "resolved": "https://registry.npmjs.org/boolbase/-/boolbase-1.0.0.tgz",
++      "integrity": "sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww==",
++      "dev": true,
++      "license": "ISC"
++    },
+     "node_modules/browserslist": {
+       "version": "4.28.9",
+       "resolved": "https://registry.npmjs.org/browserslist/-/browserslist-4.28.9.tgz",
+@@ -1995,6 +1971,50 @@
+         "node": ">=18"
+       }
+     },
++    "node_modules/cheerio": {
++      "version": "1.2.0",
++      "resolved": "https://registry.npmjs.org/cheerio/-/cheerio-1.2.0.tgz",
++      "integrity": "sha512-WDrybc/gKFpTYQutKIK6UvfcuxijIZfMfXaYm8NMsPQxSYvf+13fXUJ4rztGGbJcBQ/GF55gvrZ0Bc0bj/mqvg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "cheerio-select": "^2.1.0",
++        "dom-serializer": "^2.0.0",
++        "domhandler": "^5.0.3",
++        "domutils": "^3.2.2",
++        "encoding-sniffer": "^0.2.1",
++        "htmlparser2": "^10.1.0",
++        "parse5": "^7.3.0",
++        "parse5-htmlparser2-tree-adapter": "^7.1.0",
++        "parse5-parser-stream": "^7.1.2",
++        "undici": "^7.19.0",
++        "whatwg-mimetype": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=20.18.1"
++      },
++      "funding": {
++        "url": "https://github.com/cheeriojs/cheerio?sponsor=1"
++      }
++    },
++    "node_modules/cheerio-select": {
++      "version": "2.1.0",
++      "resolved": "https://registry.npmjs.org/cheerio-select/-/cheerio-select-2.1.0.tgz",
++      "integrity": "sha512-9v9kG0LvzrlcungtnJtpGNxY+fzECQKhK4EGJX2vByejiMX84MFNQw4UxPJl3bFbTMw+Dfs37XaIkCwTZfLh4g==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "dependencies": {
++        "boolbase": "^1.0.0",
++        "css-select": "^5.1.0",
++        "css-what": "^6.1.0",
++        "domelementtype": "^2.3.0",
++        "domhandler": "^5.0.3",
++        "domutils": "^3.0.1"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/fb55"
++      }
++    },
+     "node_modules/content-disposition": {
+       "version": "0.5.4",
+       "resolved": "https://registry.npmjs.org/content-disposition/-/content-disposition-0.5.4.tgz",
+@@ -2037,6 +2057,36 @@
+       "integrity": "sha512-NXdYc3dLr47pBkpUCHtKSwIOQXLVn8dZEuywboCOJY/osA0wFSLlSawr3KN8qXJEyX66FcONTH8EIlVuK0yyFA==",
+       "license": "MIT"
+     },
++    "node_modules/css-select": {
++      "version": "5.2.2",
++      "resolved": "https://registry.npmjs.org/css-select/-/css-select-5.2.2.tgz",
++      "integrity": "sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "dependencies": {
++        "boolbase": "^1.0.0",
++        "css-what": "^6.1.0",
++        "domhandler": "^5.0.2",
++        "domutils": "^3.0.1",
++        "nth-check": "^2.0.1"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/fb55"
++      }
++    },
++    "node_modules/css-what": {
++      "version": "6.2.2",
++      "resolved": "https://registry.npmjs.org/css-what/-/css-what-6.2.2.tgz",
++      "integrity": "sha512-u/O3vwbptzhMs3L1fQE82ZSLHQQfto5gyZzwteVIEyeaY5Fc7R4dapF/BvRoSYFeqfBk4m0V1Vafq5Pjv25wvA==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "engines": {
++        "node": ">= 6"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/fb55"
++      }
++    },
+     "node_modules/csstype": {
+       "version": "3.2.3",
+       "resolved": "https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz",
+@@ -2098,6 +2148,65 @@
+         "node": ">=8"
+       }
+     },
++    "node_modules/dom-serializer": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/dom-serializer/-/dom-serializer-2.0.0.tgz",
++      "integrity": "sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "domelementtype": "^2.3.0",
++        "domhandler": "^5.0.2",
++        "entities": "^4.2.0"
++      },
++      "funding": {
++        "url": "https://github.com/cheeriojs/dom-serializer?sponsor=1"
++      }
++    },
++    "node_modules/domelementtype": {
++      "version": "2.3.0",
++      "resolved": "https://registry.npmjs.org/domelementtype/-/domelementtype-2.3.0.tgz",
++      "integrity": "sha512-OLETBj6w0OsagBwdXnPdN0cnMfF9opN69co+7ZrbfPGrdpPVNBUj02spi6B1N7wChLQiPn4CSH/zJvXw56gmHw==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/fb55"
++        }
++      ],
++      "license": "BSD-2-Clause"
++    },
++    "node_modules/domhandler": {
++      "version": "5.0.3",
++      "resolved": "https://registry.npmjs.org/domhandler/-/domhandler-5.0.3.tgz",
++      "integrity": "sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "dependencies": {
++        "domelementtype": "^2.3.0"
++      },
++      "engines": {
++        "node": ">= 4"
++      },
++      "funding": {
++        "url": "https://github.com/fb55/domhandler?sponsor=1"
++      }
++    },
++    "node_modules/domutils": {
++      "version": "3.2.2",
++      "resolved": "https://registry.npmjs.org/domutils/-/domutils-3.2.2.tgz",
++      "integrity": "sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "dependencies": {
++        "dom-serializer": "^2.0.0",
++        "domelementtype": "^2.3.0",
++        "domhandler": "^5.0.3"
++      },
++      "funding": {
++        "url": "https://github.com/fb55/domutils?sponsor=1"
++      }
++    },
+     "node_modules/dotenv": {
+       "version": "17.4.2",
+       "resolved": "https://registry.npmjs.org/dotenv/-/dotenv-17.4.2.tgz",
+@@ -2154,6 +2263,33 @@
+         "node": ">= 0.8"
+       }
+     },
++    "node_modules/encoding-sniffer": {
++      "version": "0.2.1",
++      "resolved": "https://registry.npmjs.org/encoding-sniffer/-/encoding-sniffer-0.2.1.tgz",
++      "integrity": "sha512-5gvq20T6vfpekVtqrYQsSCFZ1wEg5+wW0/QaZMWkFr6BqD3NfKs0rLCx4rrVlSWJeZb5NBJgVLswK/w2MWU+Gw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "iconv-lite": "^0.6.3",
++        "whatwg-encoding": "^3.1.1"
++      },
++      "funding": {
++        "url": "https://github.com/fb55/encoding-sniffer?sponsor=1"
++      }
++    },
++    "node_modules/encoding-sniffer/node_modules/iconv-lite": {
++      "version": "0.6.3",
++      "resolved": "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.6.3.tgz",
++      "integrity": "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "safer-buffer": ">= 2.1.2 < 3.0.0"
++      },
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
+     "node_modules/enhanced-resolve": {
+       "version": "5.25.1",
+       "resolved": "https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.25.1.tgz",
+@@ -2167,6 +2303,19 @@
+         "node": ">=10.13.0"
+       }
+     },
++    "node_modules/entities": {
++      "version": "4.5.0",
++      "resolved": "https://registry.npmjs.org/entities/-/entities-4.5.0.tgz",
++      "integrity": "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "engines": {
++        "node": ">=0.12"
++      },
++      "funding": {
++        "url": "https://github.com/fb55/entities?sponsor=1"
++      }
++    },
+     "node_modules/es-define-property": {
+       "version": "1.0.1",
+       "resolved": "https://registry.npmjs.org/es-define-property/-/es-define-property-1.0.1.tgz",
+@@ -2205,9 +2354,9 @@
+       }
+     },
+     "node_modules/esbuild": {
+-      "version": "0.25.12",
+-      "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz",
+-      "integrity": "sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg==",
++      "version": "0.23.1",
++      "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.23.1.tgz",
++      "integrity": "sha512-VVNz/9Sa0bs5SELtn3f7qhJCDPCF5oMEl5cO9/SSinpE9hbPVvxbd572HH5AKiP7WD8INO53GgfDDhRjkylHEg==",
+       "hasInstallScript": true,
+       "license": "MIT",
+       "bin": {
+@@ -2217,32 +2366,30 @@
+         "node": ">=18"
+       },
+       "optionalDependencies": {
+-        "@esbuild/aix-ppc64": "0.25.12",
+-        "@esbuild/android-arm": "0.25.12",
+-        "@esbuild/android-arm64": "0.25.12",
+-        "@esbuild/android-x64": "0.25.12",
+-        "@esbuild/darwin-arm64": "0.25.12",
+-        "@esbuild/darwin-x64": "0.25.12",
+-        "@esbuild/freebsd-arm64": "0.25.12",
+-        "@esbuild/freebsd-x64": "0.25.12",
+-        "@esbuild/linux-arm": "0.25.12",
+-        "@esbuild/linux-arm64": "0.25.12",
+-        "@esbuild/linux-ia32": "0.25.12",
+-        "@esbuild/linux-loong64": "0.25.12",
+-        "@esbuild/linux-mips64el": "0.25.12",
+-        "@esbuild/linux-ppc64": "0.25.12",
+-        "@esbuild/linux-riscv64": "0.25.12",
+-        "@esbuild/linux-s390x": "0.25.12",
+-        "@esbuild/linux-x64": "0.25.12",
+-        "@esbuild/netbsd-arm64": "0.25.12",
+-        "@esbuild/netbsd-x64": "0.25.12",
+-        "@esbuild/openbsd-arm64": "0.25.12",
+-        "@esbuild/openbsd-x64": "0.25.12",
+-        "@esbuild/openharmony-arm64": "0.25.12",
+-        "@esbuild/sunos-x64": "0.25.12",
+-        "@esbuild/win32-arm64": "0.25.12",
+-        "@esbuild/win32-ia32": "0.25.12",
+-        "@esbuild/win32-x64": "0.25.12"
++        "@esbuild/aix-ppc64": "0.23.1",
++        "@esbuild/android-arm": "0.23.1",
++        "@esbuild/android-arm64": "0.23.1",
++        "@esbuild/android-x64": "0.23.1",
++        "@esbuild/darwin-arm64": "0.23.1",
++        "@esbuild/darwin-x64": "0.23.1",
++        "@esbuild/freebsd-arm64": "0.23.1",
++        "@esbuild/freebsd-x64": "0.23.1",
++        "@esbuild/linux-arm": "0.23.1",
++        "@esbuild/linux-arm64": "0.23.1",
++        "@esbuild/linux-ia32": "0.23.1",
++        "@esbuild/linux-loong64": "0.23.1",
++        "@esbuild/linux-mips64el": "0.23.1",
++        "@esbuild/linux-ppc64": "0.23.1",
++        "@esbuild/linux-riscv64": "0.23.1",
++        "@esbuild/linux-s390x": "0.23.1",
++        "@esbuild/linux-x64": "0.23.1",
++        "@esbuild/netbsd-x64": "0.23.1",
++        "@esbuild/openbsd-arm64": "0.23.1",
++        "@esbuild/openbsd-x64": "0.23.1",
++        "@esbuild/sunos-x64": "0.23.1",
++        "@esbuild/win32-arm64": "0.23.1",
++        "@esbuild/win32-ia32": "0.23.1",
++        "@esbuild/win32-x64": "0.23.1"
+       }
+     },
+     "node_modules/escalade": {
+@@ -2450,20 +2597,6 @@
+         "node": ">= 0.6"
+       }
+     },
+-    "node_modules/fraction.js": {
+-      "version": "5.3.4",
+-      "resolved": "https://registry.npmjs.org/fraction.js/-/fraction.js-5.3.4.tgz",
+-      "integrity": "sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ==",
+-      "dev": true,
+-      "license": "MIT",
+-      "engines": {
+-        "node": "*"
+-      },
+-      "funding": {
+-        "type": "github",
+-        "url": "https://github.com/sponsors/rawify"
+-      }
+-    },
+     "node_modules/framer-motion": {
+       "version": "12.43.0",
+       "resolved": "https://registry.npmjs.org/framer-motion/-/framer-motion-12.43.0.tgz",
+@@ -2665,6 +2798,39 @@
+         "node": ">= 0.4"
+       }
+     },
++    "node_modules/htmlparser2": {
++      "version": "10.1.0",
++      "resolved": "https://registry.npmjs.org/htmlparser2/-/htmlparser2-10.1.0.tgz",
++      "integrity": "sha512-VTZkM9GWRAtEpveh7MSF6SjjrpNVNNVJfFup7xTY3UpFtm67foy9HDVXneLtFVt4pMz5kZtgNcvCniNFb1hlEQ==",
++      "dev": true,
++      "funding": [
++        "https://github.com/fb55/htmlparser2?sponsor=1",
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/fb55"
++        }
++      ],
++      "license": "MIT",
++      "dependencies": {
++        "domelementtype": "^2.3.0",
++        "domhandler": "^5.0.3",
++        "domutils": "^3.2.2",
++        "entities": "^7.0.1"
++      }
++    },
++    "node_modules/htmlparser2/node_modules/entities": {
++      "version": "7.0.1",
++      "resolved": "https://registry.npmjs.org/entities/-/entities-7.0.1.tgz",
++      "integrity": "sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "engines": {
++        "node": ">=0.12"
++      },
++      "funding": {
++        "url": "https://github.com/fb55/entities?sponsor=1"
++      }
++    },
+     "node_modules/http-errors": {
+       "version": "2.0.1",
+       "resolved": "https://registry.npmjs.org/http-errors/-/http-errors-2.0.1.tgz",
+@@ -3266,10 +3432,23 @@
+         "node": ">=18"
+       }
+     },
+-    "node_modules/object-inspect": {
+-      "version": "1.13.4",
+-      "resolved": "https://registry.npmjs.org/object-inspect/-/object-inspect-1.13.4.tgz",
+-      "integrity": "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==",
++    "node_modules/nth-check": {
++      "version": "2.1.1",
++      "resolved": "https://registry.npmjs.org/nth-check/-/nth-check-2.1.1.tgz",
++      "integrity": "sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "dependencies": {
++        "boolbase": "^1.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/fb55/nth-check?sponsor=1"
++      }
++    },
++    "node_modules/object-inspect": {
++      "version": "1.13.4",
++      "resolved": "https://registry.npmjs.org/object-inspect/-/object-inspect-1.13.4.tgz",
++      "integrity": "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==",
+       "license": "MIT",
+       "engines": {
+         "node": ">= 0.4"
+@@ -3317,6 +3496,59 @@
+         "node": ">=8"
+       }
+     },
++    "node_modules/parse5": {
++      "version": "7.3.0",
++      "resolved": "https://registry.npmjs.org/parse5/-/parse5-7.3.0.tgz",
++      "integrity": "sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "entities": "^6.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/inikulin/parse5?sponsor=1"
++      }
++    },
++    "node_modules/parse5-htmlparser2-tree-adapter": {
++      "version": "7.1.0",
++      "resolved": "https://registry.npmjs.org/parse5-htmlparser2-tree-adapter/-/parse5-htmlparser2-tree-adapter-7.1.0.tgz",
++      "integrity": "sha512-ruw5xyKs6lrpo9x9rCZqZZnIUntICjQAd0Wsmp396Ul9lN/h+ifgVV1x1gZHi8euej6wTfpqX8j+BFQxF0NS/g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "domhandler": "^5.0.3",
++        "parse5": "^7.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/inikulin/parse5?sponsor=1"
++      }
++    },
++    "node_modules/parse5-parser-stream": {
++      "version": "7.1.2",
++      "resolved": "https://registry.npmjs.org/parse5-parser-stream/-/parse5-parser-stream-7.1.2.tgz",
++      "integrity": "sha512-JyeQc9iwFLn5TbvvqACIF/VXG6abODeB3Fwmv/TGdLk2LfbWkaySGY72at4+Ty7EkPZj854u4CrICqNk2qIbow==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "parse5": "^7.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/inikulin/parse5?sponsor=1"
++      }
++    },
++    "node_modules/parse5/node_modules/entities": {
++      "version": "6.0.1",
++      "resolved": "https://registry.npmjs.org/entities/-/entities-6.0.1.tgz",
++      "integrity": "sha512-aN97NXWF6AWBTahfVOIrB/NShkzi5H7F9r1s9mD3cDj4Ko5f2qhhVoYMibXF7GlLveb/D2ioWay8lxI97Ven3g==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "engines": {
++        "node": ">=0.12"
++      },
++      "funding": {
++        "url": "https://github.com/fb55/entities?sponsor=1"
++      }
++    },
+     "node_modules/parseurl": {
+       "version": "1.3.3",
+       "resolved": "https://registry.npmjs.org/parseurl/-/parseurl-1.3.3.tgz",
+@@ -3378,13 +3610,6 @@
+         "node": "^10 || ^12 || >=14"
+       }
+     },
+-    "node_modules/postcss-value-parser": {
+-      "version": "4.2.0",
+-      "resolved": "https://registry.npmjs.org/postcss-value-parser/-/postcss-value-parser-4.2.0.tgz",
+-      "integrity": "sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==",
+-      "dev": true,
+-      "license": "MIT"
+-    },
+     "node_modules/protobufjs": {
+       "version": "7.6.6",
+       "resolved": "https://registry.npmjs.org/protobufjs/-/protobufjs-7.6.6.tgz",
+@@ -4331,6 +4556,16 @@
+         "node": ">=14.17"
+       }
+     },
++    "node_modules/undici": {
++      "version": "7.30.0",
++      "resolved": "https://registry.npmjs.org/undici/-/undici-7.30.0.tgz",
++      "integrity": "sha512-dkrQXeHSaoamnItlYbmzG0wFYrM0ZwDxCIg0A7aKjTyyhh9svRzCNFEzV+Vm05/yehjCzjDZ31KXfGEjYSztDQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=20.18.1"
++      }
++    },
+     "node_modules/undici-types": {
+       "version": "6.21.0",
+       "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz",
+@@ -4468,6 +4703,431 @@
+         }
+       }
+     },
++    "node_modules/vite/node_modules/@esbuild/aix-ppc64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/aix-ppc64/-/aix-ppc64-0.25.12.tgz",
++      "integrity": "sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==",
++      "cpu": [
++        "ppc64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "aix"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/android-arm": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm/-/android-arm-0.25.12.tgz",
++      "integrity": "sha512-VJ+sKvNA/GE7Ccacc9Cha7bpS8nyzVv0jdVgwNDaR4gDMC/2TTRc33Ip8qrNYUcpkOHUT5OZ0bUcNNVZQ9RLlg==",
++      "cpu": [
++        "arm"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/android-arm64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm64/-/android-arm64-0.25.12.tgz",
++      "integrity": "sha512-6AAmLG7zwD1Z159jCKPvAxZd4y/VTO0VkprYy+3N2FtJ8+BQWFXU+OxARIwA46c5tdD9SsKGZ/1ocqBS/gAKHg==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/android-x64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-x64/-/android-x64-0.25.12.tgz",
++      "integrity": "sha512-5jbb+2hhDHx5phYR2By8GTWEzn6I9UqR11Kwf22iKbNpYrsmRB18aX/9ivc5cabcUiAT/wM+YIZ6SG9QO6a8kg==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/darwin-arm64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.25.12.tgz",
++      "integrity": "sha512-N3zl+lxHCifgIlcMUP5016ESkeQjLj/959RxxNYIthIg+CQHInujFuXeWbWMgnTo4cp5XVHqFPmpyu9J65C1Yg==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/darwin-x64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.25.12.tgz",
++      "integrity": "sha512-HQ9ka4Kx21qHXwtlTUVbKJOAnmG1ipXhdWTmNXiPzPfWKpXqASVcWdnf2bnL73wgjNrFXAa3yYvBSd9pzfEIpA==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/freebsd-arm64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-arm64/-/freebsd-arm64-0.25.12.tgz",
++      "integrity": "sha512-gA0Bx759+7Jve03K1S0vkOu5Lg/85dou3EseOGUes8flVOGxbhDDh/iZaoek11Y8mtyKPGF3vP8XhnkDEAmzeg==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/freebsd-x64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-x64/-/freebsd-x64-0.25.12.tgz",
++      "integrity": "sha512-TGbO26Yw2xsHzxtbVFGEXBFH0FRAP7gtcPE7P5yP7wGy7cXK2oO7RyOhL5NLiqTlBh47XhmIUXuGciXEqYFfBQ==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/linux-arm": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm/-/linux-arm-0.25.12.tgz",
++      "integrity": "sha512-lPDGyC1JPDou8kGcywY0YILzWlhhnRjdof3UlcoqYmS9El818LLfJJc3PXXgZHrHCAKs/Z2SeZtDJr5MrkxtOw==",
++      "cpu": [
++        "arm"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/linux-arm64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.25.12.tgz",
++      "integrity": "sha512-8bwX7a8FghIgrupcxb4aUmYDLp8pX06rGh5HqDT7bB+8Rdells6mHvrFHHW2JAOPZUbnjUpKTLg6ECyzvas2AQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/linux-ia32": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.25.12.tgz",
++      "integrity": "sha512-0y9KrdVnbMM2/vG8KfU0byhUN+EFCny9+8g202gYqSSVMonbsCfLjUO+rCci7pM0WBEtz+oK/PIwHkzxkyharA==",
++      "cpu": [
++        "ia32"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/linux-loong64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-loong64/-/linux-loong64-0.25.12.tgz",
++      "integrity": "sha512-h///Lr5a9rib/v1GGqXVGzjL4TMvVTv+s1DPoxQdz7l/AYv6LDSxdIwzxkrPW438oUXiDtwM10o9PmwS/6Z0Ng==",
++      "cpu": [
++        "loong64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/linux-mips64el": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-mips64el/-/linux-mips64el-0.25.12.tgz",
++      "integrity": "sha512-iyRrM1Pzy9GFMDLsXn1iHUm18nhKnNMWscjmp4+hpafcZjrr2WbT//d20xaGljXDBYHqRcl8HnxbX6uaA/eGVw==",
++      "cpu": [
++        "mips64el"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/linux-ppc64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ppc64/-/linux-ppc64-0.25.12.tgz",
++      "integrity": "sha512-9meM/lRXxMi5PSUqEXRCtVjEZBGwB7P/D4yT8UG/mwIdze2aV4Vo6U5gD3+RsoHXKkHCfSxZKzmDssVlRj1QQA==",
++      "cpu": [
++        "ppc64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/linux-riscv64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-riscv64/-/linux-riscv64-0.25.12.tgz",
++      "integrity": "sha512-Zr7KR4hgKUpWAwb1f3o5ygT04MzqVrGEGXGLnj15YQDJErYu/BGg+wmFlIDOdJp0PmB0lLvxFIOXZgFRrdjR0w==",
++      "cpu": [
++        "riscv64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/linux-s390x": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-s390x/-/linux-s390x-0.25.12.tgz",
++      "integrity": "sha512-MsKncOcgTNvdtiISc/jZs/Zf8d0cl/t3gYWX8J9ubBnVOwlk65UIEEvgBORTiljloIWnBzLs4qhzPkJcitIzIg==",
++      "cpu": [
++        "s390x"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/linux-x64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.25.12.tgz",
++      "integrity": "sha512-uqZMTLr/zR/ed4jIGnwSLkaHmPjOjJvnm6TVVitAa08SLS9Z0VM8wIRx7gWbJB5/J54YuIMInDquWyYvQLZkgw==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/netbsd-x64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/netbsd-x64/-/netbsd-x64-0.25.12.tgz",
++      "integrity": "sha512-Ld5pTlzPy3YwGec4OuHh1aCVCRvOXdH8DgRjfDy/oumVovmuSzWfnSJg+VtakB9Cm0gxNO9BzWkj6mtO1FMXkQ==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "netbsd"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/openbsd-arm64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-arm64/-/openbsd-arm64-0.25.12.tgz",
++      "integrity": "sha512-fF96T6KsBo/pkQI950FARU9apGNTSlZGsv1jZBAlcLL1MLjLNIWPBkj5NlSz8aAzYKg+eNqknrUJ24QBybeR5A==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/openbsd-x64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-x64/-/openbsd-x64-0.25.12.tgz",
++      "integrity": "sha512-MZyXUkZHjQxUvzK7rN8DJ3SRmrVrke8ZyRusHlP+kuwqTcfWLyqMOE3sScPPyeIXN/mDJIfGXvcMqCgYKekoQw==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/sunos-x64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/sunos-x64/-/sunos-x64-0.25.12.tgz",
++      "integrity": "sha512-3wGSCDyuTHQUzt0nV7bocDy72r2lI33QL3gkDNGkod22EsYl04sMf0qLb8luNKTOmgF/eDEDP5BFNwoBKH441w==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "sunos"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/win32-arm64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.25.12.tgz",
++      "integrity": "sha512-rMmLrur64A7+DKlnSuwqUdRKyd3UE7oPJZmnljqEptesKM8wx9J8gx5u0+9Pq0fQQW8vqeKebwNXdfOyP+8Bsg==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/win32-ia32": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.25.12.tgz",
++      "integrity": "sha512-HkqnmmBoCbCwxUKKNPBixiWDGCpQGVsrQfJoVGYLPT41XWF8lHuE5N6WhVia2n4o5QK5M4tYr21827fNhi4byQ==",
++      "cpu": [
++        "ia32"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/@esbuild/win32-x64": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz",
++      "integrity": "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/vite/node_modules/esbuild": {
++      "version": "0.25.12",
++      "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz",
++      "integrity": "sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg==",
++      "hasInstallScript": true,
++      "license": "MIT",
++      "bin": {
++        "esbuild": "bin/esbuild"
++      },
++      "engines": {
++        "node": ">=18"
++      },
++      "optionalDependencies": {
++        "@esbuild/aix-ppc64": "0.25.12",
++        "@esbuild/android-arm": "0.25.12",
++        "@esbuild/android-arm64": "0.25.12",
++        "@esbuild/android-x64": "0.25.12",
++        "@esbuild/darwin-arm64": "0.25.12",
++        "@esbuild/darwin-x64": "0.25.12",
++        "@esbuild/freebsd-arm64": "0.25.12",
++        "@esbuild/freebsd-x64": "0.25.12",
++        "@esbuild/linux-arm": "0.25.12",
++        "@esbuild/linux-arm64": "0.25.12",
++        "@esbuild/linux-ia32": "0.25.12",
++        "@esbuild/linux-loong64": "0.25.12",
++        "@esbuild/linux-mips64el": "0.25.12",
++        "@esbuild/linux-ppc64": "0.25.12",
++        "@esbuild/linux-riscv64": "0.25.12",
++        "@esbuild/linux-s390x": "0.25.12",
++        "@esbuild/linux-x64": "0.25.12",
++        "@esbuild/netbsd-arm64": "0.25.12",
++        "@esbuild/netbsd-x64": "0.25.12",
++        "@esbuild/openbsd-arm64": "0.25.12",
++        "@esbuild/openbsd-x64": "0.25.12",
++        "@esbuild/openharmony-arm64": "0.25.12",
++        "@esbuild/sunos-x64": "0.25.12",
++        "@esbuild/win32-arm64": "0.25.12",
++        "@esbuild/win32-ia32": "0.25.12",
++        "@esbuild/win32-x64": "0.25.12"
++      }
++    },
+     "node_modules/vitest": {
+       "version": "5.0.1",
+       "resolved": "https://registry.npmjs.org/vitest/-/vitest-5.0.1.tgz",
+@@ -4570,6 +5230,43 @@
+         "node": ">= 8"
+       }
+     },
++    "node_modules/whatwg-encoding": {
++      "version": "3.1.1",
++      "resolved": "https://registry.npmjs.org/whatwg-encoding/-/whatwg-encoding-3.1.1.tgz",
++      "integrity": "sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==",
++      "deprecated": "Use @exodus/bytes instead for a more spec-conformant and faster implementation",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "iconv-lite": "0.6.3"
++      },
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/whatwg-encoding/node_modules/iconv-lite": {
++      "version": "0.6.3",
++      "resolved": "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.6.3.tgz",
++      "integrity": "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "safer-buffer": ">= 2.1.2 < 3.0.0"
++      },
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
++    "node_modules/whatwg-mimetype": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/whatwg-mimetype/-/whatwg-mimetype-4.0.0.tgz",
++      "integrity": "sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=18"
++      }
++    },
+     "node_modules/why-is-node-running": {
+       "version": "2.3.0",
+       "resolved": "https://registry.npmjs.org/why-is-node-running/-/why-is-node-running-2.3.0.tgz",
+diff --git a/package.json b/package.json
+index 84d7f3d..9c4ec36 100644
+--- a/package.json
++++ b/package.json
+@@ -12,7 +12,8 @@
+     "clean": "rm -rf dist server.js",
+     "lint": "tsc --noEmit",
+     "test": "vitest run",
+-    "postinstall": "npm run build"
++    "postinstall": "npm run build",
++    "scan": "tsx scanner/scan.ts"
+   },
+   "dependencies": {
+     "@google/genai": "^2.4.0",
+@@ -35,6 +36,7 @@
+     "@types/node": "^22.14.0",
+     "@types/react": "^19.2.18",
+     "@types/react-dom": "^19.2.4",
++    "cheerio": "^1.2.0",
+     "tsx": "^4.21.0",
+     "typescript": "~5.8.2",
+     "vitest": "^5.0.1"
+diff --git a/public/data/retailer-prices.json b/public/data/retailer-prices.json
+new file mode 100644
+index 0000000..2176f0d
+--- /dev/null
++++ b/public/data/retailer-prices.json
+@@ -0,0 +1,7 @@
++{
++  "schemaVersion": 1,
++  "scannedAt": null,
++  "durationMs": 0,
++  "retailers": [],
++  "items": []
++}
+diff --git a/scanner/parsers.test.ts b/scanner/parsers.test.ts
+new file mode 100644
+index 0000000..baf9379
+--- /dev/null
++++ b/scanner/parsers.test.ts
+@@ -0,0 +1,181 @@
++import { describe, expect, it } from 'vitest';
++import {
++  detectPackageType,
++  looksBlocked,
++  parseHtmlSearch,
++  parseJsonLdProducts,
++  parsePrice,
++  parseProductCards,
++  parseShopifySuggest,
++  pickBest,
++  titleMatches,
++} from './parsers';
++
++const BASE = 'https://shop.example.co.uk';
++
++describe('parsePrice', () => {
++  it('handles currency symbols, thousands separators and plain numbers', () => {
++    expect(parsePrice('£12.50')).toBe(12.5);
++    expect(parsePrice('£1,250.00')).toBe(1250);
++    expect(parsePrice('12.5')).toBe(12.5);
++    expect(parsePrice(14.8)).toBe(14.8);
++  });
++  it('handles a European decimal comma', () => {
++    expect(parsePrice('12,50')).toBe(12.5);
++  });
++  it('rejects garbage, zero and negatives', () => {
++    expect(parsePrice('')).toBeNull();
++    expect(parsePrice('Price on request')).toBeNull();
++    expect(parsePrice('0.00')).toBeNull();
++    expect(parsePrice(undefined)).toBeNull();
++  });
++});
++
++describe('detectPackageType', () => {
++  it.each([
++    ['Padron 1964 Anniversary Exclusivo', 'Single'],
++    ['Padron 1964 Exclusivo Box of 25', 'Multi'],
++    ['Padron 1964 Exclusivo - Pack of 5', 'Multi'],
++    ['Padron 1964 Exclusivo 5 Pack', 'Multi'],
++    ['Cohiba Siglo VI Sampler', 'Multi'],
++    ['Cohiba Siglo VI Tin of 3', 'Multi'],
++  ])('%s -> %s', (title, expected) => {
++    expect(detectPackageType(title)).toBe(expected);
++  });
++});
++
++describe('titleMatches', () => {
++  const padron = { brand: 'Padrón', line: '1964 Anniversary Series', vitola: 'Exclusivo (Box-Pressed Robusto)' };
++
++  it('matches despite accents and extra words', () => {
++    expect(titleMatches('Padron 1964 Anniversary Series Exclusivo Maduro', padron)).toBe(true);
++  });
++  it('rejects the wrong brand', () => {
++    expect(titleMatches('Davidoff 1964 Anniversary Exclusivo', padron)).toBe(false);
++  });
++  it('rejects the right line but the wrong vitola (wrong size = wrong price)', () => {
++    expect(titleMatches('Padron 1964 Anniversary Series Monarca', padron)).toBe(false);
++  });
++  it('rejects a different line from the same brand', () => {
++    expect(titleMatches('Padron Serie 1926 No. 9 Exclusivo', padron)).toBe(false);
++  });
++  it('matches when no vitola is specified', () => {
++    expect(titleMatches('Padron 1964 Anniversary Monarca', { brand: 'Padrón', line: '1964 Anniversary Series' })).toBe(true);
++  });
++  it('does not treat a brand-only mention as a match for a specific line', () => {
++    expect(titleMatches('Casdagli Club Series Robusto', { brand: 'Casdagli', line: 'Daughters of the Wind Calico', vitola: 'Corona Gorda' })).toBe(false);
++  });
++});
++
++describe('parseShopifySuggest', () => {
++  const fixture = {
++    resources: {
++      results: {
++        products: [
++          { title: 'Padron 1964 Anniversary Exclusivo', url: '/products/padron-1964-exclusivo?_pos=1', price: '16.50', available: true },
++          { title: 'Padron 1964 Exclusivo Box of 25', url: '/products/padron-1964-exclusivo-box', price: '395.00', available: false },
++          { title: 'Broken product with no price', url: '/products/x', price: '' },
++        ],
++      },
++    },
++  };
++
++  it('extracts products, resolves relative URLs and availability', () => {
++    const out = parseShopifySuggest(fixture, BASE)!;
++    expect(out).toHaveLength(2);
++    expect(out[0]).toMatchObject({ price: 16.5, inStock: true, url: `${BASE}/products/padron-1964-exclusivo?_pos=1` });
++    expect(out[1].inStock).toBe(false);
++  });
++  it('returns null (not []) when the response is not a Shopify suggest payload', () => {
++    expect(parseShopifySuggest({ hello: 'world' }, BASE)).toBeNull();
++    expect(parseShopifySuggest(null, BASE)).toBeNull();
++  });
++  it('returns [] for a valid payload with no products', () => {
++    expect(parseShopifySuggest({ resources: { results: { products: [] } } }, BASE)).toEqual([]);
++  });
++});
++
++describe('parseJsonLdProducts', () => {
++  const single = `<html><head><script type="application/ld+json">
++    {"@context":"https://schema.org","@type":"Product","name":"Padron 1964 Exclusivo","url":"/p/padron",
++     "offers":{"@type":"Offer","price":"15.20","priceCurrency":"GBP","availability":"https://schema.org/InStock"}}
++  </script></head></html>`;
++
++  const graphAndList = `<script type="application/ld+json">{"@graph":[
++      {"@type":"BreadcrumbList"},
++      {"@type":"ItemList","itemListElement":[
++        {"@type":"ListItem","item":{"@type":"Product","name":"A Cigar","offers":[{"price":"9.00","priceCurrency":"GBP","availability":"OutOfStock"}]}},
++        {"@type":"ListItem","item":{"@type":"Product","name":"B Cigar","offers":{"@type":"AggregateOffer","lowPrice":"7.50","priceCurrency":"EUR"}}}
++      ]}]}</script>`;
++
++  it('reads a single Product', () => {
++    expect(parseJsonLdProducts(single, BASE)).toEqual([
++      { title: 'Padron 1964 Exclusivo', price: 15.2, currency: 'GBP', inStock: true, url: `${BASE}/p/padron` },
++    ]);
++  });
++  it('walks @graph / ItemList nesting, offer arrays and AggregateOffer, and reads stock + currency', () => {
++    const out = parseJsonLdProducts(graphAndList, BASE);
++    expect(out.map((p) => [p.title, p.price, p.currency, p.inStock])).toEqual([
++      ['A Cigar', 9, 'GBP', false],
++      ['B Cigar', 7.5, 'EUR', true],
++    ]);
++  });
++  it('survives malformed JSON-LD blocks next to good ones', () => {
++    const html = `<script type="application/ld+json">{ not json</script>${single}`;
++    expect(parseJsonLdProducts(html, BASE)).toHaveLength(1);
++  });
++});
++
++describe('parseProductCards (WooCommerce / Magento fallback)', () => {
++  const woo = `<ul class="products">
++    <li class="product"><a class="woocommerce-LoopProduct-link" href="/product/padron-1964/">
++      <h2 class="woocommerce-loop-product__title">Padron 1964 Exclusivo</h2>
++      <span class="price"><del><span class="amount">£18.00</span></del><ins><span class="amount">£16.00</span></ins></span></a></li>
++    <li class="product outofstock"><a class="woocommerce-LoopProduct-link" href="/product/other/">
++      <h2 class="woocommerce-loop-product__title">Other Cigar</h2><span class="price"><span class="amount">£5.00</span></span>
++      <span>Out of stock</span></a></li>
++  </ul>`;
++
++  it('reads WooCommerce cards, preferring the sale price and flagging out-of-stock', () => {
++    const out = parseProductCards(woo, BASE);
++    expect(out).toHaveLength(2);
++    expect(out[0]).toMatchObject({ title: 'Padron 1964 Exclusivo', price: 16, currency: 'GBP', inStock: true, url: `${BASE}/product/padron-1964/` });
++    expect(out[1].inStock).toBe(false);
++  });
++  it('returns [] when the page has no recognisable product cards', () => {
++    expect(parseProductCards('<html><body><p>No results</p></body></html>', BASE)).toEqual([]);
++  });
++  it('parseHtmlSearch prefers JSON-LD and falls back to cards', () => {
++    expect(parseHtmlSearch(woo, BASE)).toHaveLength(2);
++    const both = `<script type="application/ld+json">{"@type":"Product","name":"LD","offers":{"price":"1.00"}}</script>${woo}`;
++    expect(parseHtmlSearch(both, BASE).map((p) => p.title)).toEqual(['LD']);
++  });
++});
++
++describe('looksBlocked', () => {
++  it('recognises a Cloudflare challenge', () => {
++    expect(looksBlocked(403, '<title>Just a moment...</title>')).toBe(true);
++    expect(looksBlocked(503, 'cf-chl-bypass')).toBe(true);
++  });
++  it('treats 403 and 429 as blocked even without a recognisable body', () => {
++    expect(looksBlocked(403, '')).toBe(true);
++    expect(looksBlocked(429, '')).toBe(true);
++  });
++  it('does not call an ordinary 404 or 500 a block', () => {
++    expect(looksBlocked(404, 'Not found')).toBe(false);
++    expect(looksBlocked(500, 'oops')).toBe(false);
++  });
++});
++
++describe('pickBest', () => {
++  const mk = (price: number, inStock: boolean) => ({ title: 't', price, inStock });
++  it('prefers the cheapest in-stock price', () => {
++    expect(pickBest([mk(10, false), mk(14, true), mk(12, true)])?.price).toBe(12);
++  });
++  it('falls back to cheapest overall when nothing is in stock', () => {
++    expect(pickBest([mk(10, false), mk(9, false)])?.price).toBe(9);
++  });
++  it('returns undefined for no products', () => {
++    expect(pickBest([])).toBeUndefined();
++  });
++});
+diff --git a/scanner/parsers.ts b/scanner/parsers.ts
+new file mode 100644
+index 0000000..f34bc79
+--- /dev/null
++++ b/scanner/parsers.ts
+@@ -0,0 +1,227 @@
++import * as cheerio from 'cheerio';
++import type { ScanErrorKind, WatchlistEntry } from './types';
++
++/** A product as read from a retailer page, before matching/filtering. */
++export interface RawProduct {
++  title: string;
++  /** Price in the page's own currency, as a number. */
++  price: number;
++  /** ISO code if the page said (e.g. 'GBP'); undefined if it didn't. */
++  currency?: string;
++  inStock: boolean;
++  url?: string;
++}
++
++// ---------------------------------------------------------------- text utils
++
++export function normalise(text: string): string {
++  return text
++    .normalize('NFD')
++    .replace(/[\u0300-\u036f]/g, '')
++    .toLowerCase()
++    .replace(/&/g, ' and ')
++    .replace(/[^a-z0-9]+/g, ' ')
++    .trim();
++}
++
++const FILLER = new Set(['cigar', 'cigars', 'the', 'co', 'company', 'ltd', 'and', 'of', 'no', 'number', 'series']);
++
++function significantTokens(text: string): string[] {
++  return normalise(text)
++    .split(' ')
++    .filter((t) => t.length > 0 && !FILLER.has(t));
++}
++
++/** "£1,250.00" / "12.5" / "12,50" -> number, or null if there's no sane price. */
++export function parsePrice(raw: string | number | undefined | null): number | null {
++  if (raw === undefined || raw === null) return null;
++  if (typeof raw === 'number') return Number.isFinite(raw) && raw > 0 ? raw : null;
++  const m = raw.replace(/\s/g, '').match(/(\d[\d,]*(?:\.\d+)?|\d+,\d{1,2})/);
++  if (!m) return null;
++  let s = m[1];
++  // "12,50" (European decimal comma) vs "1,250" / "1,250.00" (thousands)
++  if (/^\d+,\d{1,2}$/.test(s)) s = s.replace(',', '.');
++  else s = s.replace(/,/g, '');
++  const n = Number(s);
++  return Number.isFinite(n) && n > 0 ? n : null;
++}
++
++export function detectPackageType(title: string): 'Single' | 'Multi' {
++  const t = title.toLowerCase();
++  if (/\b(box|tin|case|carton|bundle|sampler|selection|collection|gift set)\b/.test(t)) return 'Multi';
++  if (/\b(pack|pk)\s*(of)?\s*\d+\b/.test(t) || /\b\d+\s*(pack|pk|cigars|x)\b/.test(t)) return 'Multi';
++  if (/\bof\s*(3|5|6|8|10|12|13|15|20|24|25|30|50)\b/.test(t)) return 'Multi';
++  return 'Single';
++}
++
++// ------------------------------------------------------------------ matching
++
++/**
++ * Does this retailer product title plausibly be the cigar we asked for?
++ * Deliberately strict: a missed match shows as "no price found", a wrong match
++ * shows a wrong price, and the second is worse.
++ */
++export function titleMatches(title: string, wanted: WatchlistEntry): boolean {
++  const t = new Set(normalise(title).split(' '));
++  const titleText = ` ${normalise(title)} `;
++
++  const brandTokens = significantTokens(wanted.brand);
++  if (brandTokens.length > 0 && !brandTokens.every((b) => t.has(b))) return false;
++
++  const lineTokens = significantTokens(wanted.line).filter((tok) => !brandTokens.includes(tok));
++  if (lineTokens.length > 0) {
++    const hits = lineTokens.filter((tok) => t.has(tok)).length;
++    if (hits / lineTokens.length < 0.75) return false;
++  }
++
++  if (wanted.vitola) {
++    // "Exclusivo (Box-Pressed Robusto)" -> the part before the bracket is the vitola name.
++    const primary = wanted.vitola.split('(')[0];
++    const vitolaTokens = significantTokens(primary).filter((tok) => !brandTokens.includes(tok) && !lineTokens.includes(tok));
++    if (vitolaTokens.length > 0 && !vitolaTokens.every((v) => titleText.includes(` ${v} `))) return false;
++  }
++  return true;
++}
++
++// ---------------------------------------------------------------- strategies
++
++/** Shopify predictive search: GET /search/suggest.json?q=...&resources[type]=product */
++export function parseShopifySuggest(json: unknown, baseUrl: string): RawProduct[] | null {
++  const products = (json as any)?.resources?.results?.products;
++  if (!Array.isArray(products)) return null;
++  const out: RawProduct[] = [];
++  for (const p of products) {
++    const price = parsePrice(p?.price);
++    if (!p?.title || price === null) continue;
++    out.push({
++      title: String(p.title),
++      price,
++      // Shopify's suggest endpoint reports the shop's own currency without naming it;
++      // the retailer config is UK-only, so the caller treats undefined as GBP.
++      currency: undefined,
++      inStock: p.available !== false,
++      url: p.url ? new URL(String(p.url), baseUrl).toString() : undefined,
++    });
++  }
++  return out;
++}
++
++function asArray<T>(v: T | T[] | undefined | null): T[] {
++  return v === undefined || v === null ? [] : Array.isArray(v) ? v : [v];
++}
++
++function collectJsonLdProducts(node: any, into: any[]): void {
++  if (!node || typeof node !== 'object') return;
++  if (Array.isArray(node)) {
++    node.forEach((n) => collectJsonLdProducts(n, into));
++    return;
++  }
++  const types = asArray(node['@type']).map(String);
++  if (types.includes('Product')) into.push(node);
++  for (const key of ['@graph', 'itemListElement', 'item', 'mainEntity']) {
++    if (node[key]) collectJsonLdProducts(node[key], into);
++  }
++}
++
++export function parseJsonLdProducts(html: string, baseUrl: string): RawProduct[] {
++  const $ = cheerio.load(html);
++  const found: any[] = [];
++  $('script[type="application/ld+json"]').each((_, el) => {
++    try {
++      collectJsonLdProducts(JSON.parse($(el).contents().text()), found);
++    } catch {
++      /* malformed JSON-LD block -- ignore it, others may be fine */
++    }
++  });
++
++  const out: RawProduct[] = [];
++  for (const p of found) {
++    const offers = asArray(p.offers).flatMap((o: any) => (o?.offers ? asArray(o.offers) : [o]));
++    const offer = offers.find((o: any) => parsePrice(o?.price ?? o?.lowPrice) !== null);
++    if (!p.name || !offer) continue;
++    const price = parsePrice(offer.price ?? offer.lowPrice);
++    if (price === null) continue;
++    out.push({
++      title: String(p.name),
++      price,
++      currency: offer.priceCurrency ? String(offer.priceCurrency).toUpperCase() : undefined,
++      inStock: !/OutOfStock|SoldOut|Discontinued/i.test(String(offer.availability ?? '')),
++      url: p.url ? new URL(String(p.url), baseUrl).toString() : offer.url ? new URL(String(offer.url), baseUrl).toString() : undefined,
++    });
++  }
++  return out;
++}
++
++export interface CardSelectors {
++  card: string;
++  title: string;
++  price: string;
++  link: string;
++}
++
++/** Defaults cover the two common non-Shopify UK shop platforms. */
++export const DEFAULT_CARD_SELECTORS: CardSelectors[] = [
++  // WooCommerce
++  { card: 'li.product', title: '.woocommerce-loop-product__title, h2, h3', price: '.price ins .amount, .price .amount, .price', link: 'a.woocommerce-LoopProduct-link, a' },
++  // Magento
++  { card: 'li.product-item, .product-item', title: '.product-item-link, .product-name a', price: '.price', link: '.product-item-link, a' },
++  // Generic microdata
++  { card: '[itemtype*="schema.org/Product"]', title: '[itemprop="name"]', price: '[itemprop="price"], .price', link: 'a' },
++];
++
++export function parseProductCards(html: string, baseUrl: string, selectors: CardSelectors[] = DEFAULT_CARD_SELECTORS): RawProduct[] {
++  const $ = cheerio.load(html);
++  for (const sel of selectors) {
++    const out: RawProduct[] = [];
++    $(sel.card).each((_, el) => {
++      const card = $(el);
++      const title = card.find(sel.title).first().text().trim();
++      // A comma selector matches in document order, so a struck-through old price
++      // (<del>) would beat the sale price (<ins>). Try each alternative in the
++      // order written instead, so the most specific selector wins.
++      let price: number | null = null;
++      for (const alt of sel.price.split(',').map((s) => s.trim()).filter(Boolean)) {
++        const el2 = card.find(alt).first();
++        if (el2.length === 0) continue;
++        price = parsePrice(el2.attr('content') ?? el2.text());
++        if (price !== null) break;
++      }
++      if (!title || price === null) return;
++      const href = card.find(sel.link).first().attr('href');
++      out.push({
++        title,
++        price,
++        currency: /£/.test(card.text()) ? 'GBP' : undefined,
++        inStock: !/out of stock|sold out/i.test(card.text()),
++        url: href ? new URL(href, baseUrl).toString() : undefined,
++      });
++    });
++    if (out.length > 0) return out;
++  }
++  return [];
++}
++
++/** HTML search page -> products, trying JSON-LD first and then product cards. */
++export function parseHtmlSearch(html: string, baseUrl: string, selectors?: CardSelectors): RawProduct[] {
++  const fromJsonLd = parseJsonLdProducts(html, baseUrl);
++  if (fromJsonLd.length > 0) return fromJsonLd;
++  return parseProductCards(html, baseUrl, selectors ? [selectors] : DEFAULT_CARD_SELECTORS);
++}
++
++// --------------------------------------------------------------- diagnostics
++
++/** Cloudflare / bot-wall pages come back as 403/429/503 with a recognisable body. */
++export function looksBlocked(status: number, body: string): boolean {
++  if (![401, 403, 429, 503].includes(status)) return false;
++  return /just a moment|cf-chl|attention required|captcha|access denied|are you a robot|checking your browser/i.test(body) || status === 403 || status === 429;
++}
++
++export function classifyHttpFailure(status: number, body: string): ScanErrorKind {
++  return looksBlocked(status, body) ? 'blocked' : 'http';
++}
++
++/** Pick the quote to keep for one retailer x cigar: cheapest in-stock single, else cheapest single. */
++export function pickBest(products: RawProduct[]): RawProduct | undefined {
++  const sorted = [...products].sort((a, b) => a.price - b.price);
++  return sorted.find((p) => p.inStock) ?? sorted[0];
++}
+diff --git a/scanner/retailers.config.ts b/scanner/retailers.config.ts
+new file mode 100644
+index 0000000..f27ca74
+--- /dev/null
++++ b/scanner/retailers.config.ts
+@@ -0,0 +1,48 @@
++/**
++ * The retailers the scanner checks, and how.
++ *
++ * IMPORTANT: these base URLs and search paths are best guesses. They have
++ * not been verified against the live sites. The first GitHub Action run is
++ * the real test -- the "Retailer scan" panel in the app shows, per retailer,
++ * whether it was reachable, blocked, or reachable-but-matched-nothing.
++ * If a retailer fails, this file is the one place to fix it.
++ *
++ * `name` must match the vendor names the rest of the app uses
++ * (see canonicalizeVendorName in src/utils/researchUtils.ts).
++ */
++export interface RetailerConfig {
++  id: string;
++  name: string;
++  baseUrl: string;
++  enabled: boolean;
++  /** Why it's disabled, shown in the status panel. */
++  disabledReason?: string;
++  /**
++   * 'auto' tries Shopify's predictive-search JSON first, then falls back to
++   * parsing the HTML search page. Force 'shopify' or 'html' once you know.
++   */
++  strategy: 'auto' | 'shopify' | 'html';
++  /** HTML search path; {q} is replaced with the URL-encoded query. */
++  searchPath: string;
++  /** Optional CSS selectors for the HTML fallback (defaults cover WooCommerce/Magento). */
++  selectors?: { card: string; title: string; price: string; link: string };
++}
++
++export const RETAILERS: RetailerConfig[] = [
++  { id: 'cgars', name: 'C.Gars Ltd', baseUrl: 'https://www.cgarsltd.co.uk', enabled: true, strategy: 'auto', searchPath: '/search?q={q}' },
++  { id: 'havana-house', name: 'Havana House', baseUrl: 'https://www.havanahouse.co.uk', enabled: true, strategy: 'auto', searchPath: '/search?q={q}' },
++  { id: 'smoke-king', name: 'Smoke King', baseUrl: 'https://www.smokeking.co.uk', enabled: true, strategy: 'auto', searchPath: '/search?q={q}' },
++  { id: 'sautter', name: 'Sautter London', baseUrl: 'https://www.sautter.co.uk', enabled: true, strategy: 'auto', searchPath: '/search?q={q}' },
++  { id: 'neptune', name: 'Neptune Cigars', baseUrl: 'https://www.neptunecigars.co.uk', enabled: true, strategy: 'auto', searchPath: '/?s={q}&post_type=product' },
++  { id: 'jj-fox', name: 'JJ Fox', baseUrl: 'https://www.jjfox.co.uk', enabled: true, strategy: 'auto', searchPath: '/search?q={q}' },
++  { id: 'davidoff-london', name: 'Davidoff London', baseUrl: 'https://www.davidoff.com', enabled: true, strategy: 'auto', searchPath: '/gb/en/search?q={q}' },
++  {
++    id: 'holts',
++    name: "Holt's",
++    baseUrl: 'https://www.holts.com',
++    enabled: false,
++    disabledReason: 'US retailer that prices in USD; the scanner only keeps GBP quotes.',
++    strategy: 'auto',
++    searchPath: '/search?q={q}',
++  },
++];
+diff --git a/scanner/scan.test.ts b/scanner/scan.test.ts
+new file mode 100644
+index 0000000..071160e
+--- /dev/null
++++ b/scanner/scan.test.ts
+@@ -0,0 +1,167 @@
++import { describe, expect, it } from 'vitest';
++import { assembleResults, buildWatchlist, itemKey, runScan, scanRetailer, type ScanDeps } from './scan';
++import type { RetailerConfig } from './retailers.config';
++import type { ScanResultsFile, WatchlistEntry } from './types';
++
++const FIXED_NOW = new Date('2026-10-11T06:00:00.000Z');
++
++/** Fake network: URL substring -> response. Anything unmatched is a 404. */
++function fakeDeps(routes: Array<{ match: RegExp; status?: number; body?: string; throws?: string }>, log: string[] = []): ScanDeps {
++  return {
++    now: () => FIXED_NOW,
++    sleep: async () => {},
++    fetchFn: (async (url: string) => {
++      log.push(String(url));
++      const r = routes.find((x) => x.match.test(String(url)));
++      if (r?.throws) throw Object.assign(new Error(r.throws), { cause: { code: 'ENOTFOUND' } });
++      return { status: r?.status ?? 404, text: async () => r?.body ?? 'not found' } as Response;
++    }) as unknown as typeof fetch,
++  };
++}
++
++const cfg = (over: Partial<RetailerConfig> = {}): RetailerConfig => ({
++  id: 'shop',
++  name: 'Shop One',
++  baseUrl: 'https://one.example.co.uk',
++  enabled: true,
++  strategy: 'auto',
++  searchPath: '/search?q={q}',
++  ...over,
++});
++
++const padron: WatchlistEntry = { brand: 'Padrón', line: '1964 Anniversary Series', vitola: 'Exclusivo (Box-Pressed Robusto)' };
++const shark: WatchlistEntry = { brand: 'Arturo Fuente', line: 'Anejo No. 77 The Shark' };
++
++const shopifyBody = JSON.stringify({
++  resources: {
++    results: {
++      products: [
++        { title: 'Padron 1964 Anniversary Exclusivo', url: '/products/p', price: '16.50', available: true },
++        { title: 'Padron 1964 Anniversary Exclusivo Box of 25', url: '/products/pb', price: '395.00', available: true },
++      ],
++    },
++  },
++});
++
++describe('scanRetailer', () => {
++  it('Shopify path: keeps the matching single, drops the box, reports counts', async () => {
++    const out = await scanRetailer(cfg(), [padron, shark], fakeDeps([{ match: /suggest\.json/, status: 200, body: shopifyBody }]));
++    expect(out.report).toMatchObject({ status: 'ok', strategyUsed: 'shopify', queries: 2, queriesOk: 2, quotesKept: 1, skippedMultiPack: 1 });
++    const q = out.quotes.get(itemKey(padron))!;
++    expect(q).toMatchObject({ vendor: 'Shop One', price: 16.5, currency: 'GBP', inStock: true, scannedAt: FIXED_NOW.toISOString() });
++    expect(out.quotes.has(itemKey(shark))).toBe(false);
++  });
++
++  it('auto falls back to HTML when the store is not Shopify, and remembers the strategy', async () => {
++    const html = `<script type="application/ld+json">{"@type":"Product","name":"Padron 1964 Anniversary Exclusivo","offers":{"price":"15.20","priceCurrency":"GBP"}}</script>`;
++    const log: string[] = [];
++    const out = await scanRetailer(cfg(), [padron, shark], fakeDeps([{ match: /\/search\?q=/, status: 200, body: html }], log));
++    expect(out.report.strategyUsed).toBe('html');
++    expect(out.report.quotesKept).toBe(1);
++    // Shopify probe only on the first query; the second goes straight to HTML.
++    expect(log.filter((u) => u.includes('suggest.json'))).toHaveLength(1);
++  });
++
++  it('reports "no_matches" (not "ok") when the site responds but nothing matched', async () => {
++    const empty = JSON.stringify({ resources: { results: { products: [] } } });
++    const out = await scanRetailer(cfg(), [padron], fakeDeps([{ match: /suggest\.json/, status: 200, body: empty }]));
++    expect(out.report.status).toBe('no_matches');
++  });
++
++  it('skips non-GBP prices instead of mislabelling them', async () => {
++    const eur = `<script type="application/ld+json">{"@type":"Product","name":"Padron 1964 Anniversary Exclusivo","offers":{"price":"18.00","priceCurrency":"EUR"}}</script>`;
++    const out = await scanRetailer(cfg({ strategy: 'html' }), [padron], fakeDeps([{ match: /search/, status: 200, body: eur }]));
++    expect(out.report).toMatchObject({ quotesKept: 0, skippedCurrency: 1 });
++  });
++
++  it('a bot wall marks the retailer failed and stops after the first request', async () => {
++    const log: string[] = [];
++    const out = await scanRetailer(cfg(), [padron, shark, padron], fakeDeps([{ match: /./, status: 403, body: '<title>Just a moment...</title>' }], log));
++    expect(out.report.status).toBe('failed');
++    expect(out.report.errors[0]).toMatchObject({ kind: 'blocked', httpStatus: 403 });
++    expect(log).toHaveLength(1);
++    expect(out.report.queriesFailed).toBe(3);
++  });
++
++  it('DNS/network failure is recorded with its cause, after one retry', async () => {
++    const log: string[] = [];
++    const out = await scanRetailer(cfg(), [padron], fakeDeps([{ match: /./, throws: 'fetch failed' }], log));
++    expect(out.report.status).toBe('failed');
++    expect(out.report.errors[0]).toMatchObject({ kind: 'network' });
++    expect(out.report.errors[0].message).toContain('ENOTFOUND');
++    expect(log).toHaveLength(2);
++  });
++
++  it('a page with no product markup at all is a parse failure, not a silent "no results"', async () => {
++    const out = await scanRetailer(cfg({ strategy: 'html' }), [padron], fakeDeps([{ match: /./, status: 200, body: '<html><body>Welcome</body></html>' }]));
++    expect(out.report.status).toBe('failed');
++    expect(out.report.errors[0].kind).toBe('parse');
++  });
++
++  it('disabled retailers make no requests and say why', async () => {
++    const log: string[] = [];
++    const out = await scanRetailer(cfg({ enabled: false, disabledReason: 'USD only' }), [padron], fakeDeps([], log));
++    expect(out.report).toMatchObject({ status: 'disabled', note: 'USD only' });
++    expect(log).toHaveLength(0);
++  });
++});
++
++describe('assembleResults / runScan', () => {
++  it('carries over the last good price when a retailer fails, keeping its old timestamp', async () => {
++    const previous: ScanResultsFile = {
++      schemaVersion: 1,
++      scannedAt: '2026-10-10T06:00:00.000Z',
++      durationMs: 1,
++      retailers: [],
++      items: [
++        {
++          brand: padron.brand,
++          line: padron.line,
++          vitola: padron.vitola,
++          quotes: [{ vendor: 'Shop One', price: 15.9, currency: 'GBP', packageType: 'Single', inStock: true, title: 'Padron', scannedAt: '2026-10-10T06:00:00.000Z' }],
++        },
++      ],
++    };
++    const res = await runScan([padron], previous, fakeDeps([{ match: /./, status: 500, body: 'oops' }]), [cfg()]);
++    expect(res.retailers[0]).toMatchObject({ status: 'failed', carriedOver: 1 });
++    expect(res.items[0].quotes[0]).toMatchObject({ price: 15.9, scannedAt: '2026-10-10T06:00:00.000Z' });
++  });
++
++  it('does NOT carry over when the retailer answered fine but no longer lists the cigar', async () => {
++    const previous: ScanResultsFile = {
++      schemaVersion: 1, scannedAt: 'x', durationMs: 1, retailers: [],
++      items: [{ brand: padron.brand, line: padron.line, vitola: padron.vitola, quotes: [{ vendor: 'Shop One', price: 15.9, currency: 'GBP', packageType: 'Single', inStock: true, title: 'P', scannedAt: 'old' }] }],
++    };
++    const empty = JSON.stringify({ resources: { results: { products: [] } } });
++    const res = await runScan([padron], previous, fakeDeps([{ match: /suggest/, status: 200, body: empty }]), [cfg()]);
++    expect(res.items[0].quotes).toHaveLength(0);
++  });
++
++  it('sorts quotes cheapest first across retailers and stamps the run time', async () => {
++    const two = (price: string) => JSON.stringify({ resources: { results: { products: [{ title: 'Padron 1964 Anniversary Exclusivo', url: '/p', price, available: true }] } } });
++    const deps: ScanDeps = {
++      ...fakeDeps([]),
++      fetchFn: (async (url: string) => ({ status: 200, text: async () => (String(url).includes('one.') ? two('16.50') : two('14.20')) })) as unknown as typeof fetch,
++    };
++    const res = await runScan([padron], null, deps, [cfg(), cfg({ id: 'two', name: 'Shop Two', baseUrl: 'https://two.example.co.uk' })]);
++    expect(res.items[0].quotes.map((q) => [q.vendor, q.price])).toEqual([['Shop Two', 14.2], ['Shop One', 16.5]]);
++    expect(res.scannedAt).toBe(FIXED_NOW.toISOString());
++  });
++});
++
++describe('buildWatchlist', () => {
++  it('includes the built-in wishlist and research database, deduplicated', () => {
++    const list = buildWatchlist();
++    const keys = list.map(itemKey);
++    expect(new Set(keys).size).toBe(keys.length);
++    expect(list.some((e) => e.brand === 'Arturo Fuente')).toBe(true);
++    expect(list.some((e) => e.brand === 'Padrón')).toBe(true);
++  });
++  it('adds user extras and ignores entries missing brand or line', () => {
++    const list = buildWatchlist([{ brand: 'Cohiba', line: 'Siglo VI' }, { brand: '', line: 'x' } as WatchlistEntry]);
++    expect(list.some((e) => e.brand === 'Cohiba')).toBe(true);
++    expect(list.some((e) => e.line === 'x')).toBe(false);
++  });
++});
++
++void assembleResults;
+diff --git a/scanner/scan.ts b/scanner/scan.ts
+new file mode 100644
+index 0000000..ac98695
+--- /dev/null
++++ b/scanner/scan.ts
+@@ -0,0 +1,348 @@
++import fs from 'node:fs/promises';
++import path from 'node:path';
++import { pathToFileURL } from 'node:url';
++import { INITIAL_WISHLIST } from '../src/data/initialData';
++import { INITIAL_RESEARCH_DATABASE } from '../src/data/cigarDatabase';
++import { RETAILERS, type RetailerConfig } from './retailers.config';
++import {
++  classifyHttpFailure,
++  detectPackageType,
++  normalise,
++  parseHtmlSearch,
++  parseShopifySuggest,
++  pickBest,
++  titleMatches,
++  type RawProduct,
++} from './parsers';
++import type { RetailerReport, ScanError, ScanErrorKind, ScanItem, ScanQuote, ScanResultsFile, WatchlistEntry } from './types';
++
++const OUTPUT_PATH = path.resolve('public/data/retailer-prices.json');
++const WATCHLIST_PATH = path.resolve('scanner/watchlist.json');
++const USER_AGENT = 'HumidorPriceScanner/1.0 (+https://github.com/Ello2003/HUMIDOR; personal price check)';
++const REQUEST_TIMEOUT_MS = 15_000;
++const DELAY_BETWEEN_REQUESTS_MS = 1_500;
++const MAX_ERRORS_KEPT = 5;
++
++export interface ScanDeps {
++  fetchFn: typeof fetch;
++  sleep: (ms: number) => Promise<void>;
++  now: () => Date;
++}
++
++const realDeps: ScanDeps = {
++  fetchFn: (input, init) => fetch(input, init),
++  sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
++  now: () => new Date(),
++};
++
++export class ScanFailure extends Error {
++  constructor(public kind: ScanErrorKind, message: string, public httpStatus?: number) {
++    super(message);
++  }
++}
++
++export function itemKey(e: WatchlistEntry): string {
++  return normalise(`${e.brand} ${e.line} ${e.vitola ?? ''}`);
++}
++
++// ---------------------------------------------------------------- watchlist
++
++export function buildWatchlist(extra: WatchlistEntry[] = []): WatchlistEntry[] {
++  const all: WatchlistEntry[] = [
++    ...INITIAL_WISHLIST.map((w) => ({ brand: w.brand, line: w.name, vitola: w.vitola })),
++    ...INITIAL_RESEARCH_DATABASE.map((r) => ({ brand: r.brand, line: r.line, vitola: r.vitola })),
++    ...extra,
++  ];
++  const seen = new Set<string>();
++  return all.filter((e) => {
++    if (!e.brand || !e.line) return false;
++    const k = itemKey(e);
++    if (seen.has(k)) return false;
++    seen.add(k);
++    return true;
++  });
++}
++
++async function readJsonIfExists<T>(file: string): Promise<T | null> {
++  try {
++    return JSON.parse(await fs.readFile(file, 'utf8')) as T;
++  } catch {
++    return null;
++  }
++}
++
++// ------------------------------------------------------------------ fetching
++
++async function getText(url: string, deps: ScanDeps, accept: string): Promise<{ status: number; body: string }> {
++  const attempt = async () => {
++    const ctrl = new AbortController();
++    const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
++    try {
++      const res = await deps.fetchFn(url, {
++        headers: { 'User-Agent': USER_AGENT, Accept: accept, 'Accept-Language': 'en-GB,en;q=0.9' },
++        signal: ctrl.signal,
++        redirect: 'follow',
++      });
++      return { status: res.status, body: await res.text() };
++    } catch (err: any) {
++      if (err?.name === 'AbortError') throw new ScanFailure('timeout', `No response within ${REQUEST_TIMEOUT_MS / 1000}s`);
++      throw new ScanFailure('network', err?.cause?.code ? `${err.message} (${err.cause.code})` : String(err?.message ?? err));
++    } finally {
++      clearTimeout(timer);
++    }
++  };
++  try {
++    return await attempt();
++  } catch (err) {
++    if (err instanceof ScanFailure && (err.kind === 'timeout' || err.kind === 'network')) {
++      await deps.sleep(2_000);
++      return attempt(); // one retry for flaky network, then give up
++    }
++    throw err;
++  }
++}
++
++async function searchShopify(cfg: RetailerConfig, query: string, deps: ScanDeps): Promise<RawProduct[] | 'not-shopify'> {
++  const url = `${cfg.baseUrl}/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product&resources[limit]=10`;
++  const { status, body } = await getText(url, deps, 'application/json');
++  if (status !== 200) {
++    const kind = classifyHttpFailure(status, body);
++    if (kind === 'blocked') throw new ScanFailure('blocked', `HTTP ${status} -- looks like a bot wall`, status);
++    return 'not-shopify'; // 404 etc. just means this isn't a Shopify store
++  }
++  let json: unknown;
++  try {
++    json = JSON.parse(body);
++  } catch {
++    return 'not-shopify';
++  }
++  return parseShopifySuggest(json, cfg.baseUrl) ?? 'not-shopify';
++}
++
++async function searchHtml(cfg: RetailerConfig, query: string, deps: ScanDeps): Promise<RawProduct[]> {
++  const url = cfg.baseUrl + cfg.searchPath.replace('{q}', encodeURIComponent(query));
++  const { status, body } = await getText(url, deps, 'text/html,application/xhtml+xml');
++  if (status !== 200) {
++    const kind = classifyHttpFailure(status, body);
++    throw new ScanFailure(kind, kind === 'blocked' ? `HTTP ${status} -- looks like a bot wall` : `HTTP ${status}`, status);
++  }
++  const products = parseHtmlSearch(body, cfg.baseUrl, cfg.selectors);
++  if (products.length === 0 && !/product|price|£/i.test(body)) {
++    throw new ScanFailure('parse', 'Page loaded but contained no recognisable product or price markup');
++  }
++  return products;
++}
++
++// ------------------------------------------------------------------ scanning
++
++export interface RetailerScanOutput {
++  report: RetailerReport;
++  /** itemKey -> quote found this run */
++  quotes: Map<string, ScanQuote>;
++  /** itemKeys whose query failed this run (candidates for carry-over) */
++  failedKeys: Set<string>;
++}
++
++export async function scanRetailer(cfg: RetailerConfig, watchlist: WatchlistEntry[], deps: ScanDeps): Promise<RetailerScanOutput> {
++  const report: RetailerReport = {
++    id: cfg.id,
++    name: cfg.name,
++    baseUrl: cfg.baseUrl,
++    status: 'ok',
++    queries: 0,
++    queriesOk: 0,
++    queriesFailed: 0,
++    productsSeen: 0,
++    quotesKept: 0,
++    skippedMultiPack: 0,
++    skippedCurrency: 0,
++    carriedOver: 0,
++    errors: [],
++  };
++  const quotes = new Map<string, ScanQuote>();
++  const failedKeys = new Set<string>();
++
++  if (!cfg.enabled) {
++    report.status = 'disabled';
++    report.note = cfg.disabledReason;
++    return { report, quotes, failedKeys };
++  }
++
++  let strategy: 'shopify' | 'html' | null = cfg.strategy === 'auto' ? null : cfg.strategy;
++
++  for (let i = 0; i < watchlist.length; i++) {
++    const entry = watchlist[i];
++    const query = `${entry.brand} ${entry.line}`.trim();
++    report.queries++;
++    if (i > 0) await deps.sleep(DELAY_BETWEEN_REQUESTS_MS);
++
++    try {
++      let products: RawProduct[];
++      if (strategy === 'shopify') {
++        const r = await searchShopify(cfg, query, deps);
++        if (r === 'not-shopify') throw new ScanFailure('parse', 'Not a Shopify store (suggest endpoint returned nothing usable)');
++        products = r;
++      } else if (strategy === 'html') {
++        products = await searchHtml(cfg, query, deps);
++      } else {
++        const r = await searchShopify(cfg, query, deps);
++        if (r === 'not-shopify') {
++          products = await searchHtml(cfg, query, deps);
++          strategy = 'html';
++        } else {
++          products = r;
++          strategy = 'shopify';
++        }
++      }
++      report.strategyUsed = strategy ?? undefined;
++      report.queriesOk++;
++      report.productsSeen += products.length;
++
++      const matched = products.filter((p) => titleMatches(p.title, entry));
++      const singles = matched.filter((p) => detectPackageType(p.title) === 'Single');
++      report.skippedMultiPack += matched.length - singles.length;
++      const gbp = singles.filter((p) => !p.currency || p.currency === 'GBP');
++      report.skippedCurrency += singles.length - gbp.length;
++
++      const best = pickBest(gbp);
++      if (best) {
++        quotes.set(itemKey(entry), {
++          vendor: cfg.name,
++          price: best.price,
++          currency: 'GBP',
++          packageType: 'Single',
++          inStock: best.inStock,
++          url: best.url,
++          title: best.title,
++          scannedAt: deps.now().toISOString(),
++        });
++        report.quotesKept++;
++      }
++    } catch (err) {
++      const f = err instanceof ScanFailure ? err : new ScanFailure('parse', String((err as Error)?.message ?? err));
++      report.queriesFailed++;
++      failedKeys.add(itemKey(entry));
++      if (report.errors.length < MAX_ERRORS_KEPT) {
++        const e: ScanError = { query, kind: f.kind, message: f.message };
++        if (f.httpStatus) e.httpStatus = f.httpStatus;
++        report.errors.push(e);
++      }
++      // A bot wall won't be different for the next 12 cigars -- stop hammering the site.
++      if (f.kind === 'blocked') {
++        for (const rest of watchlist.slice(i + 1)) {
++          report.queries++;
++          report.queriesFailed++;
++          failedKeys.add(itemKey(rest));
++        }
++        break;
++      }
++    }
++  }
++
++  report.status =
++    report.queriesFailed === report.queries ? 'failed' : report.queriesFailed > 0 ? 'partial' : report.quotesKept === 0 ? 'no_matches' : 'ok';
++  return { report, quotes, failedKeys };
++}
++
++export function assembleResults(
++  watchlist: WatchlistEntry[],
++  outputs: RetailerScanOutput[],
++  previous: ScanResultsFile | null,
++  deps: Pick<ScanDeps, 'now'>,
++  startedAt: number,
++  runUrl?: string
++): ScanResultsFile {
++  const prevByKey = new Map<string, ScanItem>();
++  for (const it of previous?.items ?? []) prevByKey.set(itemKey(it), it);
++
++  const items: ScanItem[] = watchlist.map((entry) => {
++    const key = itemKey(entry);
++    const quotes: ScanQuote[] = [];
++    for (const out of outputs) {
++      const fresh = out.quotes.get(key);
++      if (fresh) {
++        quotes.push(fresh);
++      } else if (out.failedKeys.has(key)) {
++        // This run couldn't reach the retailer for this cigar: keep the last good
++        // price (its own scannedAt shows how old it is) rather than silently dropping it.
++        const old = prevByKey.get(key)?.quotes.find((q) => q.vendor === out.report.name);
++        if (old) {
++          quotes.push(old);
++          out.report.carriedOver++;
++        }
++      }
++    }
++    quotes.sort((a, b) => a.price - b.price);
++    return { brand: entry.brand, line: entry.line, ...(entry.vitola ? { vitola: entry.vitola } : {}), quotes };
++  });
++
++  return {
++    schemaVersion: 1,
++    scannedAt: deps.now().toISOString(),
++    durationMs: deps.now().getTime() - startedAt,
++    ...(runUrl ? { runUrl } : {}),
++    retailers: outputs.map((o) => o.report),
++    items,
++  };
++}
++
++export async function runScan(
++  watchlist: WatchlistEntry[],
++  previous: ScanResultsFile | null,
++  deps: ScanDeps = realDeps,
++  retailers: RetailerConfig[] = RETAILERS,
++  runUrl?: string
++): Promise<ScanResultsFile> {
++  const startedAt = deps.now().getTime();
++  // Retailers run in parallel with each other; each one is strictly sequential
++  // with a delay, so no single site sees more than one request at a time.
++  const outputs = await Promise.all(retailers.map((r) => scanRetailer(r, watchlist, deps)));
++  return assembleResults(watchlist, outputs, previous, deps, startedAt, runUrl);
++}
++
++// ---------------------------------------------------------------------- CLI
++
++function summaryMarkdown(r: ScanResultsFile): string {
++  const icon = { ok: '✅', no_matches: '🟡', partial: '🟠', failed: '❌', disabled: '⚪' } as const;
++  const rows = r.retailers.map((x) => {
++    const detail = x.note ?? x.errors[0]?.message ?? (x.status === 'no_matches' ? 'Reachable but nothing matched -- check URL/selectors' : '');
++    return `| ${icon[x.status]} ${x.name} | ${x.status} | ${x.strategyUsed ?? '-'} | ${x.queriesOk}/${x.queries} | ${x.quotesKept} | ${detail.replace(/\|/g, '/')} |`;
++  });
++  return ['## Retailer scan', '', '| Retailer | Status | Strategy | Queries OK | Prices | Detail |', '|---|---|---|---|---|---|', ...rows, ''].join('\n');
++}
++
++async function main() {
++  const extra = (await readJsonIfExists<{ extra?: WatchlistEntry[] }>(WATCHLIST_PATH))?.extra ?? [];
++  const watchlist = buildWatchlist(extra);
++  const previous = await readJsonIfExists<ScanResultsFile>(OUTPUT_PATH);
++  const runUrl =
++    process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID
++      ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
++      : undefined;
++
++  console.log(`Scanning ${watchlist.length} cigars across ${RETAILERS.filter((r) => r.enabled).length} retailers...`);
++  const results = await runScan(watchlist, previous, realDeps, RETAILERS, runUrl);
++
++  await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
++  await fs.writeFile(OUTPUT_PATH, JSON.stringify(results, null, 2) + '\n');
++
++  const md = summaryMarkdown(results);
++  console.log('\n' + md);
++  if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, md);
++
++  for (const r of results.retailers) {
++    if (r.status === 'failed' || r.status === 'partial') console.log(`::warning title=${r.name} ${r.status}::${r.errors[0]?.message ?? 'see summary'}`);
++  }
++  const enabled = results.retailers.filter((r) => r.status !== 'disabled');
++  if (enabled.length > 0 && enabled.every((r) => r.status === 'failed')) {
++    console.log('::error title=Every retailer failed::GitHub runner IPs are commonly blocked by retailer bot protection. See the run summary.');
++  }
++  // Exit 0 even when retailers failed: the status file is the point, and it must be committed.
++}
++
++if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
++  main().catch((err) => {
++    console.error('Scanner crashed:', err);
++    process.exit(1);
++  });
++}
+diff --git a/scanner/types.ts b/scanner/types.ts
+new file mode 100644
+index 0000000..4c8aef3
+--- /dev/null
++++ b/scanner/types.ts
+@@ -0,0 +1,84 @@
++/**
++ * Shape of public/data/retailer-prices.json -- written by scanner/scan.ts
++ * (run by the "Scan retailer prices" GitHub Action) and read by the
++ * Wishlist and Research Hub scan buttons. Bump schemaVersion if this
++ * changes in a way old readers can't cope with.
++ */
++export type RetailerStatus = 'ok' | 'no_matches' | 'partial' | 'failed' | 'disabled';
++
++export type ScanErrorKind = 'blocked' | 'http' | 'timeout' | 'network' | 'parse';
++
++export interface ScanError {
++  query: string;
++  kind: ScanErrorKind;
++  message: string;
++  httpStatus?: number;
++}
++
++export interface RetailerReport {
++  id: string;
++  /** Canonical vendor name, same spelling the rest of the app uses. */
++  name: string;
++  baseUrl: string;
++  status: RetailerStatus;
++  /** Why it was skipped, when status === 'disabled'. */
++  note?: string;
++  strategyUsed?: 'shopify' | 'html';
++  queries: number;
++  queriesOk: number;
++  queriesFailed: number;
++  productsSeen: number;
++  quotesKept: number;
++  /** Matched products dropped because they were boxes/multi-packs. */
++  skippedMultiPack: number;
++  /** Matched products dropped because the price wasn't in GBP. */
++  skippedCurrency: number;
++  /** Quotes carried over from the previous run because this run failed. */
++  carriedOver: number;
++  /** First few errors only -- enough to diagnose, not a log dump. */
++  errors: ScanError[];
++}
++
++export interface ScanQuote {
++  vendor: string;
++  price: number;
++  currency: 'GBP';
++  packageType: 'Single';
++  inStock: boolean;
++  url?: string;
++  /** Product title as the retailer wrote it, so a wrong match is visible. */
++  title: string;
++  /** When this price was actually read (older than the file if carried over). */
++  scannedAt: string;
++}
++
++export interface ScanItem {
++  brand: string;
++  line: string;
++  vitola?: string;
++  quotes: ScanQuote[];
++}
++
++export interface ScanResultsFile {
++  schemaVersion: 1;
++  /** null = the scanner has never run. */
++  scannedAt: string | null;
++  durationMs: number;
++  runUrl?: string;
++  retailers: RetailerReport[];
++  items: ScanItem[];
++}
++
++export interface WatchlistEntry {
++  brand: string;
++  line: string;
++  vitola?: string;
++}
++
++export const EMPTY_SCAN_RESULTS: ScanResultsFile = {
++  schemaVersion: 1,
++  scannedAt: null,
++  durationMs: 0,
++  retailers: [],
++  items: [],
++};
+diff --git a/scanner/watchlist.json b/scanner/watchlist.json
+new file mode 100644
+index 0000000..42713c2
+--- /dev/null
++++ b/scanner/watchlist.json
+@@ -0,0 +1,4 @@
++{
++  "_comment": "Extra cigars for the scanner to price-check, on top of the built-in wishlist and research database. The scanner can't see your browser's saved wishlist, so anything you want scanned that isn't built in goes here. The Retailer scan panel in the app has a button that copies exactly the entries you're missing.",
++  "extra": []
++}
+diff --git a/src/components/CigarResearchHub.tsx b/src/components/CigarResearchHub.tsx
+index 1b42d0b..b86c9c0 100644
+--- a/src/components/CigarResearchHub.tsx
++++ b/src/components/CigarResearchHub.tsx
+@@ -59,6 +59,8 @@ import {
+ import { formatDateShort } from '../utils/dateUtils';
+ import { generateId } from '../utils/idUtils';
+ import { formatCurrency } from '../utils/currencyUtils';
++import { findBatchQuotes, findQuotes, loadScanResults, scanHealthNote } from '../utils/scanResults';
++import RetailerScanStatus from './RetailerScanStatus';
+ import {
+   mergeVendorPriceIntoCigar,
+   canonicalizeVendorName,
+@@ -782,28 +784,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+   const handleScanRetailerPricesForCigar = async (cigar: CigarResearchItem) => {
+     setScanningPriceCigarId(cigar.id);
+     try {
+-      const res = await fetch('/api/research/retailer-prices', {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify({
+-          brand: cigar.brand,
+-          name: cigar.line,
+-          vitola: cigar.vitola,
+-          countryOrigin: cigar.countryOrigin,
+-          isCuban: cigar.isCuban,
+-        }),
+-      });
+-      const data = await res.json();
+-      if (res.ok && data.success && data.data?.retailerQuotes?.length > 0) {
+-        const quotes: VendorPriceEntry[] = data.data.retailerQuotes.map((q: any) => ({
+-          id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+-          vendor: canonicalizeVendorName(q.vendor),
+-          price: q.price,
+-          currency: '£',
+-          packageType: 'Single' as const,
+-          inStock: q.inStock ?? true,
+-          recordedAt: new Date().toISOString(),
+-        }));
++      const scan = await loadScanResults();
++      setScanStatusKey((k) => k + 1);
++      const found = findQuotes(scan, { brand: cigar.brand, line: cigar.line, vitola: cigar.vitola });
++      if (found.length > 0) {
++        const quotes: VendorPriceEntry[] = found;
+ 
+         let updatedCigar = { ...cigar };
+         for (const q of quotes) {
+@@ -837,12 +822,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+           });
+         }
+ 
+-        showFeedback(`Scanned UK Retailers (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff): Best price £${data.data.bestPrice.toFixed(2)} at ${data.data.bestVendor}!`);
++        const best = [...found].sort((x, y) => x.price - y.price)[0];
++        showFeedback(`Best scanned price £${best.price.toFixed(2)} at ${best.vendor}. ${scanHealthNote(scan)}`);
+       } else {
+-        showFeedback(`No verified UK retailer prices found for "${cigar.brand} ${cigar.line}".`);
++        showFeedback(`No scanned prices for "${cigar.brand} ${cigar.line}". ${scanHealthNote(scan)}`);
+       }
+     } catch (err: any) {
+-      showFeedback(`Price scan failed — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?`);
++      showFeedback(err?.message || "Couldn't read scan results.");
+     } finally {
+       setScanningPriceCigarId(null);
+     }
+@@ -851,35 +837,18 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+   const handleBatchScanAllRetailers = async () => {
+     setIsBatchScanningPrices(true);
+     try {
+-      const res = await fetch('/api/research/batch-retailer-prices', {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify({
+-          cigars: researchDatabase.slice(0, 25).map((c) => ({
+-            id: c.id,
+-            brand: c.brand,
+-            name: c.line,
+-            vitola: c.vitola,
+-            countryOrigin: c.countryOrigin,
+-            isCuban: c.isCuban,
+-          })),
+-        }),
+-      });
+-      const data = await res.json();
+-      if (res.ok && data.success && data.data?.results) {
++      const scan = await loadScanResults();
++      setScanStatusKey((k) => k + 1);
++      const batch = findBatchQuotes(
++        scan,
++        researchDatabase.map((c) => ({ id: c.id, brand: c.brand, line: c.line, vitola: c.vitola }))
++      );
++      {
+         let updatedCount = 0;
+-        data.data.results.forEach((r: any) => {
++        batch.forEach((r) => {
+           const cigar = researchDatabase.find((c) => c.id === r.id);
+           if (cigar && r.quotes && r.quotes.length > 0) {
+-            const quotes: VendorPriceEntry[] = r.quotes.map((q: any) => ({
+-              id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+-              vendor: canonicalizeVendorName(q.vendor),
+-              price: q.price,
+-              currency: '£',
+-              packageType: 'Single' as const,
+-              inStock: q.inStock ?? true,
+-              recordedAt: new Date().toISOString(),
+-            }));
++            const quotes: VendorPriceEntry[] = r.quotes;
+ 
+             let updatedCigar = { ...cigar };
+             for (const q of quotes) {
+@@ -915,14 +884,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+             updatedCount++;
+           }
+         });
+-        const groundedCount = data.data.groundedCount ?? 0;
+-        showFeedback(
+-          `Updated UK retailer prices for ${updatedCount} cigars — ${groundedCount} verified via live search, ` +
+-            `${updatedCount - groundedCount} from unverified reference data.`
+-        );
++        showFeedback(`Updated retailer prices for ${updatedCount} of ${researchDatabase.length} cigars from the latest scan. ${scanHealthNote(scan)}`);
+       }
+     } catch (err: any) {
+-      showFeedback('UK multi-shop batch scan complete.');
++      showFeedback(err?.message || "Couldn't read scan results.");
+     } finally {
+       setIsBatchScanningPrices(false);
+     }
+@@ -997,6 +962,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+ 
+   // Global hub feedback notice
+   const [hubNotice, setHubNotice] = useState<string | null>(null);
++  const [scanStatusKey, setScanStatusKey] = useState(0);
+ 
+   const showFeedback = (msg: string) => {
+     setHubNotice(msg);
+@@ -1411,6 +1377,12 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
+         </div>
+       )}
+ 
++      {/* Retailer scan status: shows what the scheduled scanner last managed to read */}
++      <RetailerScanStatus
++        refreshKey={scanStatusKey}
++        cigars={researchDatabase.map((c) => ({ brand: c.brand, line: c.line, vitola: c.vitola }))}
++      />
++
+       {/* Top Banner & Tab Navigation */}
+       <div className="p-6 bg-header border border-line rounded-lg shadow-sm">
+         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+diff --git a/src/components/RetailerScanStatus.tsx b/src/components/RetailerScanStatus.tsx
+new file mode 100644
+index 0000000..ac8a491
+--- /dev/null
++++ b/src/components/RetailerScanStatus.tsx
+@@ -0,0 +1,129 @@
++import React, { useCallback, useEffect, useState } from 'react';
++import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, CircleSlash, Copy, ExternalLink, RefreshCw, XCircle } from 'lucide-react';
++import {
++  SCAN_RESULTS_STALE_AFTER_HOURS,
++  describeAge,
++  loadScanResults,
++  missingFromScan,
++  retailerSummaryLine,
++  scanAgeHours,
++  type RetailerReport,
++  type ScanResultsFile,
++} from '../utils/scanResults';
++
++interface Props {
++  /** The cigars currently on screen, used to spot ones the scanner doesn't know about. */
++  cigars: Array<{ brand: string; line: string; vitola?: string }>;
++  /** Bump to force a reload (e.g. after a scan button press). */
++  refreshKey?: number;
++}
++
++const STATUS_ICON: Record<RetailerReport['status'], React.ReactNode> = {
++  ok: <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />,
++  partial: <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />,
++  no_matches: <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />,
++  failed: <XCircle className="w-4 h-4 text-red-500 shrink-0" />,
++  disabled: <CircleSlash className="w-4 h-4 text-stone-400 shrink-0" />,
++};
++
++export default function RetailerScanStatus({ cigars, refreshKey = 0 }: Props) {
++  const [results, setResults] = useState<ScanResultsFile | null>(null);
++  const [error, setError] = useState<string | null>(null);
++  const [loading, setLoading] = useState(false);
++  const [open, setOpen] = useState(false);
++  const [copied, setCopied] = useState(false);
++
++  const load = useCallback(async () => {
++    setLoading(true);
++    try {
++      setResults(await loadScanResults());
++      setError(null);
++    } catch (e: any) {
++      setError(e?.message ?? 'Could not load scan results.');
++    } finally {
++      setLoading(false);
++    }
++  }, []);
++
++  useEffect(() => {
++    load();
++  }, [load, refreshKey]);
++
++  const hours = results ? scanAgeHours(results) : null;
++  const stale = hours !== null && hours > SCAN_RESULTS_STALE_AFTER_HOURS;
++  const active = results?.retailers.filter((r) => r.status !== 'disabled') ?? [];
++  const working = active.filter((r) => r.status === 'ok' || r.status === 'partial').length;
++  const missing = results ? missingFromScan(results, cigars) : [];
++
++  const tone = error || !results?.scannedAt || (active.length > 0 && working === 0)
++    ? 'border-red-300 bg-red-50 text-red-900 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200'
++    : stale || working < active.length
++      ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200'
++      : 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200';
++
++  const headline = error
++    ? error
++    : !results?.scannedAt
++      ? 'Retailer scanner has not run yet. Run the "Scan retailer prices" workflow in GitHub Actions.'
++      : `Last scanned ${describeAge(hours)} · ${working} of ${active.length} retailers returned prices${stale ? ' · out of date' : ''}`;
++
++  const copyMissing = async () => {
++    try {
++      await navigator.clipboard.writeText(JSON.stringify(missing, null, 2));
++      setCopied(true);
++      setTimeout(() => setCopied(false), 2500);
++    } catch {
++      window.prompt('Copy these into "extra" in scanner/watchlist.json:', JSON.stringify(missing));
++    }
++  };
++
++  return (
++    <div className={`rounded-xl border px-3 py-2 text-sm ${tone}`} data-testid="retailer-scan-status">
++      <div className="flex items-center gap-2">
++        <button type="button" onClick={() => setOpen((o) => !o)} className="flex flex-1 items-center gap-2 text-left" aria-expanded={open}>
++          <span className="font-semibold">Retailer scan</span>
++          <span className="flex-1 opacity-90">{headline}</span>
++          {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
++        </button>
++        <button type="button" onClick={load} disabled={loading} title="Reload scan results" className="p-1 rounded hover:bg-black/5">
++          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
++        </button>
++      </div>
++
++      {open && results && (
++        <div className="mt-2 space-y-2">
++          <ul className="divide-y divide-black/10 dark:divide-white/10">
++            {results.retailers.map((r) => (
++              <li key={r.id} className="flex items-start gap-2 py-1.5">
++                {STATUS_ICON[r.status]}
++                <div className="min-w-0 flex-1">
++                  <div className="flex flex-wrap items-baseline gap-x-2">
++                    <span className="font-medium">{r.name}</span>
++                    <span className="text-xs opacity-70">
++                      {r.status === 'disabled' ? 'disabled' : `${r.queriesOk}/${r.queries} lookups · ${r.quotesKept} prices${r.strategyUsed ? ` · ${r.strategyUsed}` : ''}`}
++                    </span>
++                  </div>
++                  <div className="text-xs opacity-80 break-words">{retailerSummaryLine(r)}</div>
++                </div>
++              </li>
++            ))}
++          </ul>
++
++          <div className="flex flex-wrap items-center gap-3 text-xs">
++            {results.runUrl && (
++              <a href={results.runUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline">
++                Open the Action run <ExternalLink className="w-3 h-3" />
++              </a>
++            )}
++            {missing.length > 0 && (
++              <button type="button" onClick={copyMissing} className="inline-flex items-center gap-1 underline">
++                <Copy className="w-3 h-3" />
++                {copied ? 'Copied!' : `${missing.length} cigar${missing.length === 1 ? '' : 's'} here aren't scanned — copy for scanner/watchlist.json`}
++              </button>
++            )}
++          </div>
++        </div>
++      )}
++    </div>
++  );
++}
+diff --git a/src/components/WishlistHunting.tsx b/src/components/WishlistHunting.tsx
+index 3c3a03a..79bb306 100644
+--- a/src/components/WishlistHunting.tsx
++++ b/src/components/WishlistHunting.tsx
+@@ -36,6 +36,8 @@ import {
+ } from 'lucide-react';
+ import { WishlistItem, Cigar, AppSettings, VendorPriceEntry, CigarResearchItem, ReviewScoreEntry, WishlistBasketItem } from '../types';
+ import { formatCurrency, DEFAULT_CURRENCY } from '../utils/currencyUtils';
++import { findBatchQuotes, findQuotes, loadScanResults, scanHealthNote } from '../utils/scanResults';
++import RetailerScanStatus from './RetailerScanStatus';
+ import {
+   estimateAccurateSmokeTime,
+   canonicalizeVendorName,
+@@ -119,6 +121,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+   // Scanner states
+   const [scanningItemId, setScanningItemId] = useState<string | null>(null);
+   const [isBatchScanning, setIsBatchScanning] = useState(false);
++  const [scanStatusKey, setScanStatusKey] = useState(0);
+   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
+ 
+   // Search & Filter state with persistence
+@@ -770,22 +773,9 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+     setFeedbackNotice(null);
+ 
+     try {
+-      const response = await fetch('/api/research/retailer-prices', {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify({
+-          brand: item.brand,
+-          name: item.name,
+-          vitola: item.vitola,
+-        }),
+-      });
+-
+-      if (!response.ok) {
+-        throw new Error('Scanner request failed');
+-      }
+-
+-      const data = await response.json();
+-      const scannedPrices: VendorPriceEntry[] = data?.data?.retailerQuotes || data?.data?.quotes || [];
++      const results = await loadScanResults();
++      const scannedPrices: VendorPriceEntry[] = findQuotes(results, { brand: item.brand, line: item.name, vitola: item.vitola });
++      setScanStatusKey((k) => k + 1);
+ 
+       if (scannedPrices.length > 0) {
+         const currentQuotes = item.vendorPrices || [];
+@@ -836,14 +826,14 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+         }
+ 
+         setFeedbackNotice(
+-          `🇬🇧 Updated shop quotes for ${item.brand} ${item.name}! Best quote: £${minPrice.toFixed(2)} at ${bestVendor}.`
++          `🇬🇧 Updated shop quotes for ${item.brand} ${item.name}! Best quote: £${minPrice.toFixed(2)} at ${bestVendor}. ${scanHealthNote(results)}`
+         );
+       } else {
+-        setFeedbackNotice(`Scanned UK retailers — no verified prices found for ${item.brand} ${item.name}.`);
++        setFeedbackNotice(`No scanned prices for ${item.brand} ${item.name}. ${scanHealthNote(results)}`);
+       }
+-    } catch (err) {
+-      console.error('Error scanning retailer prices:', err);
+-      setFeedbackNotice(`Price scan failed for ${item.brand} ${item.name} — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?`);
++    } catch (err: any) {
++      console.error('Error reading scan results:', err);
++      setFeedbackNotice(err?.message || `Couldn't read scan results for ${item.brand} ${item.name}.`);
+     } finally {
+       setScanningItemId(null);
+     }
+@@ -856,26 +846,12 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+     setFeedbackNotice(null);
+ 
+     try {
+-      const response = await fetch('/api/research/batch-retailer-prices', {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify({
+-          cigars: wishlist.map((w) => ({
+-            id: w.id,
+-            brand: w.brand,
+-            line: w.name,
+-            name: w.name,
+-            vitola: w.vitola,
+-          })),
+-        }),
+-      });
+-
+-      if (!response.ok) {
+-        throw new Error('Batch scanner request failed');
+-      }
+-
+-      const data = await response.json();
+-      const results: Array<{ id: string; brand: string; name: string; quotes: VendorPriceEntry[] }> = data?.data?.results || [];
++      const scan = await loadScanResults();
++      const results = findBatchQuotes(
++        scan,
++        wishlist.map((w) => ({ id: w.id, brand: w.brand, line: w.name, vitola: w.vitola }))
++      );
++      setScanStatusKey((k) => k + 1);
+       let updatedCount = 0;
+ 
+       results.forEach((res) => {
+@@ -933,11 +909,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+       });
+ 
+       setFeedbackNotice(
+-        `🇬🇧 UK Tobacconist scan completed! Updated quotes and best prices across ${updatedCount} wishlist items.`
++        `🇬🇧 Updated quotes for ${updatedCount} of ${wishlist.length} wishlist items from the latest scan. ${scanHealthNote(scan)}`
+       );
+-    } catch (err) {
++    } catch (err: any) {
+       console.error('Batch scan error:', err);
+-      setFeedbackNotice('Batch price scan failed — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?');
++      setFeedbackNotice(err?.message || "Couldn't read scan results.");
+     } finally {
+       setIsBatchScanning(false);
+     }
+@@ -1285,6 +1261,23 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
+         </div>
+       )}
+ 
++      {/* Retailer scan status: shows what the scheduled scanner last managed to read */}
++      <div className="space-y-2">
++        <RetailerScanStatus
++          refreshKey={scanStatusKey}
++          cigars={wishlist.map((w) => ({ brand: w.brand, line: w.name, vitola: w.vitola }))}
++        />
++        <button
++          type="button"
++          onClick={handleBatchScanAllWishlistItems}
++          disabled={isBatchScanning || wishlist.length === 0}
++          className="px-3 py-1.5 bg-surface hover:bg-card-hover text-gold border border-gold/50 hover:border-gold text-[11px] font-semibold uppercase tracking-wider rounded-md transition cursor-pointer disabled:opacity-50"
++          title="Apply the latest scanned retailer prices to every wishlist item"
++        >
++          {isBatchScanning ? 'Applying scan...' : '🇬🇧 Apply latest scan to wishlist'}
++        </button>
++      </div>
++
+       {/* Inline Display Settings & Presets Panel */}
+       {showDisplayOptions && (
+         <div className="p-4 bg-header border border-line rounded-lg space-y-3 shadow-sm animate-in fade-in duration-200">
+diff --git a/src/utils/scanResults.test.ts b/src/utils/scanResults.test.ts
+new file mode 100644
+index 0000000..44bd688
+--- /dev/null
++++ b/src/utils/scanResults.test.ts
+@@ -0,0 +1,118 @@
++import { describe, expect, it, vi } from 'vitest';
++import {
++  cigarKey,
++  describeAge,
++  findBatchQuotes,
++  findQuotes,
++  loadScanResults,
++  missingFromScan,
++  normaliseKey,
++  retailerSummaryLine,
++  scanAgeHours,
++  scanHealthNote,
++} from './scanResults';
++import { normalise } from '../../scanner/parsers';
++import type { ScanResultsFile } from '../../scanner/types';
++
++const report = (o: Partial<ScanResultsFile['retailers'][number]>) => ({
++  id: 'x', name: 'X', baseUrl: 'https://x', status: 'ok' as const, queries: 4, queriesOk: 4, queriesFailed: 0,
++  productsSeen: 0, quotesKept: 2, skippedMultiPack: 0, skippedCurrency: 0, carriedOver: 0, errors: [], ...o,
++});
++
++const file: ScanResultsFile = {
++  schemaVersion: 1,
++  scannedAt: '2026-10-10T06:00:00.000Z',
++  durationMs: 1000,
++  retailers: [
++    report({ id: 'a', name: 'C.Gars Ltd', status: 'ok' }),
++    report({ id: 'b', name: 'Smoke King', status: 'failed', queriesOk: 0, queriesFailed: 4, quotesKept: 0, errors: [{ query: 'q', kind: 'blocked', message: 'HTTP 403 -- looks like a bot wall' }] }),
++    report({ id: 'c', name: "Holt's", status: 'disabled', note: 'US retailer' }),
++  ],
++  items: [
++    { brand: 'Padrón', line: '1964 Anniversary', vitola: 'Exclusivo', quotes: [{ vendor: 'C.Gars Ltd', price: 16, currency: 'GBP', packageType: 'Single', inStock: true, title: 'Padron 1964 Exclusivo', url: 'https://x/p', scannedAt: '2026-10-09T06:00:00.000Z' }] },
++    { brand: 'Cohiba', line: 'Behike', vitola: 'BHK 52', quotes: [] },
++  ],
++};
++
++describe('normaliseKey', () => {
++  it('stays identical to the scanner normalise()', () => {
++    for (const s of ['Padrón 1964 & Co.', "Holt's  Cigar", 'H. Upmann — No. 2', '']) {
++      expect(normaliseKey(s)).toBe(normalise(s));
++    }
++  });
++});
++
++describe('findQuotes', () => {
++  it('matches accents/case and converts to app shape (£ symbol, scan date)', () => {
++    const q = findQuotes(file, { brand: 'padron', line: '1964 anniversary', vitola: 'EXCLUSIVO' });
++    expect(q).toHaveLength(1);
++    expect(q[0]).toMatchObject({ vendor: 'C.Gars Ltd', price: 16, currency: '£', packageType: 'Single', inStock: true, recordedAt: '2026-10-09T06:00:00.000Z' });
++  });
++  it('does not match a different vitola', () => {
++    expect(findQuotes(file, { brand: 'Padrón', line: '1964 Anniversary', vitola: 'Imperial' })).toEqual([]);
++  });
++  it('lets a vitola-less item use an unambiguous line-level hit', () => {
++    expect(findQuotes(file, { brand: 'Padrón', line: '1964 Anniversary' })).toHaveLength(1);
++  });
++  it('refuses an ambiguous vitola-less match', () => {
++    const two: ScanResultsFile = { ...file, items: [file.items[0], { ...file.items[0], vitola: 'Imperial' }] };
++    expect(findQuotes(two, { brand: 'Padrón', line: '1964 Anniversary' })).toEqual([]);
++  });
++});
++
++describe('findBatchQuotes / missingFromScan', () => {
++  it('returns one result per cigar, keeping ids', () => {
++    const out = findBatchQuotes(file, [
++      { id: '1', brand: 'Padrón', line: '1964 Anniversary', vitola: 'Exclusivo' },
++      { id: '2', brand: 'Cohiba', line: 'Behike', vitola: 'BHK 52' },
++    ]);
++    expect(out.map((o) => [o.id, o.quotes.length])).toEqual([['1', 1], ['2', 0]]);
++  });
++  it('lists cigars the scanner has never heard of, once each', () => {
++    const missing = missingFromScan(file, [
++      { brand: 'Padrón', line: '1964 Anniversary', vitola: 'Exclusivo' },
++      { brand: 'Montecristo', line: 'No. 2', vitola: 'Torpedo' },
++      { brand: 'montecristo', line: 'no 2', vitola: 'torpedo' },
++    ]);
++    expect(missing).toEqual([{ brand: 'Montecristo', line: 'No. 2', vitola: 'Torpedo' }]);
++  });
++  it('cigarKey ignores an absent vitola', () => {
++    expect(cigarKey({ brand: 'A', line: 'B' })).toBe('a b');
++  });
++});
++
++describe('status helpers', () => {
++  const now = new Date('2026-10-12T06:00:00.000Z');
++  it('computes and describes age', () => {
++    expect(scanAgeHours(file, now)).toBeCloseTo(48);
++    expect(describeAge(48)).toBe('2 days ago');
++    expect(describeAge(5)).toBe('5h ago');
++    expect(describeAge(0.2)).toBe('less than an hour ago');
++    expect(describeAge(null)).toBe('never');
++  });
++  it('counts only enabled retailers in the health note', () => {
++    expect(scanHealthNote(file, now)).toBe('1 of 2 retailers returned prices (scanned 2 days ago).');
++  });
++  it('says so when the scanner has never run', () => {
++    expect(scanHealthNote({ ...file, scannedAt: null }, now)).toMatch(/has not run yet/);
++  });
++  it('explains each retailer state', () => {
++    expect(retailerSummaryLine(file.retailers[0])).toBe('2 prices');
++    expect(retailerSummaryLine(file.retailers[1])).toMatch(/blocked: HTTP 403/);
++    expect(retailerSummaryLine(file.retailers[2])).toBe('US retailer');
++    expect(retailerSummaryLine(report({ status: 'no_matches', quotesKept: 0 }))).toMatch(/nothing matched/);
++  });
++});
++
++describe('loadScanResults', () => {
++  it('cache-busts and parses a valid file', async () => {
++    const fetchFn = vi.fn().mockResolvedValue({ ok: true, json: async () => file });
++    const out = await loadScanResults(fetchFn as any, '/HUMIDOR/');
++    expect(out.items).toHaveLength(2);
++    expect(fetchFn.mock.calls[0][0]).toMatch(/^\/HUMIDOR\/data\/retailer-prices\.json\?t=\d+$/);
++  });
++  it('throws a readable error on 404 and on a bad shape', async () => {
++    await expect(loadScanResults(vi.fn().mockResolvedValue({ ok: false, status: 404 }) as any, '/')).rejects.toThrow(/HTTP 404/);
++    await expect(loadScanResults(vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }) as any, '/')).rejects.toThrow(/unexpected format/);
++  });
++});
+diff --git a/src/utils/scanResults.ts b/src/utils/scanResults.ts
+new file mode 100644
+index 0000000..c85575c
+--- /dev/null
++++ b/src/utils/scanResults.ts
+@@ -0,0 +1,122 @@
++/**
++ * Browser-side reader for public/data/retailer-prices.json, the file the
++ * scheduled "Scan retailer prices" GitHub Action commits. The Wishlist and
++ * Research Hub scan buttons read it instead of calling the old /api routes,
++ * so they work on GitHub Pages (no server) and never touch a retailer from
++ * the browser.
++ *
++ * Types are imported type-only from scanner/ so nothing scanner-side (cheerio
++ * etc.) lands in the browser bundle.
++ */
++import type { RetailerReport, ScanItem, ScanQuote, ScanResultsFile, WatchlistEntry } from '../../scanner/types';
++import type { VendorPriceEntry } from '../types';
++import { canonicalizeVendorName } from './researchUtils';
++
++export type { RetailerReport, ScanResultsFile, WatchlistEntry };
++
++/** Must stay identical to normalise() in scanner/parsers.ts (a test enforces it). */
++export function normaliseKey(text: string): string {
++  return text
++    .normalize('NFD')
++    .replace(/[\u0300-\u036f]/g, '')
++    .toLowerCase()
++    .replace(/&/g, ' and ')
++    .replace(/[^a-z0-9]+/g, ' ')
++    .trim();
++}
++
++export function cigarKey(c: { brand: string; line: string; vitola?: string }): string {
++  return normaliseKey(`${c.brand} ${c.line} ${c.vitola ?? ''}`);
++}
++
++export const SCAN_RESULTS_STALE_AFTER_HOURS = 72;
++
++export async function loadScanResults(fetchFn: typeof fetch = fetch, baseUrl: string = import.meta.env.BASE_URL): Promise<ScanResultsFile> {
++  // Cache-bust: GitHub Pages / browsers can otherwise serve yesterday's file.
++  const url = `${baseUrl}data/retailer-prices.json?t=${Date.now()}`;
++  const res = await fetchFn(url, { cache: 'no-store' });
++  if (!res.ok) throw new Error(`Couldn't load scan results (HTTP ${res.status}). The scanner may not have run yet.`);
++  const json = (await res.json()) as ScanResultsFile;
++  if (json?.schemaVersion !== 1 || !Array.isArray(json.items) || !Array.isArray(json.retailers)) {
++    throw new Error('Scan results file is in an unexpected format.');
++  }
++  return json;
++}
++
++export function toVendorEntry(q: ScanQuote): VendorPriceEntry {
++  return {
++    id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
++    vendor: canonicalizeVendorName(q.vendor),
++    price: q.price,
++    currency: '£',
++    packageType: 'Single',
++    inStock: q.inStock,
++    url: q.url,
++    // The date the retailer's price was actually read, not "now".
++    recordedAt: q.scannedAt,
++  };
++}
++
++/** Quotes for one cigar. Exact brand+line+vitola; vitola-less app items may use a line-level hit. */
++export function findQuotes(results: ScanResultsFile, c: { brand: string; line: string; vitola?: string }): VendorPriceEntry[] {
++  const wanted = cigarKey(c);
++  let item: ScanItem | undefined = results.items.find((i) => cigarKey(i) === wanted);
++  if (!item && !c.vitola) {
++    const lineKey = cigarKey({ brand: c.brand, line: c.line });
++    const candidates = results.items.filter((i) => cigarKey({ brand: i.brand, line: i.line }) === lineKey && i.quotes.length > 0);
++    if (candidates.length === 1) item = candidates[0];
++  }
++  return (item?.quotes ?? []).map(toVendorEntry);
++}
++
++export function findBatchQuotes<T extends { id: string; brand: string; line: string; vitola?: string }>(
++  results: ScanResultsFile,
++  cigars: T[]
++): Array<{ id: string; brand: string; name: string; quotes: VendorPriceEntry[] }> {
++  return cigars.map((c) => ({ id: c.id, brand: c.brand, name: c.line, quotes: findQuotes(results, c) }));
++}
++
++/** App cigars the scanner doesn't know about (so they'd never get a price). */
++export function missingFromScan(results: ScanResultsFile, cigars: Array<{ brand: string; line: string; vitola?: string }>): WatchlistEntry[] {
++  const known = new Set(results.items.map(cigarKey));
++  const seen = new Set<string>();
++  const out: WatchlistEntry[] = [];
++  for (const c of cigars) {
++    const k = cigarKey(c);
++    if (!c.brand || !c.line || known.has(k) || seen.has(k)) continue;
++    seen.add(k);
++    out.push({ brand: c.brand, line: c.line, ...(c.vitola ? { vitola: c.vitola } : {}) });
++  }
++  return out;
++}
++
++export function scanAgeHours(results: ScanResultsFile, now: Date = new Date()): number | null {
++  if (!results.scannedAt) return null;
++  return (now.getTime() - new Date(results.scannedAt).getTime()) / 3_600_000;
++}
++
++export function describeAge(hours: number | null): string {
++  if (hours === null) return 'never';
++  if (hours < 1) return 'less than an hour ago';
++  if (hours < 48) return `${Math.round(hours)}h ago`;
++  return `${Math.round(hours / 24)} days ago`;
++}
++
++/** One line for the toast after pressing a scan button. */
++export function scanHealthNote(results: ScanResultsFile, now: Date = new Date()): string {
++  if (!results.scannedAt) return 'The scanner has not run yet — run the "Scan retailer prices" workflow in GitHub Actions.';
++  const active = results.retailers.filter((r) => r.status !== 'disabled');
++  const working = active.filter((r) => r.status === 'ok' || r.status === 'partial').length;
++  const age = describeAge(scanAgeHours(results, now));
++  return `${working} of ${active.length} retailers returned prices (scanned ${age}).`;
++}
++
++export function retailerSummaryLine(r: RetailerReport): string {
++  if (r.status === 'disabled') return r.note ?? 'Disabled';
++  if (r.status === 'no_matches') return 'Reachable, but nothing matched — the search URL or selectors need fixing';
++  const first = r.errors[0];
++  if (r.status === 'failed' || r.status === 'partial') {
++    return first ? `${first.kind}: ${first.message}` : `${r.queriesFailed} of ${r.queries} lookups failed`;
++  }
++  return `${r.quotesKept} price${r.quotesKept === 1 ? '' : 's'}${r.carriedOver ? `, ${r.carriedOver} carried over` : ''}`;
++}
+diff --git a/src/vite-env.d.ts b/src/vite-env.d.ts
+new file mode 100644
+index 0000000..11f02fe
+--- /dev/null
++++ b/src/vite-env.d.ts
+@@ -0,0 +1 @@
++/// <reference types="vite/client" />

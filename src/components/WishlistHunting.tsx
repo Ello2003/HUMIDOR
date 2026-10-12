@@ -36,6 +36,8 @@ import {
 } from 'lucide-react';
 import { WishlistItem, Cigar, AppSettings, VendorPriceEntry, CigarResearchItem, ReviewScoreEntry, WishlistBasketItem } from '../types';
 import { formatCurrency, DEFAULT_CURRENCY } from '../utils/currencyUtils';
+import { findBatchQuotes, findQuotes, loadScanResults, scanHealthNote } from '../utils/scanResults';
+import RetailerScanStatus from './RetailerScanStatus';
 import {
   estimateAccurateSmokeTime,
   canonicalizeVendorName,
@@ -119,6 +121,7 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
   // Scanner states
   const [scanningItemId, setScanningItemId] = useState<string | null>(null);
   const [isBatchScanning, setIsBatchScanning] = useState(false);
+  const [scanStatusKey, setScanStatusKey] = useState(0);
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
 
   // Search & Filter state with persistence
@@ -770,22 +773,9 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
     setFeedbackNotice(null);
 
     try {
-      const response = await fetch('/api/research/retailer-prices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brand: item.brand,
-          name: item.name,
-          vitola: item.vitola,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Scanner request failed');
-      }
-
-      const data = await response.json();
-      const scannedPrices: VendorPriceEntry[] = data?.data?.retailerQuotes || data?.data?.quotes || [];
+      const results = await loadScanResults();
+      const scannedPrices: VendorPriceEntry[] = findQuotes(results, { brand: item.brand, line: item.name, vitola: item.vitola });
+      setScanStatusKey((k) => k + 1);
 
       if (scannedPrices.length > 0) {
         const currentQuotes = item.vendorPrices || [];
@@ -836,14 +826,14 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
         }
 
         setFeedbackNotice(
-          `🇬🇧 Updated shop quotes for ${item.brand} ${item.name}! Best quote: £${minPrice.toFixed(2)} at ${bestVendor}.`
+          `🇬🇧 Updated shop quotes for ${item.brand} ${item.name}! Best quote: £${minPrice.toFixed(2)} at ${bestVendor}. ${scanHealthNote(results)}`
         );
       } else {
-        setFeedbackNotice(`Scanned UK retailers — no verified prices found for ${item.brand} ${item.name}.`);
+        setFeedbackNotice(`No scanned prices for ${item.brand} ${item.name}. ${scanHealthNote(results)}`);
       }
-    } catch (err) {
-      console.error('Error scanning retailer prices:', err);
-      setFeedbackNotice(`Price scan failed for ${item.brand} ${item.name} — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?`);
+    } catch (err: any) {
+      console.error('Error reading scan results:', err);
+      setFeedbackNotice(err?.message || `Couldn't read scan results for ${item.brand} ${item.name}.`);
     } finally {
       setScanningItemId(null);
     }
@@ -856,26 +846,12 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
     setFeedbackNotice(null);
 
     try {
-      const response = await fetch('/api/research/batch-retailer-prices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cigars: wishlist.map((w) => ({
-            id: w.id,
-            brand: w.brand,
-            line: w.name,
-            name: w.name,
-            vitola: w.vitola,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Batch scanner request failed');
-      }
-
-      const data = await response.json();
-      const results: Array<{ id: string; brand: string; name: string; quotes: VendorPriceEntry[] }> = data?.data?.results || [];
+      const scan = await loadScanResults();
+      const results = findBatchQuotes(
+        scan,
+        wishlist.map((w) => ({ id: w.id, brand: w.brand, line: w.name, vitola: w.vitola }))
+      );
+      setScanStatusKey((k) => k + 1);
       let updatedCount = 0;
 
       results.forEach((res) => {
@@ -933,11 +909,11 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
       });
 
       setFeedbackNotice(
-        `🇬🇧 UK Tobacconist scan completed! Updated quotes and best prices across ${updatedCount} wishlist items.`
+        `🇬🇧 Updated quotes for ${updatedCount} of ${wishlist.length} wishlist items from the latest scan. ${scanHealthNote(scan)}`
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error('Batch scan error:', err);
-      setFeedbackNotice('Batch price scan failed — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?');
+      setFeedbackNotice(err?.message || "Couldn't read scan results.");
     } finally {
       setIsBatchScanning(false);
     }
@@ -1284,6 +1260,23 @@ export const WishlistHunting: React.FC<WishlistHuntingProps> = ({
           </button>
         </div>
       )}
+
+      {/* Retailer scan status: shows what the scheduled scanner last managed to read */}
+      <div className="space-y-2">
+        <RetailerScanStatus
+          refreshKey={scanStatusKey}
+          cigars={wishlist.map((w) => ({ brand: w.brand, line: w.name, vitola: w.vitola }))}
+        />
+        <button
+          type="button"
+          onClick={handleBatchScanAllWishlistItems}
+          disabled={isBatchScanning || wishlist.length === 0}
+          className="px-3 py-1.5 bg-surface hover:bg-card-hover text-gold border border-gold/50 hover:border-gold text-[11px] font-semibold uppercase tracking-wider rounded-md transition cursor-pointer disabled:opacity-50"
+          title="Apply the latest scanned retailer prices to every wishlist item"
+        >
+          {isBatchScanning ? 'Applying scan...' : '🇬🇧 Apply latest scan to wishlist'}
+        </button>
+      </div>
 
       {/* Inline Display Settings & Presets Panel */}
       {showDisplayOptions && (

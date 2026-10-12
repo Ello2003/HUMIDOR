@@ -59,6 +59,8 @@ import {
 import { formatDateShort } from '../utils/dateUtils';
 import { generateId } from '../utils/idUtils';
 import { formatCurrency } from '../utils/currencyUtils';
+import { findBatchQuotes, findQuotes, loadScanResults, scanHealthNote } from '../utils/scanResults';
+import RetailerScanStatus from './RetailerScanStatus';
 import {
   mergeVendorPriceIntoCigar,
   canonicalizeVendorName,
@@ -782,28 +784,11 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   const handleScanRetailerPricesForCigar = async (cigar: CigarResearchItem) => {
     setScanningPriceCigarId(cigar.id);
     try {
-      const res = await fetch('/api/research/retailer-prices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brand: cigar.brand,
-          name: cigar.line,
-          vitola: cigar.vitola,
-          countryOrigin: cigar.countryOrigin,
-          isCuban: cigar.isCuban,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success && data.data?.retailerQuotes?.length > 0) {
-        const quotes: VendorPriceEntry[] = data.data.retailerQuotes.map((q: any) => ({
-          id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          vendor: canonicalizeVendorName(q.vendor),
-          price: q.price,
-          currency: '£',
-          packageType: 'Single' as const,
-          inStock: q.inStock ?? true,
-          recordedAt: new Date().toISOString(),
-        }));
+      const scan = await loadScanResults();
+      setScanStatusKey((k) => k + 1);
+      const found = findQuotes(scan, { brand: cigar.brand, line: cigar.line, vitola: cigar.vitola });
+      if (found.length > 0) {
+        const quotes: VendorPriceEntry[] = found;
 
         let updatedCigar = { ...cigar };
         for (const q of quotes) {
@@ -837,12 +822,13 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           });
         }
 
-        showFeedback(`Scanned UK Retailers (Cgars, Cuban Cigar Club, Havana House, Smoke King, Davidoff): Best price £${data.data.bestPrice.toFixed(2)} at ${data.data.bestVendor}!`);
+        const best = [...found].sort((x, y) => x.price - y.price)[0];
+        showFeedback(`Best scanned price £${best.price.toFixed(2)} at ${best.vendor}. ${scanHealthNote(scan)}`);
       } else {
-        showFeedback(`No verified UK retailer prices found for "${cigar.brand} ${cigar.line}".`);
+        showFeedback(`No scanned prices for "${cigar.brand} ${cigar.line}". ${scanHealthNote(scan)}`);
       }
     } catch (err: any) {
-      showFeedback(`Price scan failed — is the HUMIDOR server running (npm run dev) with a GEMINI_API_KEY set?`);
+      showFeedback(err?.message || "Couldn't read scan results.");
     } finally {
       setScanningPriceCigarId(null);
     }
@@ -851,35 +837,18 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
   const handleBatchScanAllRetailers = async () => {
     setIsBatchScanningPrices(true);
     try {
-      const res = await fetch('/api/research/batch-retailer-prices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cigars: researchDatabase.slice(0, 25).map((c) => ({
-            id: c.id,
-            brand: c.brand,
-            name: c.line,
-            vitola: c.vitola,
-            countryOrigin: c.countryOrigin,
-            isCuban: c.isCuban,
-          })),
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success && data.data?.results) {
+      const scan = await loadScanResults();
+      setScanStatusKey((k) => k + 1);
+      const batch = findBatchQuotes(
+        scan,
+        researchDatabase.map((c) => ({ id: c.id, brand: c.brand, line: c.line, vitola: c.vitola }))
+      );
+      {
         let updatedCount = 0;
-        data.data.results.forEach((r: any) => {
+        batch.forEach((r) => {
           const cigar = researchDatabase.find((c) => c.id === r.id);
           if (cigar && r.quotes && r.quotes.length > 0) {
-            const quotes: VendorPriceEntry[] = r.quotes.map((q: any) => ({
-              id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-              vendor: canonicalizeVendorName(q.vendor),
-              price: q.price,
-              currency: '£',
-              packageType: 'Single' as const,
-              inStock: q.inStock ?? true,
-              recordedAt: new Date().toISOString(),
-            }));
+            const quotes: VendorPriceEntry[] = r.quotes;
 
             let updatedCigar = { ...cigar };
             for (const q of quotes) {
@@ -915,14 +884,10 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
             updatedCount++;
           }
         });
-        const groundedCount = data.data.groundedCount ?? 0;
-        showFeedback(
-          `Updated UK retailer prices for ${updatedCount} cigars — ${groundedCount} verified via live search, ` +
-            `${updatedCount - groundedCount} from unverified reference data.`
-        );
+        showFeedback(`Updated retailer prices for ${updatedCount} of ${researchDatabase.length} cigars from the latest scan. ${scanHealthNote(scan)}`);
       }
     } catch (err: any) {
-      showFeedback('UK multi-shop batch scan complete.');
+      showFeedback(err?.message || "Couldn't read scan results.");
     } finally {
       setIsBatchScanningPrices(false);
     }
@@ -997,6 +962,7 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
 
   // Global hub feedback notice
   const [hubNotice, setHubNotice] = useState<string | null>(null);
+  const [scanStatusKey, setScanStatusKey] = useState(0);
 
   const showFeedback = (msg: string) => {
     setHubNotice(msg);
@@ -1410,6 +1376,12 @@ export const CigarResearchHub: React.FC<CigarResearchHubProps> = ({
           <span>{hubNotice}</span>
         </div>
       )}
+
+      {/* Retailer scan status: shows what the scheduled scanner last managed to read */}
+      <RetailerScanStatus
+        refreshKey={scanStatusKey}
+        cigars={researchDatabase.map((c) => ({ brand: c.brand, line: c.line, vitola: c.vitola }))}
+      />
 
       {/* Top Banner & Tab Navigation */}
       <div className="p-6 bg-header border border-line rounded-lg shadow-sm">

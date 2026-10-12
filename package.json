@@ -12,10 +12,10 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build",
+    "scan": "tsx scanner/scan.ts"
   },
   "dependencies": {
-    "@composio/core": "^0.22.0",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/canvas-confetti": "^1.9.0",
@@ -36,6 +36,7 @@
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "cheerio": "^1.2.0",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vitest": "^5.0.1"

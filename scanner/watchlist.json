@@ -1,0 +1,4 @@
+{
+  "_comment": "Extra cigars for the scanner to price-check, on top of the built-in wishlist and research database. The scanner can't see your browser's saved wishlist, so anything you want scanned that isn't built in goes here. The Retailer scan panel in the app has a button that copies exactly the entries you're missing.",
+  "extra": []
+}
