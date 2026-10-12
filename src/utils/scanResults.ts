@@ -1,94 +1,137 @@
-import { VendorPriceEntry } from '../types';
+import type { RetailerReport, ScanItem, ScanQuote, ScanResultsFile, WatchlistEntry } from '../../scanner/types';
+import type { VendorPriceEntry } from '../types';
+import { canonicalizeVendorName } from './researchUtils';
 
-const toText = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  return '';
-};
+export type { RetailerReport, ScanResultsFile, WatchlistEntry };
 
-const normalizeScanResults = (scan: any): any[] => {
-  if (!scan) return [];
-  if (Array.isArray(scan)) return scan;
+export function normaliseKey(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
 
-  const candidates = [
-    scan.retailerQuotes,
-    scan.quotes,
-    scan.results,
-    scan.data?.retailerQuotes,
-    scan.data?.quotes,
-    scan.data?.results,
-  ];
+export function cigarKey(c: { brand: string; line: string; vitola?: string }): string {
+  return normaliseKey(`${c.brand} ${c.line} ${c.vitola ?? ''}`);
+}
 
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) return candidate;
+export const SCAN_RESULTS_STALE_AFTER_HOURS = 72;
+
+export async function loadScanResults(
+  fetchFn: typeof fetch = fetch,
+  baseUrl: string = import.meta.env.BASE_URL
+): Promise<ScanResultsFile> {
+  const safeBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  const url = `${safeBase}data/retailer-prices.json?t=${Date.now()}`;
+  const res = await fetchFn(url, { cache: 'no-store' });
+
+  if (!res.ok) {
+    throw new Error(`Couldn't load scan results (HTTP ${res.status}). The scanner may not have run yet.`);
   }
 
-  return [];
-};
-
-export async function loadScanResults(): Promise<any> {
-  try {
-    const response = await fetch('/api/research/retailer-prices', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
-
-    if (!response.ok) {
-      return { retailerQuotes: [], quotes: [], results: [] };
-    }
-
-    const data = await response.json();
-    return data?.data ?? data ?? { retailerQuotes: [], quotes: [], results: [] };
-  } catch {
-    return { retailerQuotes: [], quotes: [], results: [] };
+  const json = (await res.json()) as ScanResultsFile;
+  if (json?.schemaVersion !== 1 || !Array.isArray(json.items) || !Array.isArray(json.retailers)) {
+    throw new Error('Scan results file is in an unexpected format.');
   }
+
+  return json;
+}
+
+export function toVendorEntry(q: ScanQuote): VendorPriceEntry {
+  return {
+    id: `vp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    vendor: canonicalizeVendorName(q.vendor),
+    price: q.price,
+    currency: '£',
+    packageType: 'Single',
+    inStock: q.inStock,
+    url: q.url,
+    recordedAt: q.scannedAt,
+  };
 }
 
 export function findQuotes(
-  scan: any,
-  criteria: { brand?: string; line?: string; vitola?: string }
+  results: ScanResultsFile,
+  c: { brand: string; line: string; vitola?: string }
 ): VendorPriceEntry[] {
-  const candidates = normalizeScanResults(scan) as Array<Record<string, any>>;
-  const brand = toText(criteria.brand).toLowerCase();
-  const line = toText(criteria.line).toLowerCase();
-  const vitola = toText(criteria.vitola).toLowerCase();
+  const wanted = cigarKey(c);
+  let item: ScanItem | undefined = results.items.find((i) => cigarKey(i) === wanted);
 
-  return candidates.filter((entry) => {
-    const entryBrand = toText(entry.brand || entry.vendor || entry.itemBrand || '').toLowerCase();
-    const entryLine = toText(entry.name || entry.line || entry.itemName || '').toLowerCase();
-    const entryVitola = toText(entry.vitola || entry.size || '').toLowerCase();
+  if (!item && !c.vitola) {
+    const lineKey = cigarKey({ brand: c.brand, line: c.line });
+    const candidates = results.items.filter(
+      (i) => cigarKey({ brand: i.brand, line: i.line }) === lineKey && i.quotes.length > 0
+    );
+    if (candidates.length === 1) item = candidates[0];
+  }
 
-    const matchesBrand = !brand || entryBrand.includes(brand) || entryBrand === brand;
-    const matchesLine = !line || entryLine.includes(line) || entryLine === line;
-    const matchesVitola = !vitola || entryVitola.includes(vitola) || entryVitola === vitola;
-
-    return matchesBrand && matchesLine && matchesVitola;
-  }) as VendorPriceEntry[];
+  return (item?.quotes ?? []).map(toVendorEntry);
 }
 
-export function findBatchQuotes(
-  scan: any,
-  items: Array<{ id: string; brand?: string; line?: string; vitola?: string }>
-): Array<{ id: string; quotes: VendorPriceEntry[] }> {
-  return items.map((item) => ({
-    id: item.id,
-    quotes: findQuotes(scan, {
-      brand: item.brand,
-      line: item.line,
-      vitola: item.vitola,
-    }),
+export function findBatchQuotes<T extends { id: string; brand: string; line: string; vitola?: string }>(
+  results: ScanResultsFile,
+  cigars: T[]
+): Array<{ id: string; brand: string; name: string; quotes: VendorPriceEntry[] }> {
+  return cigars.map((c) => ({
+    id: c.id,
+    brand: c.brand,
+    name: c.line,
+    quotes: findQuotes(results, c),
   }));
 }
 
-export function scanHealthNote(scan: any): string {
-  const allQuotes = normalizeScanResults(scan);
-  const count = allQuotes.length;
+export function missingFromScan(
+  results: ScanResultsFile,
+  cigars: Array<{ brand: string; line: string; vitola?: string }>
+): WatchlistEntry[] {
+  const known = new Set(results.items.map(cigarKey));
+  const seen = new Set<string>();
+  const out: WatchlistEntry[] = [];
 
-  if (count === 0) {
-    return 'Scanned sources returned no verified prices.';
+  for (const c of cigars) {
+    const k = cigarKey(c);
+    if (!c.brand || !c.line || known.has(k) || seen.has(k)) continue;
+    seen.add(k);
+    out.push({ brand: c.brand, line: c.line, ...(c.vitola ? { vitola: c.vitola } : {}) });
   }
 
-  return `Scan included ${count} potential quote${count === 1 ? '' : 's'} for review.`;
+  return out;
+}
+
+export function scanAgeHours(results: ScanResultsFile, now: Date = new Date()): number | null {
+  if (!results.scannedAt) return null;
+  return (now.getTime() - new Date(results.scannedAt).getTime()) / 3_600_000;
+}
+
+export function describeAge(hours: number | null): string {
+  if (hours === null) return 'never';
+  if (hours < 1) return 'less than an hour ago';
+  if (hours < 48) return `${Math.round(hours)}h ago`;
+  return `${Math.round(hours / 24)} days ago`;
+}
+
+export function scanHealthNote(results: ScanResultsFile, now: Date = new Date()): string {
+  if (!results.scannedAt) {
+    return 'The scanner has not run yet — run the "Scan retailer prices" workflow in GitHub Actions.';
+  }
+
+  const active = results.retailers.filter((r) => r.status !== 'disabled');
+  const working = active.filter((r) => r.status === 'ok' || r.status === 'partial').length;
+  const age = describeAge(scanAgeHours(results, now));
+  return `${working} of ${active.length} retailers returned prices (scanned ${age}).`;
+}
+
+export function retailerSummaryLine(r: RetailerReport): string {
+  if (r.status === 'disabled') return r.note ?? 'Disabled';
+  if (r.status === 'no_matches') return 'Reachable, but nothing matched — the search URL or selectors need fixing';
+
+  const first = r.errors[0];
+  if (r.status === 'failed' || r.status === 'partial') {
+    return first ? `${first.kind}: ${first.message}` : `${r.queriesFailed} of ${r.queries} lookups failed`;
+  }
+
+  return `${r.quotesKept} price${r.quotesKept === 1 ? '' : 's'}${r.carriedOver ? `, ${r.carriedOver} carried over` : ''}`;
 }
