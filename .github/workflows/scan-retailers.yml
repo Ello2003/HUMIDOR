@@ -1,0 +1,62 @@
+name: Scan retailer prices
+
+on:
+  schedule:
+    - cron: '17 6 * * *' # daily, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write # commit public/data/retailer-prices.json
+  actions: write  # re-run the Pages deploy afterwards
+
+# Never run two scans at once (they would fight over the same commit).
+concurrency:
+  group: scan-retailers
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # --ignore-scripts: skips the "postinstall" full app build, which the scanner doesn't need.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Unit tests
+        run: npm test
+
+      # Exits 0 even when retailers fail: the status file is the point, and it must be committed.
+      - name: Scan retailers
+        run: npm run scan
+
+      - name: Commit results
+        id: commit
+        run: |
+          git config user.name  "humidor-scanner[bot]"
+          git config user.email "humidor-scanner@users.noreply.github.com"
+          git add public/data/retailer-prices.json
+          if git diff --cached --quiet; then
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            echo "No change in scan results."
+            exit 0
+          fi
+          git commit -m "chore(scan): update retailer prices"
+          # main may have moved while we were scanning
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # Pushes made with GITHUB_TOKEN do not trigger other workflows, so ask for the Pages deploy explicitly.
+      - name: Redeploy site with the new prices
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run static.yml --ref "${GITHUB_REF_NAME}"
