@@ -83,14 +83,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-header border-b border-line backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        {/* Mobile: slightly tighter height; desktop unchanged */}
+        <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo & Brand matching design */}
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 bg-cedar rounded-md flex items-center justify-center shadow-lg border border-text-muted/20 flex-shrink-0">
-              <span className="text-white font-serif text-2xl italic font-bold">H</span>
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-cedar rounded-md flex items-center justify-center shadow-lg border border-text-muted/20 flex-shrink-0">
+              <span className="text-white font-serif text-xl md:text-2xl italic font-bold">H</span>
             </div>
             <div>
-              <h1 className="font-serif text-xl sm:text-2xl tracking-tight text-text">
+              <h1 className="font-serif text-lg sm:text-xl md:text-2xl tracking-tight text-text">
                 The Humidor
               </h1>
               <p className="text-[11px] text-text-muted tracking-wide hidden sm:block">
@@ -130,7 +131,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-2 sm:gap-2.5">
             <button
               onClick={onOpenLogSmoke}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-gold hover:brightness-110 text-ink font-bold text-xs uppercase tracking-widest rounded-md shadow-sm transition hover:scale-[1.02] active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 md:px-3.5 py-2 bg-gold hover:brightness-110 text-ink font-bold text-xs uppercase tracking-widest rounded-md shadow-sm transition hover:scale-[1.02] active:scale-95 cursor-pointer"
             >
               <Flame className="w-3.5 h-3.5 text-ink" />
               <span className="hidden sm:inline">Log Smoke</span>
@@ -142,10 +143,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="inline-flex rounded-md shadow-xs">
                 <button
                   onClick={onOpenAddCigar}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-card hover:bg-card-hover text-text border border-line hover:border-cedar font-medium text-xs uppercase tracking-wider rounded-l-md transition cursor-pointer"
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-card hover:bg-card-hover text-text border border-line hover:border-cedar font-medium text-xs uppercase tracking-wider rounded-l-md transition cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 text-gold" />
-                  <span>Add Stick</span>
+                  <span className="hidden xs:inline sm:inline">Add Stick</span>
+                  <span className="sm:hidden">Add</span>
                 </button>
                 {onOpenBasketImporter && (
                   <button
@@ -196,8 +198,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto py-2.5 scrollbar-none border-t border-line text-xs uppercase tracking-widest font-medium">
+        {/* Navigation Tabs — desktop / tablet only. Mobile uses bottom tab bar. */}
+        <nav className="hidden md:flex items-center space-x-2 sm:space-x-4 overflow-x-auto py-2.5 scrollbar-none border-t border-line text-xs uppercase tracking-widest font-medium">
           {visibleTabs.dashboard && (
             <button
               onClick={() => setActiveTab('dashboard')}
@@ -286,4 +288,3 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
-
